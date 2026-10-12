@@ -1,0 +1,16 @@
+{
+  "name": "orbit-api",
+  "version": "1.4.0",
+  "description": "Subscription billing API for small SaaS teams",
+  "main": "src/index.js",
+  "license": "MIT",
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "dev": "node --watch src/index.js",
+    "start": "node src/index.js",
+    "test": "node --test test/",
+    "lint": "eslint src"
+  },
+  "dependencies": { "express": "^4.21.0", "pg": "^8.13.0", "stripe": "^17.0.0" },
+  "devDependencies": { "eslint": "^9.0.0" }
+}

@@ -1,0 +1,24 @@
+# GitHub shows a "Cite this repository" button when this file is at the repo root.
+# Validate: pip install cffconvert && cffconvert --validate
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+title: "{{TITLE}}"
+type: software
+authors:
+  - family-names: "{{FAMILY}}"
+    given-names: "{{GIVEN}}"
+    orcid: "https://orcid.org/{{ORCID}}"
+repository-code: "{{REPO_URL}}"
+license: "{{SPDX_LICENSE}}"
+version: "{{VERSION}}"
+date-released: "{{YYYY-MM-DD}}"
+# If there is a paper, add:
+# preferred-citation:
+#   type: article
+#   title: "{{PAPER_TITLE}}"
+#   authors:
+#     - family-names: "{{FAMILY}}"
+#       given-names: "{{GIVEN}}"
+#   journal: "{{VENUE}}"
+#   year: {{YEAR}}
+#   doi: "{{DOI}}"

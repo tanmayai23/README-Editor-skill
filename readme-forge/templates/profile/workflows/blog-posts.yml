@@ -1,0 +1,21 @@
+# Updates the list between <!-- BLOG-POST-LIST:START --> and <!-- BLOG-POST-LIST:END --> in README.md.
+# Edit feed_list: dev.to https://dev.to/feed/USER · Medium https://medium.com/feed/@USER · Hashnode https://BLOG.hashnode.dev/rss.xml · any RSS/Atom.
+name: Latest blog posts
+
+on:
+  schedule:
+    - cron: "0 */6 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  update-readme:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: gautamkrishnar/blog-post-workflow@v1
+        with:
+          feed_list: "{{FEED_URL}}"
+          max_post_count: 5

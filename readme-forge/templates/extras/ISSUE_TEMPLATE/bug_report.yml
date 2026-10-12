@@ -1,0 +1,38 @@
+# Place in .github/ISSUE_TEMPLATE/
+name: Bug report
+description: Something doesn't work as documented
+labels: ["bug"]
+body:
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: What did you expect, and what happened instead?
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Run `...`
+        2. See error
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      placeholder: "{{NAME}} 1.2.3"
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      placeholder: OS, runtime version (e.g. macOS 15, Node 22)
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      render: shell

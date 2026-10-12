@@ -1,0 +1,33 @@
+# 3D isometric contribution calendar (yoshi389111/github-profile-3d-contrib).
+# Writes SVGs to profile-3d-contrib/ in this repo daily. Pin a release tag instead of @main if you prefer.
+# Embed (pick a theme file: profile-green-animate.svg, profile-night-rainbow.svg, profile-season-animate.svg, profile-gitblock.svg …):
+#   <picture>
+#     <source media="(prefers-color-scheme: dark)" srcset="profile-3d-contrib/profile-night-rainbow.svg">
+#     <img alt="3D chart of USER's GitHub contributions" src="profile-3d-contrib/profile-green-animate.svg">
+#   </picture>
+name: 3D contribution calendar
+
+on:
+  schedule:
+    - cron: "0 18 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: yoshi389111/github-profile-3d-contrib@main
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          USERNAME: ${{ github.repository_owner }}
+      - name: Commit & push
+        run: |
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          git add -A profile-3d-contrib
+          git diff --staged --quiet || git commit -m "Update 3D contribution calendar"
+          git push

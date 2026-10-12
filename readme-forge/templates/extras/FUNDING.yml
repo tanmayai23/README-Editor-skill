@@ -1,0 +1,9 @@
+# Place at .github/FUNDING.yml to add a "Sponsor" button to the repo. Keep only platforms you use.
+github: ["{{GITHUB_USER}}"]
+# open_collective: "{{SLUG}}"
+# ko_fi: "{{USER}}"
+# buy_me_a_coffee: "{{USER}}"
+# patreon: "{{USER}}"
+# liberapay: "{{USER}}"
+# polar: "{{USER}}"
+# custom: ["{{URL}}"]

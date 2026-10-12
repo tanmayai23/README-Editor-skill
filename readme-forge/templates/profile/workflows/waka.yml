@@ -1,0 +1,21 @@
+# Writes your WakaTime coding stats between <!--START_SECTION:waka--> and <!--END_SECTION:waka--> in README.md.
+# Setup: get your API key at https://wakatime.com/settings/api-key and save it as repo secret WAKATIME_API_KEY.
+name: WakaTime stats
+
+on:
+  schedule:
+    - cron: "30 18 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  update-readme:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: athul/waka-readme@master
+        with:
+          WAKATIME_API_KEY: ${{ secrets.WAKATIME_API_KEY }}
+          SHOW_TITLE: true
+          TIME_RANGE: last_7_days

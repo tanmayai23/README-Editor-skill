@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Questions & help
+    url: "{{DISCUSSIONS_URL}}"
+    about: Ask and answer questions in Discussions
+  - name: Security vulnerability
+    url: "{{REPO_URL}}/security/advisories/new"
+    about: Report security issues privately

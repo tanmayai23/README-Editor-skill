@@ -1,0 +1,31 @@
+# Renders github-metrics.svg with lowlighter/metrics and commits it to this repo.
+# Setup: create a classic personal access token (scopes: public_repo, read:user) and save it as repo secret METRICS_TOKEN.
+# Embed in README: <img alt="GitHub metrics" src="github-metrics.svg" width="100%">
+name: Metrics
+
+on:
+  schedule:
+    - cron: "0 0 * * *"
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  github-metrics:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: lowlighter/metrics@latest
+        with:
+          token: ${{ secrets.METRICS_TOKEN }}
+          filename: github-metrics.svg
+          base: header, activity, community, repositories, metadata
+          config_timezone: "{{TIMEZONE}}"   # e.g. Asia/Kolkata, Europe/Berlin
+          plugin_isocalendar: yes
+          plugin_isocalendar_duration: full-year
+          plugin_languages: yes
+          plugin_languages_limit: 8
+          plugin_habits: yes
+          plugin_habits_charts: yes
