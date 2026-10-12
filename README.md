@@ -386,10 +386,14 @@ Python, JavaScript/TypeScript, Go and Rust. For other languages the skill still 
 - [x] 0–100 scorer with drift detection
 - [x] 15 animated banner styles with dark/light variants
 - [x] Claude Code plugin install
-- [ ] GitHub Action that comments the README score on pull requests
-- [ ] Architecture diagrams for Java, C# and PHP
-- [ ] Check that documented CLI flags and API routes exist in the code
-- [ ] More banner styles from the community ([suggest one](https://github.com/tanmayai23/README-Editor-skill/issues/new?template=feature_request.yml))
+- [ ] GitHub Action that comments the README score on pull requests ([#1](https://github.com/tanmayai23/README-Editor-skill/issues/1))
+- [ ] Architecture diagrams for Java/Kotlin ([#3](https://github.com/tanmayai23/README-Editor-skill/issues/3)), C# ([#4](https://github.com/tanmayai23/README-Editor-skill/issues/4)), PHP and Ruby ([#5](https://github.com/tanmayai23/README-Editor-skill/issues/5))
+- [ ] Check that documented CLI flags and API routes exist in the code ([#6](https://github.com/tanmayai23/README-Editor-skill/issues/6))
+- [ ] More banner styles from the community ([#10](https://github.com/tanmayai23/README-Editor-skill/issues/10))
+- [ ] Weekly automatic widget health check ([#2](https://github.com/tanmayai23/README-Editor-skill/issues/2))
+- [ ] Mermaid pre-rendering for PyPI, npm and Hugging Face ([#7](https://github.com/tanmayai23/README-Editor-skill/issues/7))
+
+See all [open issues](https://github.com/tanmayai23/README-Editor-skill/issues), or start with a [`good first issue`](https://github.com/tanmayai23/README-Editor-skill/issues?q=is%3Aopen+label%3A%22good+first+issue%22).
 
 <div align="center">
 
