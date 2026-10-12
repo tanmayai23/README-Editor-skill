@@ -566,25 +566,25 @@ def s_ribbon(x):
     SMIL morphs each strand between two phases so the ribbon flows."""
     W, H, c = x.W, x.H, x.c
     bg_rect(x)
-    n = 26
+    n = 20
     x.defs.append(f'<linearGradient id="silk" x1="0" x2="1"><stop offset="0" stop-color="{c["a3"]}" stop-opacity="0"/><stop offset=".25" stop-color="{c["a3"]}"/>'
                   f'<stop offset=".6" stop-color="{c["a1"]}"/><stop offset="1" stop-color="{c["a2"]}" stop-opacity=".2"/></linearGradient>')
 
     def strand(i, phase):
         t = i / (n - 1)
         pts = []
-        for k in range(0, 33):
-            u = k / 32
+        for k in range(0, 19):
+            u = k / 18
             X = -40 + (W + 80) * u
             twist = math.cos(math.pi * (u * 1.6 + phase))           # ribbon edge-on where cos≈0
             Y = H * (0.60 + 0.20 * math.sin(2 * math.pi * (u * .9 + phase * .5))) + (t - .5) * H * .42 * twist
             pts.append((X, Y))
-        d = f"M{pts[0][0]:.1f},{pts[0][1]:.1f}"
+        d = f"M{pts[0][0]:.0f},{pts[0][1]:.0f}"
         for k in range(1, len(pts)):
             mx = (pts[k - 1][0] + pts[k][0]) / 2
             my = (pts[k - 1][1] + pts[k][1]) / 2
-            d += f" Q{pts[k - 1][0]:.1f},{pts[k - 1][1]:.1f} {mx:.1f},{my:.1f}"
-        d += f" T{pts[-1][0]:.1f},{pts[-1][1]:.1f}"
+            d += f" Q{pts[k - 1][0]:.0f},{pts[k - 1][1]:.0f} {mx:.0f},{my:.0f}"
+        d += f" T{pts[-1][0]:.0f},{pts[-1][1]:.0f}"
         return d
 
     g = ['<g fill="none" stroke="url(#silk)" stroke-linecap="round">']

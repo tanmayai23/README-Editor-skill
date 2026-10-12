@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Questions and show-and-tell
+    url: https://github.com/tanmayai23/README-Editor-skill/discussions
+    about: Ask questions and share READMEs you made
+  - name: Security vulnerability
+    url: https://github.com/tanmayai23/README-Editor-skill/security/advisories/new
+    about: Report security issues privately

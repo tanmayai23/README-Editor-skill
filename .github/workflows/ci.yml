@@ -1,0 +1,53 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: Scripts and README
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        python: ["3.8", "3.13"]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Compile scripts
+        shell: bash
+        run: python -m py_compile readme-forge/scripts/*.py
+      - name: Analyzer runs on the sample app
+        run: python readme-forge/scripts/analyze_repo.py demo/sample-app --compact
+      - name: Import graph runs on the sample app
+        run: python readme-forge/scripts/import_graph.py demo/sample-app
+      - name: Project README scores 85+
+        run: python readme-forge/scripts/score_readme.py README.md --repo . --min 85
+      - name: Skill README scores 85+
+        run: python readme-forge/scripts/score_readme.py readme-forge/README.md --min 85
+      - name: Marketplace manifest is valid JSON
+        run: python -c "import json; json.load(open('.claude-plugin/marketplace.json'))"
+
+  release:
+    name: Attach skill zip to release
+    needs: check
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build readme-forge.zip
+        run: zip -r readme-forge.zip readme-forge -x "*/__pycache__/*"
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" readme-forge.zip demo/readme-forge-demo.gif --title "readme-forge $GITHUB_REF_NAME" --notes-file CHANGELOG.md

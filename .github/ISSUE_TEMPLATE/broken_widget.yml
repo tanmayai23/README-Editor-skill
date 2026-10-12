@@ -1,0 +1,19 @@
+name: Broken widget or badge
+description: A widget or badge URL the skill recommends no longer renders
+labels: ["widget"]
+body:
+  - type: input
+    id: url
+    attributes:
+      label: Failing URL
+    validations:
+      required: true
+  - type: input
+    id: status
+    attributes:
+      label: HTTP status or what you see
+      placeholder: "402, 503, broken image..."
+  - type: input
+    id: alternative
+    attributes:
+      label: Working alternative (if you know one)

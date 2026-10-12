@@ -110,7 +110,7 @@ Always wrap: `[![LinkedIn: Jane Doe](badge-url)](https://linkedin.com/in/â€¦)` â
 
 ## Headers, banners and 3D visuals
 
-**Default: generate your own** with `scripts/make_banner.py` (12 animated styles, dark and light versions, frame 0 always complete). It is self-hosted, so it can't rate-limit or go down. See `design.md`. Use the hosted services below only when the user asks for them.
+**Default: generate your own** with `scripts/make_banner.py` (15 animated styles, dark and light versions, frame 0 always complete). It is self-hosted, so it can't rate-limit or go down. See `design.md`. Use the hosted services below only when the user asks for them.
 
 | Tool | What it does | Reliability | Notes |
 |---|---|---|---|

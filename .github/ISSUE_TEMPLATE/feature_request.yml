@@ -1,0 +1,19 @@
+name: Feature request
+description: Suggest a template, banner style, platform or check
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem would this solve?
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: What would you like to happen?
+  - type: textarea
+    id: examples
+    attributes:
+      label: Examples
+      description: Links to READMEs, designs or tools that already do this well.

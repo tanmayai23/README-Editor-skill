@@ -1,0 +1,7 @@
+__pycache__/
+*.pyc
+.DS_Store
+Thumbs.db
+demo/frames/
+demo/*.log
+demo/build/parts/

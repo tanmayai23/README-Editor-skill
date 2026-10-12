@@ -28,14 +28,20 @@ README generators fill a fixed template, and template collections expect you to 
 | READMEs drift from the code | **Drift check**: wrong package manager, missing scripts/make targets, undocumented env vars |
 | Profile generators embed dead widgets | Widget catalog with **tested endpoints**, dark/light `<picture>`, fallbacks; flags herokuapp and HTTP-402 hosts |
 | No Hugging Face support | Model, dataset and Space cards with **validated YAML frontmatter** |
-| Banners come from rate-limited third-party services, and nothing is designed | **12 animated SVG banner styles** (3D synthwave, isometric, orbit, glass, terminal, neon, wave, …), plus footers and dividers, generated locally in dark and light versions with a complete first frame |
+| Banners come from rate-limited third-party services, and nothing is designed | **15 animated SVG banner styles** (3D synthwave, isometric, orbit, glass, terminal, neon, wave, …), plus footers and dividers, generated locally in dark and light versions with a complete first frame |
 
 ## Quickstart
 
-**Claude Code**: copy the folder into your skills directory:
+**Claude Code**: install it as a plugin (Claude Code 2.1.275 or later):
+
+```text
+/plugin install readme-forge --marketplace tanmayai23/README-Editor-skill
+```
+
+Or copy the folder into your skills directory:
 
 ```bash
-git clone <this-repo-url> readme-forge-src
+git clone https://github.com/tanmayai23/README-Editor-skill.git readme-forge-src
 cp -r readme-forge-src/readme-forge ~/.claude/skills/readme-forge
 ```
 
@@ -90,7 +96,7 @@ python scripts/score_readme.py README.md --profile       # profile rubric
 python scripts/score_readme.py README.md --hf            # Hugging Face card rubric
 python scripts/check_links.py README.md                  # network: verify every URL
 python scripts/make_banner.py --style orbit --title "my-app" --subtitle "What it does" --out .github/assets
-python scripts/make_banner.py --list                     # 12 styles, 7 palettes
+python scripts/make_banner.py --list                     # 15 styles, 16 palettes
 ```
 
 Example output:

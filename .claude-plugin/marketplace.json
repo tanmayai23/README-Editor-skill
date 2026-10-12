@@ -1,0 +1,19 @@
+{
+  "name": "readme-forge",
+  "description": "README design and audit skill for Claude Code",
+  "owner": { "name": "tanmayai23" },
+  "plugins": [
+    {
+      "name": "readme-forge",
+      "source": "./readme-forge",
+      "description": "Create, audit, design and fix READMEs, GitHub profile READMEs and Hugging Face cards from facts in your real code",
+      "version": "1.0.0",
+      "author": { "name": "tanmayai23" },
+      "homepage": "https://github.com/tanmayai23/README-Editor-skill",
+      "repository": "https://github.com/tanmayai23/README-Editor-skill",
+      "license": "MIT",
+      "keywords": ["readme", "documentation", "github-profile", "huggingface", "mermaid", "badges"],
+      "category": "documentation"
+    }
+  ]
+}

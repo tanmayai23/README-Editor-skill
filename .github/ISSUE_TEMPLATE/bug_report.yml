@@ -1,0 +1,42 @@
+name: Bug report
+description: The skill or one of its scripts does something wrong
+labels: ["bug"]
+body:
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: What did you ask for, what did you expect, and what happened instead?
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Run `/readme-forge write a README for this repo` in a Rust workspace
+        2. See the wrong install command
+    validations:
+      required: true
+  - type: dropdown
+    id: where
+    attributes:
+      label: Where did you run it?
+      options:
+        - Claude Code (plugin install)
+        - Claude Code (manual install)
+        - claude.ai
+        - Claude Desktop
+        - A script on its own
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      placeholder: OS, Python version, Claude Code version
+  - type: textarea
+    id: logs
+    attributes:
+      label: Script output
+      render: shell
