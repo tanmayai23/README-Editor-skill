@@ -33,6 +33,20 @@
 <p align="center"><a href="demo/readme-forge-cinematic.mp4"><b>▶ Watch the full 34-second demo in HD</b></a> · <sub>43/100 → 95/100 on a real sample app, with one command</sub></p>
 
 <details>
+<summary><b>Reproduce the 43 → 95 demo yourself</b> (no Claude account needed)</summary>
+
+```bash
+git clone https://github.com/tanmayai23/README-Editor-skill.git
+cd README-Editor-skill/demo/sample-app
+cp README.before.md README.md && python ../../readme-forge/scripts/score_readme.py README.md --repo .   # 43/100, grade F
+cp README.after.md README.md && python ../../readme-forge/scripts/score_readme.py README.md --repo .    # 95/100, grade A
+```
+
+`README.after.md` is the README the skill wrote for this sample app. The scorer is plain Python, so you can run it on your own README the same way.
+
+</details>
+
+<details>
 <summary><b>Contents</b></summary>
 
 - [Why](#why)
