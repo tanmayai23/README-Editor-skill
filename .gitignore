@@ -1,7 +1,29 @@
+# Python
 __pycache__/
 *.pyc
+
+# OS
 .DS_Store
 Thumbs.db
+
+# Secrets: never commit real env files or keys
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Local Claude Code settings
+.claude/settings.local.json
+
+# Build output: the skill zip is attached to every GitHub release
+readme-forge.zip
+
+# Video production workspace (kept locally, not published)
+demo/build/
 demo/frames/
+demo/*.tape
 demo/*.log
-demo/build/parts/
+demo/STORYBOARD.md
+demo/PROMPTS.md
+demo/sample-app/README.live.md
