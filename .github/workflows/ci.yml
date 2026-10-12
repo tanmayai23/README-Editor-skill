@@ -52,6 +52,11 @@ jobs:
       - name: Banner generator writes repo-relative paths
         shell: bash
         run: python readme-forge/scripts/make_banner.py --style aurora --title CI --out "$PWD/ci-out" | grep -q 'srcset="ci-out/header-dark.svg"'
+      - name: Banner generator embeds a logo
+        shell: bash
+        run: |
+          python readme-forge/scripts/make_banner.py --style spotlight --palette ghost --logo .github/assets/logo-320.png --title CI --out ci-logo > /dev/null
+          grep -q 'href="data:image/png;base64,' ci-logo/header-dark.svg
       - name: Plugin manifests are valid and versions match
         run: python -c "import json; m=json.load(open('.claude-plugin/marketplace.json')); p=json.load(open('readme-forge/.claude-plugin/plugin.json')); assert m['plugins'][0]['version']==p['version'], 'bump the version in both manifests'"
 

@@ -4,6 +4,18 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-10-13
+
+### Added
+
+- `make_banner.py --logo FILE`: embeds a PNG, SVG, WebP, JPG or GIF logo in a header, with a soft accent glow so dark logos stay visible on dark banners. Spotlight centres it above the title; other styles place it on the left and keep the title clear of it.
+- `ghost` palette (cyan, blue and purple on deep navy), matching the readme-forge logo.
+- readme-forge logo, rebranded header, footer and CTA buttons, and a 1280×640 social preview image.
+
+### Changed
+
+- Demo video and GIF: local paths, plan name and installed-plugin list are blurred.
+
 ## [1.0.1] - 2026-10-12
 
 ### Fixed

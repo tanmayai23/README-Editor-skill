@@ -1,6 +1,6 @@
 <a id="top"></a>
 <a href="#readme-forge">
-  <picture><source media="(prefers-color-scheme: dark)" srcset=".github/assets/header-dark.svg"><img alt="readme-forge: READMEs that look as good as your code. New: 15 banner styles and CTA buttons." src=".github/assets/header-light.svg" width="100%"></picture>
+  <picture><source media="(prefers-color-scheme: dark)" srcset=".github/assets/header-dark.svg"><img alt="readme-forge logo, a ghost inside a circuit chip, above the title readme-forge and the line: Your code is the source of truth. Your README should be too." src=".github/assets/header-light.svg" width="100%"></picture>
 </a>
 
 <p align="center"><b>A Claude skill that writes, designs, scores and fixes READMEs using facts from your actual code.</b></p>
@@ -14,12 +14,12 @@
 <p align="center"><sub>MIT licensed · Python standard library only · Works in Claude Code, claude.ai and Claude Desktop</sub></p>
 
 <p align="center">
-  <a href="https://github.com/tanmayai23/README-Editor-skill/stargazers"><img alt="GitHub stars" src="https://img.shields.io/github/stars/tanmayai23/README-Editor-skill?style=flat&color=FF8A3D&logo=github"></a>
+  <a href="https://github.com/tanmayai23/README-Editor-skill/stargazers"><img alt="GitHub stars" src="https://img.shields.io/github/stars/tanmayai23/README-Editor-skill?style=flat&color=13A7D5&logo=github"></a>
   <a href="https://github.com/tanmayai23/README-Editor-skill/actions/workflows/ci.yml"><img alt="CI status" src="https://github.com/tanmayai23/README-Editor-skill/actions/workflows/ci.yml/badge.svg"></a>
-  <a href="https://github.com/tanmayai23/README-Editor-skill/releases"><img alt="Latest release" src="https://img.shields.io/github/v/release/tanmayai23/README-Editor-skill?color=FF8A3D"></a>
-  <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-FF8A3D"></a>
-  <img alt="Claude Agent Skill" src="https://img.shields.io/badge/Claude-Agent%20Skill-FF8A3D">
-  <img alt="Scripts: Python 3.8+, standard library only" src="https://img.shields.io/badge/python-3.8%2B%20stdlib-FF8A3D?logo=python&logoColor=white">
+  <a href="https://github.com/tanmayai23/README-Editor-skill/releases"><img alt="Latest release" src="https://img.shields.io/github/v/release/tanmayai23/README-Editor-skill?color=13A7D5"></a>
+  <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-13A7D5"></a>
+  <img alt="Claude Agent Skill" src="https://img.shields.io/badge/Claude-Agent%20Skill-13A7D5">
+  <img alt="Scripts: Python 3.8+, standard library only" src="https://img.shields.io/badge/python-3.8%2B%20stdlib-13A7D5?logo=python&logoColor=white">
 </p>
 
 <br>
@@ -249,6 +249,7 @@ Inspired by ShaderGradient, Supahero, Call to Inspiration, dark-design galleries
 
 ```bash
 python readme-forge/scripts/make_banner.py --style isometric --palette ocean --title "kubeforge" --subtitle "Clusters in one command" --out .github/assets
+python readme-forge/scripts/make_banner.py --style spotlight --logo logo.png --palette ghost --title "my-app" --height 400 --out .github/assets
 python readme-forge/scripts/make_banner.py --kind footer --style wave --title "Thanks for visiting" --out .github/assets
 ```
 

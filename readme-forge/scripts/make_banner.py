@@ -28,6 +28,7 @@ Prints the <picture> snippet to paste into the README.
 from __future__ import annotations
 
 import argparse
+import base64
 import os
 import html
 import math
@@ -64,6 +65,8 @@ PALETTES.update({
                  "light": dict(bg0="#FBFBFC", bg1="#F1F2F4", fg="#0D0E10", muted="#5C616B", a1="#5E6AD2", a2="#9333EA", a3="#0284C7", surface="#FFFFFF", line="#0D0E10")},
     "carbon":   {"dark": dict(bg0="#000000", bg1="#0A0A0A", fg="#EDEDED", muted="#A1A1A1", a1="#FFFFFF", a2="#3B82F6", a3="#A855F7", surface="#111111", line="#FFFFFF"),
                  "light": dict(bg0="#FFFFFF", bg1="#FAFAFA", fg="#0A0A0A", muted="#525252", a1="#0A0A0A", a2="#2563EB", a3="#9333EA", surface="#FFFFFF", line="#0A0A0A")},
+    "ghost":    {"dark": dict(bg0="#070A12", bg1="#0E1424", fg="#F2F6FF", muted="#9AA7C2", a1="#19C3EC", a2="#8B4FD1", a3="#3D7FD8", surface="#101727", line="#FFFFFF"),
+                 "light": dict(bg0="#F8FAFE", bg1="#EEF2FB", fg="#0C131D", muted="#4A5568", a1="#0B7FAA", a2="#6E35A8", a3="#2F6CC0", surface="#FFFFFF", line="#0C131D")},
     "obsidian": {"dark": dict(bg0="#0E1111", bg1="#161A1A", fg="#EDEFEF", muted="#8F9A99", a1="#3ECF8E", a2="#2DD4BF", a3="#A3E635", surface="#1A1F1F", line="#FFFFFF"),
                  "light": dict(bg0="#F8FAF9", bg1="#EEF3F1", fg="#0E1111", muted="#4B5655", a1="#0F9F6A", a2="#0D9488", a3="#4D7C0F", surface="#FFFFFF", line="#0E1111")},
 })
@@ -125,6 +128,9 @@ class Ctx:
         if a.accent:
             self.c["a1"] = a.accent
         self.title, self.sub, self.tag = a.title or "", a.subtitle or "", a.tag or ""
+        self.logo = getattr(a, "logo_uri", None)
+        # With a side logo, keep centred text clear of it.
+        self.text_w = self.W - 2 * (self.H * 0.62 + self.H * 0.2) if self.logo and a.kind == "header" and a.style != "spotlight" else self.W
         self.animate = not a.static
         self.rng = random.Random(f"{a.style}{a.title}{theme}")
         self.defs, self.css, self.body = [], [], []
@@ -143,7 +149,7 @@ def text_block(x: Ctx, cx=None, anchor="middle", y_center=None, mono=False, size
     cx = W / 2 if cx is None else cx
     y_center = H / 2 if y_center is None else y_center
     fam = MONO if mono else SANS
-    ts = size or title_size(x.title, W if anchor == "middle" else W * 0.62, H, 72 if x.kind == "header" else 40, mono)
+    ts = size or title_size(x.title, x.text_w if anchor == "middle" else W * 0.62, H, 72 if x.kind == "header" else 40, mono)
     ss = max(14, int(ts * 0.34))
     tg = max(11, int(ts * 0.2))
     lines_h = (tg * 1.9 if x.tag else 0) + ts + (ss * 1.7 if x.sub else 0)
@@ -181,6 +187,16 @@ def soft_blobs(x: Ctx, n=4, blur=60, opacity=0.55, speed=14):
                      f".b{i}{{animation:drift{i} {speed + i * 3}s ease-in-out infinite}}")
     g.append("</g>")
     x.body.extend(g)
+
+
+def logo_mark(x: Ctx, cx: float, cy: float, size: float):
+    """The user's logo with a soft accent glow behind it, so dark logos stay visible on dark banners."""
+    c, dark = x.c, x.theme == "dark"
+    x.defs.append(f'<radialGradient id="lglow"><stop offset="0" stop-color="{c["a1"]}" stop-opacity="{.55 if dark else .22}"/>'
+                  f'<stop offset=".55" stop-color="{c["a2"]}" stop-opacity="{.22 if dark else .08}"/><stop offset="1" stop-color="{c["a2"]}" stop-opacity="0"/></radialGradient>')
+    x.body.append(f'<circle class="lglow" cx="{cx:.0f}" cy="{cy:.0f}" r="{size * .72:.0f}" fill="url(#lglow)"/>')
+    x.css.append("@keyframes lpulse{0%,100%{opacity:1}50%{opacity:.7}}.lglow{animation:lpulse 6s ease-in-out infinite}")
+    x.body.append(f'<image href="{x.logo}" x="{cx - size / 2:.0f}" y="{cy - size / 2:.0f}" width="{size:.0f}" height="{size:.0f}" preserveAspectRatio="xMidYMid meet"/>')
 
 
 # ---------------------------------------------------------------- styles
@@ -538,9 +554,14 @@ def s_spotlight(x):
     # announcement pill (the tag) with a light sweeping across its border
     ts = title_size(x.title, W, H, 72)
     ss = max(17, int(ts * .32))
-    block = (40 + 20 if x.tag else 0) + ts + (ss * 1.8 if x.sub else 0)
+    lsize = H * .40 if x.logo else 0
+    top = (lsize + 14) if x.logo else (40 + 20 if x.tag else 0)
+    block = top + ts + (ss * 1.8 if x.sub else 0)
     y = H / 2 - block / 2 + 6
-    if x.tag:
+    if x.logo:
+        logo_mark(x, W / 2, y + lsize / 2, lsize)
+        y += lsize + 14
+    elif x.tag:
         label = x.tag
         pw = len(label) * 9.6 + 66
         px = W / 2 - pw / 2
@@ -673,6 +694,9 @@ def render(a, theme) -> str:
     x = Ctx(a, theme)
     if a.kind == "header":
         DRAW[a.style](x)
+        if x.logo and a.style != "spotlight":
+            size = x.H * .62
+            logo_mark(x, x.H * .2 + size / 2, x.H / 2, size)
     elif a.kind == "footer":
         footer(x)
     else:
@@ -724,6 +748,7 @@ def main(argv=None):
     p.add_argument("--style", default="aurora", choices=sorted(STYLES))
     p.add_argument("--palette", choices=sorted(PALETTES))
     p.add_argument("--accent")
+    p.add_argument("--logo", metavar="FILE", help="PNG/SVG/WebP/JPG logo embedded in a header (transparent background works best)")
     p.add_argument("--title", default="")
     p.add_argument("--subtitle", default="")
     p.add_argument("--tag", default="")
@@ -765,6 +790,19 @@ def main(argv=None):
         print(f"wrote {len(STYLES)} headers + 2 footers + 1 divider + 2 buttons (dark+light) to {out}")
         return 0
 
+    a.logo_uri = None
+    if a.logo:
+        lp = Path(a.logo)
+        if not lp.is_file():
+            p.error(f"--logo: {lp} not found")
+        mime = {".png": "image/png", ".svg": "image/svg+xml", ".webp": "image/webp", ".jpg": "image/jpeg",
+                ".jpeg": "image/jpeg", ".gif": "image/gif"}.get(lp.suffix.lower())
+        if not mime:
+            p.error("--logo must be .png, .svg, .webp, .jpg or .gif")
+        data = lp.read_bytes()
+        if len(data) > 200_000:
+            print(f"warning: logo is {len(data) // 1024} KB; resize it to ~320 px so the README loads fast", file=sys.stderr)
+        a.logo_uri = f"data:{mime};base64," + base64.b64encode(data).decode("ascii")
     if a.height is None:
         a.height = {"header": 320, "footer": 160, "divider": 24, "button": 44}[a.kind]
     if a.kind == "header" and not a.title:

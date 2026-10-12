@@ -86,6 +86,8 @@ Section dividers (optional, for long profiles only): `--kind divider`, at most 2
 
 If the project has a brand colour, use `--accent "#HEX"` with the closest palette. Show the user 2–3 options (generate them, then render previews) when the choice isn't obvious.
 
+**Logos.** Pass `--logo FILE` to embed the project logo in the header. Spotlight centres it above the title (use `--height 400` so it has room); other styles put it on the left. The logo is base64-embedded, so keep it small: a transparent PNG about 320 px wide (≈ 20–80 KB) or an SVG. If the logo sits on a white box, remove the background first, because it looks broken on dark banners. Match the palette to the logo's colours, and reuse that accent for the badges, buttons and footer.
+
 ## 5. Colour system
 - **One accent, one neutral pair.** Badges, banner accent, links you style, and footer accent all use the same accent family. Mixed palettes look amateur.
 - Every palette in `make_banner.py` has dark and light variants with title/subtitle contrast checked at ≥ 4.5:1 against their backgrounds. Light variants use darker accents so they don't wash out.
