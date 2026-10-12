@@ -42,6 +42,7 @@
 - [Templates included](#templates-included)
 - [How it works](#how-it-works)
 - [Scripts](#scripts)
+- [Troubleshooting](#troubleshooting)
 - [FAQ](#faq)
 - [Roadmap](#roadmap)
 - [Contributing](#contributing)
@@ -63,18 +64,38 @@ Most README generators fill one template. Most profile galleries ask you to copy
 
 ## Quickstart
 
-**Claude Code (recommended).** Install it as a plugin in one step (Claude Code 2.1.275 or later):
+**Claude Code (recommended).** Install it once from any terminal (PowerShell, Git Bash, macOS or Linux). It then works in every project:
+
+```bash
+claude plugin install readme-forge --marketplace tanmayai23/README-Editor-skill
+```
+
+Or type it inside a Claude Code chat in the terminal (Claude Code 2.1.275 or later):
 
 ```text
 /plugin install readme-forge --marketplace tanmayai23/README-Editor-skill
 ```
 
-<details>
-<summary>Older Claude Code, or manual install</summary>
+> [!TIP]
+> **Seeing "/plugin isn't available in this environment"?** Some chat panels, such as the VS Code extension, don't support the `/plugin` command. Run the `claude plugin install …` line above in a normal terminal instead, then start a new chat. The skill is available everywhere after that, including VS Code.
 
-```text
-/plugin marketplace add tanmayai23/README-Editor-skill
-/plugin install readme-forge@readme-forge
+<details>
+<summary>Older Claude Code, project-only install, updating, or manual install</summary>
+
+Older versions add the marketplace first:
+
+```bash
+claude plugin marketplace add tanmayai23/README-Editor-skill
+claude plugin install readme-forge@readme-forge
+```
+
+To install for one project only, and share it with your team through `.claude/settings.json`, add `--scope project`.
+
+Get new versions with:
+
+```bash
+claude plugin marketplace update readme-forge
+claude plugin update readme-forge@readme-forge
 ```
 
 Or copy the skill folder yourself:
@@ -318,6 +339,20 @@ Every script runs on its own with Python 3.8+ and no dependencies. See the [skil
 | `make_banner.py` | Generates animated SVG headers, footers, dividers and buttons | `python readme-forge/scripts/make_banner.py --list` |
 
 Use `score_readme.py --min 85` in CI to stop a README from getting worse. This repo's own [CI](.github/workflows/ci.yml) does exactly that.
+
+## Troubleshooting
+
+| Problem | Fix |
+|---|---|
+| `/plugin isn't available in this environment` | Run `claude plugin install readme-forge --marketplace tanmayai23/README-Editor-skill` in a normal terminal, then open a new chat |
+| `Unknown command: /readme-forge` after installing | Start a new Claude Code session. Plugins load at startup |
+| Two `readme-forge` skills, or the wrong one runs | You have both the plugin and a manual copy. Use `/readme-forge:readme-forge`, or delete `~/.claude/skills/readme-forge` |
+| `python: command not found` | Install Python 3.8+. On macOS and Linux, tell Claude to use `python3`. The skill accepts either |
+| Old behaviour after an update | `claude plugin marketplace update readme-forge`, then `claude plugin update readme-forge@readme-forge`, then restart |
+| Garbled `█` bars in Windows PowerShell | Run `[Console]::OutputEncoding = [Text.Encoding]::UTF8` once, or use Windows Terminal |
+| Widget images broken on your profile | Run `python readme-forge/scripts/check_links.py README.md`, then [report the widget](https://github.com/tanmayai23/README-Editor-skill/issues/new?template=broken_widget.yml) |
+
+Something else? [Open an issue](https://github.com/tanmayai23/README-Editor-skill/issues/new?template=bug_report.yml) with your OS, Claude Code version (`claude --version`) and the error.
 
 ## FAQ
 

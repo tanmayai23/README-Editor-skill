@@ -30,6 +30,10 @@ IGNORE_DIRS = {
     "Pods", ".turbo", ".cache", "site-packages", ".svelte-kit", ".parcel-cache",
 }
 
+# Sample code lives here; its env vars, routes and tests are not the project's own.
+# Skipped when collecting facts, but still shown in the tree and listed as "example_dirs".
+SAMPLE_DIRS = {"demo", "demos", "example", "examples", "sample", "samples", "fixtures", "testdata"}
+
 EXT_LANG = {
     ".py": "Python", ".ipynb": "Jupyter Notebook", ".js": "JavaScript", ".mjs": "JavaScript",
     ".cjs": "JavaScript", ".jsx": "JavaScript", ".ts": "TypeScript", ".tsx": "TypeScript",
@@ -193,13 +197,28 @@ def mini_toml(text: str) -> dict:
 def walk(root: Path):
     count = 0
     for dirpath, dirnames, filenames in os.walk(root):
-        dirnames[:] = [d for d in dirnames if d not in IGNORE_DIRS
+        dirnames[:] = [d for d in dirnames if d not in IGNORE_DIRS and d.lower() not in SAMPLE_DIRS
                        and (not d.startswith(".") or d in KEEP_DOT_DIRS)]
         for name in filenames:
             count += 1
             if count > MAX_FILES:
                 return
             yield Path(dirpath) / name
+
+
+def find_example_dirs(root: Path, limit: int = 10):
+    found = []
+    for dirpath, dirnames, _ in os.walk(root):
+        keep = []
+        for d in dirnames:
+            if d.lower() in SAMPLE_DIRS:
+                found.append(rel(root, Path(dirpath) / d))
+            elif d not in IGNORE_DIRS and not d.startswith("."):
+                keep.append(d)
+        dirnames[:] = keep
+        if len(found) >= limit:
+            break
+    return sorted(found)[:limit]
 
 
 def rel(root: Path, p: Path) -> str:
@@ -625,6 +644,7 @@ def analyze(root: Path) -> dict:
     facts["http_routes"] = routes[:60]
 
     # ---- Tests / docs / misc -----------------------------------------------
+    facts["example_dirs"] = find_example_dirs(root)
     facts["tests"] = sorted({rel(root, p).split("/")[0] for p in files if re.search(r"(^|/)(tests?|__tests__|spec)(/|$)", rel(root, p)) or re.search(r"(_test\.go|\.test\.[jt]sx?|\.spec\.[jt]sx?|^test_.*\.py)$", p.name)})[:10]
     facts["docs"] = {
         "dirs": [d for d in ("docs", "doc", "documentation", "website", "examples", "example", "notebooks", "samples") if (root / d).is_dir()],

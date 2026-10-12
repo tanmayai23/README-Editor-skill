@@ -4,6 +4,20 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+## [1.0.1] - 2026-10-12
+
+### Fixed
+
+- `score_readme.py --hf` crashed on model cards (a regex was split at `|` inside a group).
+- `analyze_repo.py` no longer reports env vars, routes and tests from `demo/`, `examples/`, `samples/`, `fixtures/` and `testdata/` as the project's own. They are listed in `example_dirs` instead.
+- `make_banner.py` printed absolute paths (`C:/Users/...`) in the README snippet when `--out` was absolute. Paths are now relative to the repository root.
+
+### Added
+
+- Terminal install command (`claude plugin install ...`) for environments where `/plugin` isn't available, such as the VS Code extension.
+- Troubleshooting section in the README.
+- CI checks for Hugging Face cards and the plugin manifests.
+
 ## [1.0.0] - 2026-10-12
 
 ### Added

@@ -33,8 +33,17 @@ jobs:
         run: python readme-forge/scripts/score_readme.py README.md --repo . --min 85
       - name: Skill README scores 85+
         run: python readme-forge/scripts/score_readme.py readme-forge/README.md --min 85
-      - name: Marketplace manifest is valid JSON
-        run: python -c "import json; json.load(open('.claude-plugin/marketplace.json'))"
+      - name: Hugging Face card templates score
+        shell: bash
+        run: for f in readme-forge/templates/huggingface/*.md; do python readme-forge/scripts/score_readme.py "$f" --hf; done
+      - name: Profile templates score
+        shell: bash
+        run: for f in readme-forge/templates/profile/*.md; do python readme-forge/scripts/score_readme.py "$f" --profile > /dev/null; done
+      - name: Banner generator writes repo-relative paths
+        shell: bash
+        run: python readme-forge/scripts/make_banner.py --style aurora --title CI --out "$PWD/ci-out" | grep -q 'srcset="ci-out/header-dark.svg"'
+      - name: Plugin manifests are valid and versions match
+        run: python -c "import json; m=json.load(open('.claude-plugin/marketplace.json')); p=json.load(open('readme-forge/.claude-plugin/plugin.json')); assert m['plugins'][0]['version']==p['version'], 'bump the version in both manifests'"
 
   release:
     name: Attach skill zip to release

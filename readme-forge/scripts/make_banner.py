@@ -28,6 +28,7 @@ Prints the <picture> snippet to paste into the README.
 from __future__ import annotations
 
 import argparse
+import os
 import html
 import math
 import random
@@ -692,6 +693,18 @@ def snippet(base: str, alt: str, width_attr="100%") -> str:
             "</picture>")
 
 
+def readme_path(target: Path) -> str:
+    """Path for the README snippet: relative to the repo root (nearest .git), else to the cwd.
+    README image paths must be relative; an absolute C:/... or /home/... path breaks on GitHub."""
+    full = target.resolve()
+    root = next((d for d in [full.parent, *full.parent.parents] if (d / ".git").exists()), Path.cwd().resolve())
+    try:
+        return os.path.relpath(full, root).replace(os.sep, "/")
+    except ValueError:  # different drive on Windows
+        print("warning: output is outside the repository; move the SVGs into it and fix the paths below", file=sys.stderr)
+        return target.as_posix()
+
+
 def write(a, out: Path, stem: str):
     out.mkdir(parents=True, exist_ok=True)
     themes = ["dark", "light"] if a.theme == "both" else [a.theme]
@@ -759,7 +772,7 @@ def main(argv=None):
     stem = a.name or a.kind
     themes = write(a, Path(a.out), stem)
     alt = " — ".join(t for t in (a.title, a.subtitle) if t) or f"{a.kind}"
-    rel = (Path(a.out) / stem).as_posix()
+    rel = readme_path(Path(a.out) / stem)
     print(f"wrote {', '.join(f'{stem}-{t}.svg' for t in themes)} in {a.out}\n")
     if a.kind == "button":
         alt = a.title or "Get started"

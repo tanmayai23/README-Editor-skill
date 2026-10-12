@@ -752,7 +752,7 @@ def score_hf(text, path: Path) -> Report:
                ("usage|how to|instructions|example", 15, "How to use it"),
                ("model|credits|acknowledg|built with|license", 10, "Models / credits")]
     for pat, pts, label in req:
-        if find_section(hs, *pat.split("|")):
+        if find_section(hs, pat):
             s += pts
         else:
             r.add("WARN", "sections", f"missing section: {label}")
