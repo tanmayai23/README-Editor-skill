@@ -1,26 +1,23 @@
 <a id="top"></a>
 <a href="#readme-forge">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset=".github/assets/header-dark.svg">
-    <img alt="readme-forge: READMEs that look as good as your code. A Claude skill." src=".github/assets/header-light.svg" width="100%">
-  </picture>
+  <picture><source media="(prefers-color-scheme: dark)" srcset=".github/assets/header-dark.svg"><img alt="readme-forge: READMEs that look as good as your code. New: 15 banner styles and CTA buttons." src=".github/assets/header-light.svg" width="100%"></picture>
 </a>
 
 <p align="center"><b>A Claude skill that writes, designs, scores and fixes READMEs using facts from your actual code.</b></p>
 
 <p align="center">
-  <img alt="Claude Agent Skill" src="https://img.shields.io/badge/Claude-Agent%20Skill-FF8A3D">
-  <img alt="Scripts: Python 3.8+, standard library only" src="https://img.shields.io/badge/python-3.8%2B%20stdlib-FF8A3D?logo=python&logoColor=white">
-  <img alt="12 animated banner styles" src="https://img.shields.io/badge/banners-12%20styles-FF8A3D">
-  <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-FF8A3D"></a>
+  <a href="#quickstart"><picture><source media="(prefers-color-scheme: dark)" srcset=".github/assets/cta-primary-dark.svg"><img alt="Get started" src=".github/assets/cta-primary-light.svg" height="44"></picture></a>
+  &nbsp;
+  <a href="#banner-gallery"><picture><source media="(prefers-color-scheme: dark)" srcset=".github/assets/cta-secondary-dark.svg"><img alt="Banner gallery" src=".github/assets/cta-secondary-light.svg" height="44"></picture></a>
 </p>
 
+<p align="center"><sub>MIT licensed · Python standard library only · Works in Claude Code, claude.ai and Claude Desktop</sub></p>
+
 <p align="center">
-  <a href="#quickstart">Quickstart</a> •
-  <a href="#banner-gallery">Banner gallery</a> •
-  <a href="#what-you-can-ask">What you can ask</a> •
-  <a href="#how-it-works">How it works</a> •
-  <a href="readme-forge/README.md">Skill docs</a>
+  <img alt="Claude Agent Skill" src="https://img.shields.io/badge/Claude-Agent%20Skill-FF8A3D">
+  <img alt="Scripts: Python 3.8+, standard library only" src="https://img.shields.io/badge/python-3.8%2B%20stdlib-FF8A3D?logo=python&logoColor=white">
+  <img alt="15 animated banner styles" src="https://img.shields.io/badge/banners-15%20styles-FF8A3D">
+  <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-FF8A3D"></a>
 </p>
 
 <br>
@@ -38,7 +35,7 @@ Most README generators fill one template. Most profile galleries ask you to copy
 | | Other tools | readme-forge |
 |---|---|---|
 | **Facts** | Typed in by hand, or read from `package.json` only | Detects 15+ ecosystems, scripts, env vars, Docker, CI, routes; never invents commands |
-| **Visuals** | A logo if you have one | Mermaid architecture **from real imports**, plus 12 animated banner styles with dark/light variants |
+| **Visuals** | A logo if you have one | Mermaid architecture **from real imports**, plus 15 animated banner styles and CTA buttons with dark/light variants |
 | **Widgets** | Hard-coded public URLs (some now return HTTP 402) | Tested endpoints, self-hosted SVGs that can't rate-limit, reliability tiers |
 | **Quality** | None | A 0–100 score and linter: structure, accessibility, dead links, drift, design |
 | **Platforms** | GitHub only | GitHub, Hugging Face cards, PyPI, npm, GitLab |
@@ -61,50 +58,71 @@ On claude.ai or Claude Desktop, upload `readme-forge.zip` under **Settings → C
 
 ## Banner gallery
 
-Every banner is a **self-contained animated SVG** that you commit to your repo, so there are no external services, rate limits or broken images. Each comes in a dark and a light variant (switch your GitHub theme to see both), shows a complete first frame, and stops moving for visitors who turn on reduce motion.
+Inspired by ShaderGradient, Supahero, Call to Inspiration, dark-design galleries and Dribbble, then rebuilt for what GitHub can render. Every banner is a **self-contained animated SVG** that you commit to your repo, so there are no external services, rate limits or broken images. Each comes in a dark and a light variant (switch your GitHub theme to see both), shows a complete first frame, and stops moving for visitors who turn on reduce motion.
 
 <table>
 <tr>
-<td width="50%" valign="top">
+<td width="33%" valign="top">
+
+<picture><source media="(prefers-color-scheme: dark)" srcset="readme-forge/assets/banners/shader-dark.svg"><img alt="shader banner style: grainy 3D colour field (ShaderGradient)" src="readme-forge/assets/banners/shader-light.svg" width="100%"></picture>
+
+<b><code>--style shader</code></b><br><sub>grainy 3D colour field (ShaderGradient)</sub>
+
+</td>
+<td width="33%" valign="top">
+
+<picture><source media="(prefers-color-scheme: dark)" srcset="readme-forge/assets/banners/spotlight-dark.svg"><img alt="spotlight banner style: landing-page hero: grid, beam, pill" src="readme-forge/assets/banners/spotlight-light.svg" width="100%"></picture>
+
+<b><code>--style spotlight</code></b><br><sub>landing-page hero: grid, beam, pill</sub>
+
+</td>
+<td width="33%" valign="top">
+
+<picture><source media="(prefers-color-scheme: dark)" srcset="readme-forge/assets/banners/ribbon-dark.svg"><img alt="ribbon banner style: twisting silk strands, 3D depth" src="readme-forge/assets/banners/ribbon-light.svg" width="100%"></picture>
+
+<b><code>--style ribbon</code></b><br><sub>twisting silk strands, 3D depth</sub>
+
+</td>
+</tr>
+<tr>
+<td width="33%" valign="top">
 
 <picture><source media="(prefers-color-scheme: dark)" srcset="readme-forge/assets/banners/aurora-dark.svg"><img alt="aurora banner style: drifting mesh-gradient light" src="readme-forge/assets/banners/aurora-light.svg" width="100%"></picture>
 
 <b><code>--style aurora</code></b><br><sub>drifting mesh-gradient light</sub>
 
 </td>
-<td width="50%" valign="top">
+<td width="33%" valign="top">
 
 <picture><source media="(prefers-color-scheme: dark)" srcset="readme-forge/assets/banners/synthwave-dark.svg"><img alt="synthwave banner style: 3D perspective grid + striped sun" src="readme-forge/assets/banners/synthwave-light.svg" width="100%"></picture>
 
 <b><code>--style synthwave</code></b><br><sub>3D perspective grid + striped sun</sub>
 
 </td>
-</tr>
-<tr>
-<td width="50%" valign="top">
+<td width="33%" valign="top">
 
 <picture><source media="(prefers-color-scheme: dark)" srcset="readme-forge/assets/banners/isometric-dark.svg"><img alt="isometric banner style: 3D floating isometric cubes" src="readme-forge/assets/banners/isometric-light.svg" width="100%"></picture>
 
 <b><code>--style isometric</code></b><br><sub>3D floating isometric cubes</sub>
 
 </td>
-<td width="50%" valign="top">
+</tr>
+<tr>
+<td width="33%" valign="top">
 
 <picture><source media="(prefers-color-scheme: dark)" srcset="readme-forge/assets/banners/orbit-dark.svg"><img alt="orbit banner style: 3D tilted orbits, revolving planets" src="readme-forge/assets/banners/orbit-light.svg" width="100%"></picture>
 
 <b><code>--style orbit</code></b><br><sub>3D tilted orbits, revolving planets</sub>
 
 </td>
-</tr>
-<tr>
-<td width="50%" valign="top">
+<td width="33%" valign="top">
 
 <picture><source media="(prefers-color-scheme: dark)" srcset="readme-forge/assets/banners/glass-dark.svg"><img alt="glass banner style: frosted glass over moving colour" src="readme-forge/assets/banners/glass-light.svg" width="100%"></picture>
 
 <b><code>--style glass</code></b><br><sub>frosted glass over moving colour</sub>
 
 </td>
-<td width="50%" valign="top">
+<td width="33%" valign="top">
 
 <picture><source media="(prefers-color-scheme: dark)" srcset="readme-forge/assets/banners/terminal-dark.svg"><img alt="terminal banner style: code window that retypes the title" src="readme-forge/assets/banners/terminal-light.svg" width="100%"></picture>
 
@@ -113,46 +131,44 @@ Every banner is a **self-contained animated SVG** that you commit to your repo, 
 </td>
 </tr>
 <tr>
-<td width="50%" valign="top">
+<td width="33%" valign="top">
 
 <picture><source media="(prefers-color-scheme: dark)" srcset="readme-forge/assets/banners/neon-dark.svg"><img alt="neon banner style: glowing neon outline" src="readme-forge/assets/banners/neon-light.svg" width="100%"></picture>
 
 <b><code>--style neon</code></b><br><sub>glowing neon outline</sub>
 
 </td>
-<td width="50%" valign="top">
+<td width="33%" valign="top">
 
 <picture><source media="(prefers-color-scheme: dark)" srcset="readme-forge/assets/banners/wave-dark.svg"><img alt="wave banner style: layered animated waves" src="readme-forge/assets/banners/wave-light.svg" width="100%"></picture>
 
 <b><code>--style wave</code></b><br><sub>layered animated waves</sub>
 
 </td>
-</tr>
-<tr>
-<td width="50%" valign="top">
+<td width="33%" valign="top">
 
 <picture><source media="(prefers-color-scheme: dark)" srcset="readme-forge/assets/banners/blueprint-dark.svg"><img alt="blueprint banner style: engineering drawing that redraws" src="readme-forge/assets/banners/blueprint-light.svg" width="100%"></picture>
 
 <b><code>--style blueprint</code></b><br><sub>engineering drawing that redraws</sub>
 
 </td>
-<td width="50%" valign="top">
+</tr>
+<tr>
+<td width="33%" valign="top">
 
 <picture><source media="(prefers-color-scheme: dark)" srcset="readme-forge/assets/banners/constellation-dark.svg"><img alt="constellation banner style: twinkling particle network" src="readme-forge/assets/banners/constellation-light.svg" width="100%"></picture>
 
 <b><code>--style constellation</code></b><br><sub>twinkling particle network</sub>
 
 </td>
-</tr>
-<tr>
-<td width="50%" valign="top">
+<td width="33%" valign="top">
 
 <picture><source media="(prefers-color-scheme: dark)" srcset="readme-forge/assets/banners/minimal-dark.svg"><img alt="minimal banner style: clean type, one sweeping accent" src="readme-forge/assets/banners/minimal-light.svg" width="100%"></picture>
 
 <b><code>--style minimal</code></b><br><sub>clean type, one sweeping accent</sub>
 
 </td>
-<td width="50%" valign="top">
+<td width="33%" valign="top">
 
 <picture><source media="(prefers-color-scheme: dark)" srcset="readme-forge/assets/banners/bold-dark.svg"><img alt="bold banner style: oversized type, moving gradient" src="readme-forge/assets/banners/bold-light.svg" width="100%"></picture>
 
@@ -168,7 +184,7 @@ python readme-forge/scripts/make_banner.py --kind footer --style wave --title "T
 ```
 
 <details>
-<summary><b>Footers and dividers</b></summary>
+<summary><b>ShaderGradient presets, CTA buttons, footers and dividers</b></summary>
 <br>
 
 <picture><source media="(prefers-color-scheme: dark)" srcset="readme-forge/assets/banners/footer-wave-dark.svg"><img alt="Wave footer: Thanks for reading" src="readme-forge/assets/banners/footer-wave-light.svg" width="100%"></picture>
@@ -177,7 +193,25 @@ python readme-forge/scripts/make_banner.py --kind footer --style wave --title "T
 
 <picture><source media="(prefers-color-scheme: dark)" srcset="readme-forge/assets/banners/divider-aurora-dark.svg"><img alt="Animated gradient section divider" src="readme-forge/assets/banners/divider-aurora-light.svg" width="100%"></picture>
 
-Palettes: `ember` · `ocean` · `violet` · `mint` · `sunset` · `mono` · `cyber`, or pass any brand colour with `--accent "#HEX"`.
+**ShaderGradient presets** (`--style shader --palette …`):
+
+<picture><source media="(prefers-color-scheme: dark)" srcset="readme-forge/assets/banners/presets/shader-halo-dark.svg"><img alt="Shader banner with the halo preset" src="readme-forge/assets/banners/presets/shader-halo-light.svg" width="100%"></picture>
+
+<picture><source media="(prefers-color-scheme: dark)" srcset="readme-forge/assets/banners/presets/shader-pensive-dark.svg"><img alt="Shader banner with the pensive preset" src="readme-forge/assets/banners/presets/shader-pensive-light.svg" width="100%"></picture>
+
+<picture><source media="(prefers-color-scheme: dark)" srcset="readme-forge/assets/banners/presets/shader-interstella-dark.svg"><img alt="Shader banner with the interstella preset" src="readme-forge/assets/banners/presets/shader-interstella-light.svg" width="100%"></picture>
+
+<picture><source media="(prefers-color-scheme: dark)" srcset="readme-forge/assets/banners/presets/shader-universe-dark.svg"><img alt="Shader banner with the universe preset" src="readme-forge/assets/banners/presets/shader-universe-light.svg" width="100%"></picture>
+
+<picture><source media="(prefers-color-scheme: dark)" srcset="readme-forge/assets/banners/presets/shader-mandarin-dark.svg"><img alt="Shader banner with the mandarin preset" src="readme-forge/assets/banners/presets/shader-mandarin-light.svg" width="100%"></picture>
+
+<picture><source media="(prefers-color-scheme: dark)" srcset="readme-forge/assets/banners/presets/shader-nighty-dark.svg"><img alt="Shader banner with the nighty preset" src="readme-forge/assets/banners/presets/shader-nighty-light.svg" width="100%"></picture>
+
+**CTA buttons** (`--kind button --variant primary|secondary`), clickable because each one is an image inside a link:
+
+<picture><source media="(prefers-color-scheme: dark)" srcset="readme-forge/assets/banners/button-primary-dark.svg"><img alt="Get started" src="readme-forge/assets/banners/button-primary-light.svg" height="44"></picture> <picture><source media="(prefers-color-scheme: dark)" srcset="readme-forge/assets/banners/button-secondary-dark.svg"><img alt="Read the docs" src="readme-forge/assets/banners/button-secondary-light.svg" height="44"></picture>
+
+Palettes: `ember` · `ocean` · `violet` · `mint` · `sunset` · `mono` · `cyber` · dark-design `midnight` · `carbon` · `obsidian` · ShaderGradient `halo` · `pensive` · `interstella` · `universe` · `mandarin` · `nighty`, or pass any brand colour with `--accent "#HEX"`.
 
 </details>
 
@@ -210,6 +244,18 @@ flowchart LR
 ```
 
 Every script runs on its own with Python 3.8+ and no dependencies. See the [skill docs](readme-forge/README.md).
+
+<div align="center">
+
+### Start writing READMEs people actually read
+
+One command reads your code, designs the page and checks it.
+
+<a href="#quickstart"><picture><source media="(prefers-color-scheme: dark)" srcset=".github/assets/cta-primary-dark.svg"><img alt="Get started" src=".github/assets/cta-primary-light.svg" height="44"></picture></a>
+
+<sub>Free and open source · 2-minute setup</sub>
+
+</div>
 
 ## Contributing
 

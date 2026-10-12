@@ -1,6 +1,6 @@
 ---
 name: readme-forge
-description: Create, audit, and improve README files grounded in the real codebase — project READMEs (any language, monorepos), GitHub personal and organization profile READMEs with working widgets, Hugging Face model/dataset/Space cards, and PyPI/npm-ready variants. Generates Mermaid architecture diagrams from actual imports, picks badges from detected registries and CI, scores READMEs 0-100 with a linter, designs the page (animated SVG header/footer banners in 12 styles including 3D synthwave, isometric and orbit, palettes, typography, layout), handles dark/light images and accessibility, and writes companion docs (CONTRIBUTING, SECURITY, CITATION.cff, etc.). Use whenever the user mentions README, readme.md, profile README, GitHub profile, model card, dataset card, Space README, project documentation front page, "improve my readme", "make my repo look good", README banner/header/footer design, or badges/stats widgets.
+description: Create, audit, and improve README files grounded in the real codebase — project READMEs (any language, monorepos), GitHub personal and organization profile READMEs with working widgets, Hugging Face model/dataset/Space cards, and PyPI/npm-ready variants. Generates Mermaid architecture diagrams from actual imports, picks badges from detected registries and CI, scores READMEs 0-100 with a linter, designs the page (animated SVG header/footer banners in 15 styles including ShaderGradient-style grain, landing-page spotlight hero, 3D synthwave, isometric, orbit and ribbon, plus clickable CTA buttons, palettes, typography, layout), handles dark/light images and accessibility, and writes companion docs (CONTRIBUTING, SECURITY, CITATION.cff, etc.). Use whenever the user mentions README, readme.md, profile README, GitHub profile, model card, dataset card, Space README, project documentation front page, "improve my readme", "make my repo look good", README banner/header/footer design, or badges/stats widgets.
 ---
 
 # readme-forge
@@ -110,6 +110,7 @@ Read `references/design.md` first.
    ```
    For profiles, put the assets in `assets/`. For Hugging Face, use `#hf-dark-mode-only` / `#hf-light-mode-only` instead of `<picture>`.
 3. Paste the printed `<picture>` snippet, wrap it in a link, and put the pitch, badges (one style, palette colour) and link row below it, as in design.md §2.
+   For a **landing-page** feel (apps, SaaS, launches), use the spotlight hero + CTA buttons (`--kind button`) from design.md §10 and `templates/design/hero-landing.md`. Optionally repeat the CTA before the footer with `templates/design/cta-section.md`. For a **ShaderGradient** look, use `--style shader --palette halo|pensive|interstella|universe|mandarin|nighty`.
 4. End with a footer (design.md §3): license line, credit, back-to-top, plus the footer SVG for polished projects and profiles.
 5. Run `score_readme.py`. Fix the `design` findings (missing dark variant, mixed badge styles, external fonts in SVGs, oversized assets).
 6. **Visual check:** if a browser is available, render the README or the SVGs and look at both themes. At minimum, open each SVG once to confirm the title is fully visible.

@@ -129,3 +129,34 @@ python scripts/make_banner.py --style isometric --palette ocean --accent "#0EA5E
 python scripts/make_banner.py --gallery /tmp/banners      # preview every style
 ```
 It prints the `<picture>` snippet to paste. Add `--static` to get a version with no motion.
+
+## 10. Inspiration library → what we borrow
+Web design galleries use WebGL, JS and hover states. A README can't. This is how each source translates into something GitHub *can* render:
+
+| Source | What it teaches | readme-forge equivalent |
+|---|---|---|
+| **ShaderGradient** (shadergradient.co) | Three colours bleeding over a curved 3D surface, very slow drift, film grain | `--style shader` with the real presets as palettes: `halo`, `pensive`, `interstella`, `universe`, `mandarin`, `nighty` (`--palette …`) |
+| **Supahero** (hero gallery: Linear, Stripe, Raycast, Resend…) | Hero anatomy: announcement pill → 56–80px title, tight tracking, white→60% gradient → 18–20px sub-copy → CTA pair → social proof. Grid or dot field fading out radially, top spotlight glow, 1px horizon beam | `--style spotlight` (pill = `--tag`) + CTA buttons + proof line: `templates/design/hero-landing.md` |
+| **Call to Inspiration** (CTA gallery) | Verb-first labels, one bright primary + one ghost secondary, trailing →, a friction reducer underneath, the CTA repeated at the end | `--kind button --variant primary|secondary` (clickable: each button is its own image inside `<a>`) + `templates/design/cta-section.md` |
+| **Dark design galleries** | Never pure black (#08090A–#121212). Elevation through lighter surfaces (+3–6%) and white 5–10% borders. Text at 100/62/40%. One desaturated accent, glow on a single focal element | Palettes `midnight` (Linear-like), `carbon` (Vercel-like), `obsidian` (Supabase-like). All have light variants too |
+| **Dribbble 2025–26 trends** | Bento grids, soft layered gradients, flowing lines, restrained glass, dark mode | `--style ribbon` (silk strands), `glass`, `aurora`, plus bento layout recipe (§7, a 2–3 column table of short cards) |
+| **Figma** | Where designers tweak visuals | Drag any generated SVG into Figma to edit colours and layout. Figma drops SMIL/CSS animation and noise filters, so use `--static` for the Figma copy, edit it, export as SVG, then regenerate the animated version with the same palette (`--accent`). For hand-made Figma banners: frame 1280 wide, outline text, export SVG, and keep them under 100 KB. |
+
+### Landing-page hero recipe (supahero pattern)
+```bash
+python SKILL_DIR/scripts/make_banner.py --style spotlight --palette midnight --title "Acme" --subtitle "Ship docs your users actually read" --tag "New · v2.0 is out" --out .github/assets
+python SKILL_DIR/scripts/make_banner.py --kind button --variant primary   --title "Get started" --href "#quickstart" --out .github/assets --name cta-primary
+python SKILL_DIR/scripts/make_banner.py --kind button --variant secondary --title "Read the docs" --href "DOCS_URL" --out .github/assets --name cta-secondary
+```
+Then fill `templates/design/hero-landing.md`. Rules: one primary CTA per screen, labels are 1–3 words starting with a verb, and the primary is the brightest element. Below the buttons, add at most one line of real proof ("Used by N repos", "MIT licensed", "No sign-up"). Never invent numbers.
+
+### Dark design tokens (for hand-written HTML and colour choices)
+| Token | midnight | carbon | obsidian |
+|---|---|---|---|
+| canvas | #08090A | #000000 | #0E1111 |
+| surface | #141518 | #111111 | #1A1F1F |
+| border | white 6–8% | white 10% | white 8% |
+| text | #F7F8F8 | #EDEDED | #EDEFEF |
+| text-secondary | #8A8F98 | #A1A1A1 | #8F9A99 |
+| accent | #7C83FF | #FFFFFF / #3B82F6 | #3ECF8E |
+Badge colour = the accent hex without `#` (e.g. `&color=7C83FF`), and use the same accent for the banner (`--accent`).

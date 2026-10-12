@@ -527,7 +527,7 @@ def s_spotlight(x):
                   f'<mask id="gm"><rect width="{W}" height="{H}" fill="url(#fade)"/></mask>')
     x.body.append(f'<rect width="{W}" height="{H}" fill="url(#grid)" mask="url(#gm)"/>')
     # beam: soft accent glow + thin cone of light from the top centre
-    x.defs.append(f'<radialGradient id="glow" cx=".5" cy="0" r="1"><stop offset="0" stop-color="{c["a1"]}" stop-opacity="{.55 if dark else .30}"/><stop offset=".55" stop-color="{c["a2"]}" stop-opacity="{.14 if dark else .08}"/><stop offset="1" stop-color="{c["a1"]}" stop-opacity="0"/></radialGradient>'
+    x.defs.append(f'<radialGradient id="glow" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="{c["a1"]}" stop-opacity="{.55 if dark else .30}"/><stop offset=".55" stop-color="{c["a2"]}" stop-opacity="{.14 if dark else .08}"/><stop offset="1" stop-color="{c["a1"]}" stop-opacity="0"/></radialGradient>'
                   f'<linearGradient id="cone" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="{c["fg"]}" stop-opacity="{.20 if dark else .10}"/><stop offset="1" stop-color="{c["fg"]}" stop-opacity="0"/></linearGradient>'
                   f'<filter id="soft"><feGaussianBlur stdDeviation="14"/></filter>')
     x.body.append(f'<ellipse class="beam" cx="{W / 2}" cy="0" rx="{W * .42:.0f}" ry="{H * .95:.0f}" fill="url(#glow)"/>')
@@ -535,24 +535,24 @@ def s_spotlight(x):
     x.body.append(f'<rect x="{W * .2:.0f}" y="0" width="{W * .6:.0f}" height="1" fill="{c["a1"]}" opacity=".7"/>')
     x.css.append("@keyframes breathe{0%,100%{opacity:1}50%{opacity:.72}}.beam{animation:breathe 7s ease-in-out infinite}")
     # announcement pill (the tag) with a light sweeping across its border
-    ts = title_size(x.title, W, H, 64)
-    ss = max(15, int(ts * .32))
-    block = (34 + 18 if x.tag else 0) + ts + (ss * 1.8 if x.sub else 0)
+    ts = title_size(x.title, W, H, 72)
+    ss = max(17, int(ts * .32))
+    block = (40 + 20 if x.tag else 0) + ts + (ss * 1.8 if x.sub else 0)
     y = H / 2 - block / 2 + 6
     if x.tag:
         label = x.tag
-        pw = len(label) * 8.2 + 58
+        pw = len(label) * 9.6 + 66
         px = W / 2 - pw / 2
         surf = c.get("surface", c["bg1"])
         x.defs.append(f'<linearGradient id="pillb" x1="0" x2="1"><stop offset="0" stop-color="{line}" stop-opacity=".14"/><stop offset=".5" stop-color="{c["a1"]}" stop-opacity=".9"/><stop offset="1" stop-color="{line}" stop-opacity=".14"/>'
                       + (f'<animateTransform attributeName="gradientTransform" type="translate" values="-1 0;1 0" dur="4s" repeatCount="indefinite"/>' if x.animate else "")
                       + "</linearGradient>")
-        x.body.append(f'<rect x="{px:.0f}" y="{y:.0f}" width="{pw:.0f}" height="34" rx="17" fill="{surf}" fill-opacity="{.85 if dark else .95}" stroke="url(#pillb)" stroke-width="1"/>'
-                      f'<circle cx="{px + 18:.0f}" cy="{y + 17:.0f}" r="4" fill="{c["a1"]}"/>'
-                      f'<text x="{px + 30:.0f}" y="{y + 22:.0f}" font-family="{SANS}" font-size="14" font-weight="600" fill="{c["fg"]}">{esc(label)}</text>'
-                      f'<text x="{px + pw - 22:.0f}" y="{y + 22:.0f}" font-family="{SANS}" font-size="14" fill="{c["muted"]}">→</text>')
-        y += 34 + 18
-    x.defs.append(f'<linearGradient id="tgrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="{c["fg"]}"/><stop offset="1" stop-color="{c["fg"]}" stop-opacity="{.62 if dark else .78}"/></linearGradient>')
+        x.body.append(f'<rect x="{px:.0f}" y="{y:.0f}" width="{pw:.0f}" height="40" rx="20" fill="{surf}" fill-opacity="{.85 if dark else .95}" stroke="url(#pillb)" stroke-width="1"/>'
+                      f'<circle cx="{px + 21:.0f}" cy="{y + 20:.0f}" r="4.5" fill="{c["a1"]}"/>'
+                      f'<text x="{px + 34:.0f}" y="{y + 26:.0f}" font-family="{SANS}" font-size="16.5" font-weight="600" fill="{c["fg"]}">{esc(label)}</text>'
+                      f'<text x="{px + pw - 26:.0f}" y="{y + 26:.0f}" font-family="{SANS}" font-size="16.5" fill="{c["muted"]}">→</text>')
+        y += 40 + 20
+    x.defs.append(f'<linearGradient id="tgrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="{c["fg"]}"/><stop offset="1" stop-color="{c["fg"]}" stop-opacity="{.80 if dark else .82}"/></linearGradient>')
     y += ts * 0.86
     x.body.append(f'<text x="{W / 2}" y="{y:.0f}" text-anchor="middle" font-family="{SANS}" font-size="{ts}" font-weight="700" letter-spacing="{-ts * .035:.1f}" fill="url(#tgrad)">{esc(x.title)}</text>')
     if x.sub:
