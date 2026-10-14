@@ -104,6 +104,7 @@ STYLES = {
     "shader":        ("halo", "grainy flowing 3D colour field (ShaderGradient look)"),
     "spotlight":     ("midnight", "dark landing-page hero: masked grid, light beam, announcement pill, gradient title"),
     "ribbon":        ("violet", "twisting silk ribbon of light strands, 3D depth"),
+    "pulse":         ("ocean",  "soft glowing rings expanding behind the title"),
 }
 
 
@@ -621,6 +622,24 @@ def s_ribbon(x):
     text_block(x, y_center=H * 0.42)
 
 
+def s_pulse(x):
+    """Pulse: soft concentric rings breathing outward from behind the title."""
+    W, H, c = x.W, x.H, x.c
+    bg_rect(x)
+    cx, cy = W / 2, H / 2
+    x.defs.append(f'<radialGradient id="pulseGlow"><stop offset="0" stop-color="{c["a1"]}" stop-opacity=".35"/>'
+                  f'<stop offset="1" stop-color="{c["a1"]}" stop-opacity="0"/></radialGradient>')
+    x.body.append(f'<circle cx="{cx:.0f}" cy="{cy:.0f}" r="{H * .48:.0f}" fill="url(#pulseGlow)"/>')
+    for i in range(4):
+        r = H * (.12 + i * .12)
+        anim = (f'<animate attributeName="r" values="{r:.1f};{r + H * .10:.1f};{r:.1f}" dur="{5 + i}s" repeatCount="indefinite"/>'
+                if x.animate else "")
+        x.body.append(f'<circle cx="{cx:.0f}" cy="{cy:.0f}" r="{r:.1f}" fill="none" stroke="{c["a1"]}" stroke-width="1.5" '
+                      f'stroke-opacity="{.45 - i * .08:.2f}">{anim}</circle>')
+    scrim(x, rx=0.34, ry=0.30, strength=0.8)
+    text_block(x)
+
+
 # ---------------------------------------------------------------- CTA buttons (Call-to-Inspiration patterns)
 def button_svg(a, theme) -> str:
     """Pill CTA button. Each button is its own image wrapped in <a> in the README, so it is genuinely clickable."""
@@ -664,7 +683,7 @@ def _lum(hex_):
 DRAW = {"aurora": s_aurora, "glass": s_glass, "synthwave": s_synthwave, "isometric": s_isometric, "orbit": s_orbit,
         "terminal": s_terminal, "neon": s_neon, "wave": s_wave, "blueprint": s_blueprint, "constellation": s_constellation,
         "minimal": s_minimal, "bold": s_bold,
-        "shader": s_shader, "spotlight": s_spotlight, "ribbon": s_ribbon}
+        "shader": s_shader, "spotlight": s_spotlight, "ribbon": s_ribbon, "pulse": s_pulse}
 
 
 # ---------------------------------------------------------------- footer + divider
