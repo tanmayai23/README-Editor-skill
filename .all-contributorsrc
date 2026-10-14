@@ -1,0 +1,28 @@
+{
+  "projectName": "README-Editor-skill",
+  "projectOwner": "tanmayai23",
+  "repoType": "github",
+  "repoHost": "https://github.com",
+  "files": ["README.md"],
+  "imageSize": 100,
+  "commit": false,
+  "commitConvention": "none",
+  "contributorsPerLine": 7,
+  "linkToUsage": false,
+  "contributors": [
+    {
+      "login": "tanmayai23",
+      "name": "Tanmay kala",
+      "avatar_url": "https://avatars.githubusercontent.com/u/212147996?v=4",
+      "profile": "https://github.com/tanmayai23",
+      "contributions": ["code", "design", "doc", "infra", "maintenance"]
+    },
+    {
+      "login": "Sultanast01",
+      "name": "Sultanast01",
+      "avatar_url": "https://avatars.githubusercontent.com/u/173893361?v=4",
+      "profile": "https://github.com/Sultanast01",
+      "contributions": ["code", "design"]
+    }
+  ]
+}
