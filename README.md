@@ -71,7 +71,7 @@ Most README generators fill one template. Most profile galleries ask you to copy
 | | Other tools | readme-forge |
 |---|---|---|
 | **Facts** | Typed in by hand, or read from `package.json` only | Detects 15+ ecosystems, scripts, env vars, Docker, CI, routes; never invents commands |
-| **Visuals** | A logo if you have one | Mermaid architecture **from real imports**, plus 15 animated banner styles and CTA buttons with dark/light variants |
+| **Visuals** | A logo if you have one | Mermaid architecture **from real imports**, plus 16 animated banner styles and CTA buttons with dark/light variants |
 | **Widgets** | Hard-coded public URLs (some now return HTTP 402) | Tested endpoints, self-hosted SVGs that can't rate-limit, reliability tiers |
 | **Quality** | None | A 0–100 score and linter: structure, accessibility, dead links, drift, design |
 | **Platforms** | GitHub only | GitHub, Hugging Face cards, PyPI, npm, GitLab |
@@ -259,6 +259,17 @@ Inspired by ShaderGradient, Supahero, Call to Inspiration, dark-design galleries
 
 </td>
 </tr>
+<tr>
+<td width="33%" valign="top">
+
+<picture><source media="(prefers-color-scheme: dark)" srcset="readme-forge/assets/banners/pulse-dark.svg"><img alt="pulse banner style: soft rings breathing behind the title" src="readme-forge/assets/banners/pulse-light.svg" width="100%"></picture>
+
+<b><code>--style pulse</code></b><br><sub>soft rings breathing behind the title</sub>
+
+</td>
+<td width="33%" valign="top"></td>
+<td width="33%" valign="top"></td>
+</tr>
 </table>
 
 ```bash
@@ -399,7 +410,7 @@ Python, JavaScript/TypeScript, Go and Rust. For other languages the skill still 
 
 - [x] Project, profile and Hugging Face READMEs grounded in code
 - [x] 0–100 scorer with drift detection
-- [x] 15 animated banner styles with dark/light variants
+- [x] 16 animated banner styles with dark/light variants
 - [x] Claude Code plugin install
 - [ ] GitHub Action that comments the README score on pull requests ([#1](https://github.com/tanmayai23/README-Editor-skill/issues/1))
 - [ ] Architecture diagrams for Java/Kotlin ([#3](https://github.com/tanmayai23/README-Editor-skill/issues/3)), C# ([#4](https://github.com/tanmayai23/README-Editor-skill/issues/4)), PHP and Ruby ([#5](https://github.com/tanmayai23/README-Editor-skill/issues/5))

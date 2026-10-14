@@ -137,6 +137,15 @@ _twisting silk ribbon of light strands, 3D depth_ · `--style ribbon`
   <img alt="ribbon banner: readme-forge" src="ribbon-light.svg" width="100%">
 </picture>
 
+## pulse
+
+_soft glowing rings expanding behind the title_ · `--style pulse`
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="pulse-dark.svg">
+  <img alt="pulse banner: readme-forge" src="pulse-light.svg" width="100%">
+</picture>
+
 ## footer: wave
 
 <picture>
