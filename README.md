@@ -443,7 +443,26 @@ Issues and pull requests are welcome. Read [CONTRIBUTING.md](CONTRIBUTING.md) fi
 
 Please follow the [Code of Conduct](CODE_OF_CONDUCT.md). Report security issues privately as described in [SECURITY.md](SECURITY.md).
 
-<a href="https://github.com/tanmayai23/README-Editor-skill/graphs/contributors"><img alt="Contributors" src="https://contrib.rocks/image?repo=tanmayai23/README-Editor-skill"></a>
+### Contributors
+
+Thanks to everyone who has helped build readme-forge. Code, design, docs, ideas and bug reports all count ([emoji key](https://allcontributors.org/emoji-key/)).
+
+<!-- ALL-CONTRIBUTORS-LIST:START - Do not remove or modify this section -->
+<!-- prettier-ignore-start -->
+<!-- markdownlint-disable -->
+<table>
+  <tbody>
+    <tr>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/tanmayai23"><img src="https://avatars.githubusercontent.com/u/212147996?v=4?s=100" width="100px;" alt="Tanmay kala"/><br /><sub><b>Tanmay kala</b></sub></a><br /><a href="https://github.com/tanmayai23/README-Editor-skill/commits?author=tanmayai23" title="Code">💻</a> <a href="https://github.com/tanmayai23/README-Editor-skill/tree/main/readme-forge/assets" title="Design">🎨</a> <a href="https://github.com/tanmayai23/README-Editor-skill/commits?author=tanmayai23" title="Documentation">📖</a> <a href="https://github.com/tanmayai23/README-Editor-skill/tree/main/.github/workflows" title="Infrastructure (Hosting, Build-Tools, etc)">🚇</a> <a href="https://github.com/tanmayai23/README-Editor-skill/pulls?q=is%3Apr+reviewed-by%3Atanmayai23" title="Maintenance">🚧</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/Sultanast01"><img src="https://avatars.githubusercontent.com/u/173893361?v=4?s=100" width="100px;" alt="Sultanast01"/><br /><sub><b>Sultanast01</b></sub></a><br /><a href="https://github.com/tanmayai23/README-Editor-skill/pull/17" title="Code">💻</a> <a href="https://github.com/tanmayai23/README-Editor-skill/pull/15" title="Design">🎨</a></td>
+    </tr>
+  </tbody>
+</table>
+
+<!-- markdownlint-restore -->
+<!-- prettier-ignore-end -->
+
+<!-- ALL-CONTRIBUTORS-LIST:END -->
 
 ### Star history
 
