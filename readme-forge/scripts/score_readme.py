@@ -23,6 +23,7 @@ import json
 import os
 import re
 import sys
+import urllib.parse
 from pathlib import Path
 
 FILLER = [
@@ -91,6 +92,14 @@ class Report:
         got = sum(c["score"] for c in self.cats.values())
         mx = sum(c["max"] for c in self.cats.values()) or 1
         return round(100 * got / mx)
+
+
+def find_repo_root(start: Path) -> Path:
+    cur = start.resolve()
+    for p in [cur, *cur.parents]:
+        if (p / ".git").exists():
+            return p
+    return cur
 
 
 # ----------------------------------------------------------------------------- parsing
@@ -255,13 +264,18 @@ def common_lints(r: Report, text, nocode, hs, imgs, lks, blocks, readme_path: Pa
                 r.add("WARN", "links", f"in-page anchor '{lk['href']}' matches no heading", lk["line"])
     # relative links / images exist
     base = readme_path.parent
+    repo_root = repo if repo is not None else find_repo_root(base)
     for item in [{"href": i["src"], "line": i["line"]} for i in imgs] + lks:
         h = item["href"]
         if not h or re.match(r"^(https?:|mailto:|#|data:|//|tel:)", h) or "{{" in h:
             continue
         if GITHUB_ROUTE.search(h):
             continue  # repo-relative GitHub routes (../../actions, ../../issues) resolve on github.com
-        target = (base / h.split("#")[0].split("?")[0]).resolve()
+        clean_h = urllib.parse.unquote(h.split("#")[0].split("?")[0])
+        if clean_h.startswith("/"):
+            target = (repo_root / clean_h.lstrip("/")).resolve()
+        else:
+            target = (base / clean_h).resolve()
         if not target.exists():
             r.add("ERROR", "links", f"relative link/image target not found: {h}", item["line"])
     # mermaid: common syntax breakers that render as "Syntax error" on GitHub
@@ -380,13 +394,18 @@ def drift_checks(r: Report, text: str, repo: Path):
 def design_lints(r: Report, text: str, imgs, readme_path: Path):
     """Visual-design checks: local SVG safety/size, dark variants, badge style consistency."""
     base = readme_path.parent
+    repo_root = find_repo_root(base)
     seen = set()
     for im in imgs:
         src = im["src"].split("#")[0].split("?")[0]
         if not src or re.match(r"^(https?:|data:|//)", src) or not src.lower().endswith(".svg") or src in seen:
             continue
         seen.add(src)
-        f = (base / src)
+        clean_src = urllib.parse.unquote(src)
+        if clean_src.startswith("/"):
+            f = (repo_root / clean_src.lstrip("/")).resolve()
+        else:
+            f = (base / clean_src).resolve()
         if not f.is_file():
             continue
         size = f.stat().st_size
@@ -435,8 +454,8 @@ def score_project(text, path: Path, repo: Path | None) -> Report:
     fm, body, off = split_frontmatter(text)
     nocode = strip_code(body)
     hs = headings(nocode)
-    imgs = images(body)
-    lks = links(body)
+    imgs = images(nocode)
+    lks = links(nocode)
     blocks = code_blocks(body)
     lines = body.splitlines()
     n = len(lines)
@@ -597,8 +616,8 @@ def score_profile(text, path: Path) -> Report:
     r = Report()
     nocode = strip_code(text)
     hs = headings(nocode)
-    imgs = images(text)
-    lks = links(text)
+    imgs = images(nocode)
+    lks = links(nocode)
     blocks = code_blocks(text)
     common_lints(r, text, nocode, hs, imgs, lks, blocks, path, None)
     design_lints(r, text, imgs, path)
@@ -673,8 +692,8 @@ def score_hf(text, path: Path) -> Report:
     fm, body, off = split_frontmatter(text)
     nocode = strip_code(body)
     hs = headings(nocode)
-    imgs = images(body)
-    lks = links(body)
+    imgs = images(nocode)
+    lks = links(nocode)
     blocks = code_blocks(body)
     common_lints(r, body, nocode, hs, imgs, lks, blocks, path, None)
     design_lints(r, body, imgs, path)
