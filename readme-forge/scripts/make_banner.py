@@ -31,11 +31,13 @@ from __future__ import annotations
 
 import argparse
 import base64
-import os
 import html
 import math
+import os
 import random
+import re
 import sys
+import unicodedata
 from pathlib import Path
 
 SANS = "'Segoe UI', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Inter, Roboto, Arial, sans-serif"
@@ -114,12 +116,21 @@ def esc(s: str) -> str:
     return html.escape(s or "", quote=True)
 
 
-def title_size(text: str, width: int, height: int, base: float, mono=False) -> int:
+def text_ems(text: str, mono: bool = False) -> float:
+    ems = 0.0
+    for c in text:
+        if unicodedata.east_asian_width(c) in ("W", "F") or ord(c) >= 0x1F000 or (0x2600 <= ord(c) <= 0x27BF):
+            ems += 1.0
+        else:
+            ems += 0.62 if mono else 0.56
+    return max(ems, 0.56)
+
+
+def title_size(text: str, width: int, height: int, base: float, mono=False, min_size: int = 18) -> int:
     """Estimate a font size that fits ~80% of the width (no text measuring in SVG-as-image)."""
-    ch = max(len(text), 1)
-    per = 0.62 if mono else 0.56
-    fit = (width * 0.80) / (ch * per)
-    return int(max(18, min(base, fit, height * 0.32)))
+    ems = text_ems(text, mono)
+    fit = (width * 0.80) / ems
+    return int(max(min_size, min(base, fit, height * 0.32)))
 
 
 class Ctx:
@@ -152,8 +163,10 @@ def text_block(x: Ctx, cx=None, anchor="middle", y_center=None, mono=False, size
     cx = W / 2 if cx is None else cx
     y_center = H / 2 if y_center is None else y_center
     fam = MONO if mono else SANS
-    ts = size or title_size(x.title, x.text_w if anchor == "middle" else W * 0.62, H, 72 if x.kind == "header" else 40, mono)
-    ss = max(14, int(ts * 0.34))
+    avail_w = x.text_w if anchor == "middle" else W * 0.62
+    ts = size or title_size(x.title, avail_w, H, 72 if x.kind == "header" else 40, mono)
+    base_ss = max(14, int(ts * 0.34))
+    ss = title_size(x.sub, avail_w, H, base_ss, mono=False, min_size=12) if x.sub else base_ss
     tg = max(11, int(ts * 0.2))
     lines_h = (tg * 1.9 if x.tag else 0) + ts + (ss * 1.7 if x.sub else 0)
     y = y_center - lines_h / 2
@@ -282,6 +295,8 @@ def iso_cube(cx, cy, s, top, left, right, cls=""):
 
 def shade(hex_, f):
     h = hex_.lstrip("#")
+    if len(h) == 3:
+        h = "".join(c * 2 for c in h)
     r, g, b = (int(h[i:i + 2], 16) for i in (0, 2, 4))
     if f >= 0:
         r, g, b = (int(v + (255 - v) * f) for v in (r, g, b))
@@ -652,7 +667,7 @@ def button_svg(a, theme) -> str:
     label = a.title or "Get started"
     arrow = " →" if a.variant == "primary" else ""
     fs = 15
-    w = int(len(label + arrow) * fs * 0.58 + 44)
+    w = int(text_ems(label + arrow) * fs + 44)
     h = 44
     dark = theme == "dark"
     if a.variant == "primary":
@@ -678,6 +693,8 @@ def button_svg(a, theme) -> str:
 
 def _lum(hex_):
     h = hex_.lstrip("#")
+    if len(h) == 3:
+        h = "".join(c * 2 for c in h)
     r, g, b = (int(h[i:i + 2], 16) / 255 for i in (0, 2, 4))
     return 0.2126 * r + 0.7152 * g + 0.0722 * b
 
@@ -789,6 +806,16 @@ def main(argv=None):
     p.add_argument("--list", action="store_true")
     p.add_argument("--gallery", metavar="DIR")
     a = p.parse_args(argv)
+
+    if a.accent:
+        m = re.fullmatch(r"#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})", a.accent)
+        if not m:
+            p.error(f"--accent must be #RGB or #RRGGBB (got '{a.accent}')")
+        hex_part = m.group(1)
+        if len(hex_part) == 3:
+            a.accent = "#" + "".join(c * 2 for c in hex_part).upper()
+        else:
+            a.accent = "#" + hex_part.upper()
 
     if a.list:
         print("Styles:")
