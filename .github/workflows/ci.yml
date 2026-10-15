@@ -35,6 +35,8 @@ jobs:
       - name: Compile scripts
         shell: bash
         run: python -m py_compile readme-forge/scripts/*.py
+      - name: Run unit tests
+        run: python -m unittest discover -s tests
       - name: Analyzer runs on the sample app
         run: python readme-forge/scripts/analyze_repo.py demo/sample-app --compact
       - name: Import graph runs on the sample app

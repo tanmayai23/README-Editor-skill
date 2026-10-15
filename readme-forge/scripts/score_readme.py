@@ -110,6 +110,22 @@ def strip_code(text: str) -> str:
     return "\n".join(out)
 
 
+def strip_fenced_code(text: str) -> str:
+    """Blank out fenced code blocks (keeps line numbers, leaves inline code intact)."""
+    out, fence = [], None
+    for line in text.splitlines():
+        m = re.match(r"^\s*(```+|~~~+)", line)
+        if m:
+            if fence is None:
+                fence = m.group(1)[0] * 3
+            elif line.strip().startswith(fence):
+                fence = None
+            out.append("")
+            continue
+        out.append("" if fence else line)
+    return "\n".join(out)
+
+
 def split_frontmatter(text: str):
     if text.startswith("---"):
         parts = text.split("\n---", 1)
@@ -202,9 +218,13 @@ def code_blocks(text: str):
 
 
 def slug(title: str) -> str:
-    s = re.sub(r"<[^>]+>", "", title).strip().lower()
+    s = re.sub(r"^\s*#+\s*", "", title)
+    s = re.sub(r"<[^>]+>", "", s)
+    s = re.sub(r"!\[([^\]]*)\]\([^)]+\)", r"\1", s)
+    s = re.sub(r"\[([^\]]+)\]\([^)]+\)", r"\1", s)
+    s = s.replace("`", "").strip().lower()
     s = re.sub(r"[^\w\- ]", "", s, flags=re.U)
-    return s.replace(" ", "-")
+    return s.replace(" ", "-").strip("-")
 
 
 # ----------------------------------------------------------------------------- shared checks
@@ -245,7 +265,15 @@ def common_lints(r: Report, text, nocode, hs, imgs, lks, blocks, readme_path: Pa
         if lk["text"].strip().lower() in ("here", "click here", "this", "link", "this link", "read more"):
             r.add("WARN", "accessibility", f"non-descriptive link text '{lk['text']}' → {lk['href'][:60]}", lk["line"])
     # anchors
-    anchors = {slug(t) for _, t, _ in hs}
+    anchors = set()
+    counts: dict[str, int] = {}
+    for _, t, _ in hs:
+        base_slug = slug(t)
+        if not base_slug:
+            continue
+        count = counts.get(base_slug, 0)
+        counts[base_slug] = count + 1
+        anchors.add(base_slug if count == 0 else f"{base_slug}-{count}")
     anchors |= {a.lower() for a in re.findall(r"<[a-z0-9]+\b[^>]*\b(?:id|name)=[\"']([^\"']+)", text, re.I)}
     anchors |= {"readme", "top"}
     for lk in lks:
@@ -434,7 +462,7 @@ def score_project(text, path: Path, repo: Path | None) -> Report:
     r = Report()
     fm, body, off = split_frontmatter(text)
     nocode = strip_code(body)
-    hs = headings(nocode)
+    hs = headings(strip_fenced_code(body))
     imgs = images(body)
     lks = links(body)
     blocks = code_blocks(body)
@@ -596,7 +624,7 @@ def score_project(text, path: Path, repo: Path | None) -> Report:
 def score_profile(text, path: Path) -> Report:
     r = Report()
     nocode = strip_code(text)
-    hs = headings(nocode)
+    hs = headings(strip_fenced_code(text))
     imgs = images(text)
     lks = links(text)
     blocks = code_blocks(text)
@@ -672,7 +700,7 @@ def score_hf(text, path: Path) -> Report:
     r = Report()
     fm, body, off = split_frontmatter(text)
     nocode = strip_code(body)
-    hs = headings(nocode)
+    hs = headings(strip_fenced_code(body))
     imgs = images(body)
     lks = links(body)
     blocks = code_blocks(body)
