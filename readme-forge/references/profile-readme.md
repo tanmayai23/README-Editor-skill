@@ -30,6 +30,38 @@ Taken from the categories used by awesome-github-profile-readme and its gallery.
 | Badges wall | `badges-wall.md` | quick, colorful | for-the-badge rows for stack and socials |
 | Actions-dynamic | `actions-dynamic.md` | bloggers, tinkerers | auto-updated latest posts, WakaTime, metrics, snake |
 | Organization | `org-profile.md` | companies, communities | mission, products, how to contribute, links, hiring |
+| Game mode | `game-mode.md` | people who want visitors to interact | community tic-tac-toe played through issues (`workflows/tictactoe.yml` + `game/tictactoe.py`) |
+| Typing | `typing.md` | anyone who wants one strong hero line | readme-typing-svg as the hero, quiet sections below |
+| Anime / art | `anime-art.md` | illustrators, fans, playful profiles | the user's own art beside a `<pre>` status card |
+| Fancy fonts | `fancy-fonts.md` | frontend, personal-brand profiles | Unicode-styled headings made with `scripts/fancy_text.py` |
+| Descriptive | `descriptive.md` | experienced devs with a story to tell | short intro, longer sections folded into `<details>` |
+| Simple but innovative | `simple-innovative.md` | senior devs, designers | a few lines + one clever live element (now playing, latest posts) |
+| Icons | `icons.md` | engineers with a broad stack | Devicon grid grouped by area, each icon with alt + title |
+| Just an image | `just-image.md` | designers, artists | the whole profile is one image with a descriptive alt |
+
+### awesome-github-profile categories → archetype
+The [awesome-github-profile](https://zzetao.github.io/awesome-github-profile/) gallery groups ~190 profiles into 16 categories. When the user points at a category (or at a profile in it), start from:
+
+| Gallery category | Template |
+|---|---|
+| GitHub Actions 🤖 | `actions-dynamic.md` |
+| Game Mode 🚀 | `game-mode.md` |
+| Code Mode 👨🏽‍💻 | `code-mode.md` |
+| Dynamic Realtime 💫 | `stats-dashboard.md` (+ `simple-innovative.md` option A for now playing) |
+| A Little Bit of Everything 😃 | `stats-dashboard.md` + `creative.md` (combine at most two) |
+| Descriptive 🗒 | `descriptive.md` |
+| Simple but Innovative Ones 🤗 | `simple-innovative.md` |
+| Typing.. Mode 🎰 | `typing.md` |
+| Anime 👾 | `anime-art.md` |
+| Minimalistic ✨ | `minimal.md` |
+| GIFS 👻 | `creative.md` (≤ 2 animations, each with alt text) |
+| Just Images 🎭 | `just-image.md` |
+| Badges 🎫 | `badges-wall.md` |
+| Fancy Fonts 🖋 | `fancy-fonts.md` |
+| Icons 🎯 | `icons.md` |
+| Retro 😎 | `retro.md` |
+
+Take the *pattern* from a gallery profile, never its content: no copied text, images, GIFs or art. Many popular profiles use widgets that have since died (herokuapp, the public trophy and activity-graph hosts), so rebuild them with the URLs in widgets.md.
 
 ## Layout rules
 - **Top:** greeting + name (H1 or H2), then a one-line headline. Optional banner (1200×300 or so, with alt text).

@@ -316,7 +316,7 @@ Palettes: `ember` · `ocean` · `violet` · `mint` · `sunset` · `mono` · `cyb
 | You say | You get |
 |---|---|
 | "Write a README for this repo" | Project README from code facts, a designed header and footer, and an architecture diagram |
-| "Make my GitHub profile README, creative style" | A profile from 11 archetypes with a hero banner, working widgets and an optional 3D contribution calendar |
+| "Make my GitHub profile README, creative style" | A profile from 19 archetypes (every awesome-github-profile category) with a hero banner, working widgets and an optional 3D contribution calendar |
 | "Review my README and fix it" | A score, drift report and ranked fixes, then a rewrite in your voice |
 | "Give my README a better header" | 2–3 banner options in your brand colour, ready to paste |
 | "Create a model card for this fine-tune" | A Hugging Face card with validated YAML |
@@ -327,12 +327,12 @@ Palettes: `ember` · `ocean` · `violet` · `mint` · `sunset` · `mono` · `cyb
 
 | Kind | Templates |
 |---|---|
-| **Profile READMEs** (11) | `minimal` · `creative` · `stats-dashboard` · `code-mode` · `badges-wall` · `retro` · `student` · `data-scientist` · `oss-maintainer` · `actions-dynamic` · `org-profile` |
+| **Profile READMEs** (19) | `minimal` · `creative` · `stats-dashboard` · `code-mode` · `badges-wall` · `retro` · `student` · `data-scientist` · `oss-maintainer` · `actions-dynamic` · `org-profile` · `game-mode` · `typing` · `anime-art` · `fancy-fonts` · `descriptive` · `simple-innovative` · `icons` · `just-image` |
 | **Project READMEs** (7) | `api` · `cli` · `library` · `webapp` · `ml-project` · `monorepo` · `minimal` |
 | **Hugging Face** (3) | model card · dataset card · Space README, each with validated YAML frontmatter |
 | **Design blocks** (6) | centered header · profile header · landing-page hero · CTA section · SVG footer · quiet footer |
 | **Companion docs** | CONTRIBUTING · CODE_OF_CONDUCT · SECURITY · SUPPORT · CHANGELOG · CITATION.cff · FUNDING · issue forms · PR template |
-| **Profile Actions** (5) | contribution snake · latest blog posts · WakaTime stats · metrics · 3D contribution calendar |
+| **Profile Actions** (6) | contribution snake · latest blog posts · WakaTime stats · metrics · 3D contribution calendar · community tic-tac-toe |
 
 Every widget URL in the profile templates was checked with `check_links.py`. Services that now fail, such as the public trophy and activity-graph hosts that return HTTP 402, are left out or replaced by self-hosted Actions.
 
@@ -364,6 +364,7 @@ Every script runs on its own with Python 3.8+ and no dependencies. See the [skil
 | `score_readme.py` | Scores a README 0–100, lints it and checks it against the code | `python readme-forge/scripts/score_readme.py README.md --repo . --min 85` |
 | `check_links.py` | Finds dead links, broken badges and widgets that return error cards | `python readme-forge/scripts/check_links.py README.md` |
 | `make_banner.py` | Generates animated SVG headers, footers, dividers and buttons | `python readme-forge/scripts/make_banner.py --list` |
+| `fancy_text.py` | Converts text to Unicode bold, italic, mono and double-struck styles for profile headings | `python readme-forge/scripts/fancy_text.py "Hi, I'm Ada" --all` |
 
 Use `score_readme.py --min 85` in CI to stop a README from getting worse. This repo's own [CI](.github/workflows/ci.yml) does exactly that.
 

@@ -8,6 +8,11 @@ All notable changes to this project are documented here. The format follows [Kee
 
 - `make_banner.py --style pulse`: soft concentric rings breathing behind the title, with dark and light variants (#15, thanks @Sultanast01).
 - `make_banner.py --href URL` for headers and footers: prints the banner already wrapped in a link, in the form GitHub renders correctly.
+- 8 profile archetypes covering every category of the [awesome-github-profile](https://zzetao.github.io/awesome-github-profile/) gallery: `game-mode`, `typing`, `anime-art`, `fancy-fonts`, `descriptive`, `simple-innovative`, `icons` and `just-image`. `profile-readme.md` maps each of the gallery's 16 categories to a template.
+- Community tic-tac-toe for profiles (`workflows/tictactoe.yml` + `game/tictactoe.py`): visitors click a square, which opens an issue, and an Action plays the move, redraws the board, keeps a scoreboard and closes the issue. Issue titles are validated and passed through `env`, never into the shell.
+- `scripts/fancy_text.py`: converts text to Unicode bold, italic, sans, mono and double-struck styles, including the letters outside the math block (ℎ, ℂ, ℝ…).
+- `score_readme.py` warns when styled Unicode text runs past headings and a tagline, since screen readers spell it letter by letter.
+- Spotify now-playing widget (kittinan/spotify-github-profile) in `widgets.md`.
 - `score_readme.py` reports a `<picture>` that GitHub empties, either opened after `<a href>` on the same line or glued to the paragraph line above it.
 
 ### Fixed

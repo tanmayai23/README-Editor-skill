@@ -57,6 +57,30 @@ jobs:
         run: |
           python readme-forge/scripts/make_banner.py --style spotlight --palette ghost --logo .github/assets/logo-320.png --title CI --out ci-logo > /dev/null
           grep -q 'href="data:image/png;base64,' ci-logo/header-dark.svg
+      - name: Linked banner snippet keeps <a> and <picture> on separate lines
+        shell: bash
+        run: python readme-forge/scripts/make_banner.py --kind button --title Go --href "#go" --out ci-btn | grep -qx '<a href="#go">'
+      - name: Fancy text maps letters, digits and Unicode holes
+        shell: bash
+        run: |
+          test "$(python readme-forge/scripts/fancy_text.py 'Hi 7' --style sans-bold)" = "𝗛𝗶 𝟳"
+          test "$(python readme-forge/scripts/fancy_text.py 'RCh' --style double-struck)" = "ℝℂ𝕙"
+        env:
+          PYTHONIOENCODING: utf-8
+      - name: Tic-tac-toe game plays, rejects bad moves and detects a win
+        shell: bash
+        env:
+          PYTHONIOENCODING: utf-8
+        run: |
+          T="$PWD/readme-forge/templates/profile/game/tictactoe.py"
+          mkdir ttt && cd ttt
+          printf '<!-- TICTACTOE:START -->\n<!-- TICTACTOE:END -->\n' > README.md
+          python "$T" --repo a/a --render
+          for m in "a 1" "b 4" "c 2" "d 5"; do set -- $m; python "$T" --repo a/a --title "ttt|move|$2" --user "$1"; done
+          ! python "$T" --repo a/a --title "ttt|move|1" --user e
+          ! python "$T" --repo a/a --title 'ttt|move|3; rm -rf ~' --user e
+          python "$T" --repo a/a --title "ttt|move|3" --user e | grep -q "wins"
+          grep -q '"X": 1' .github/game/tictactoe.json
       - name: Plugin manifests are valid and versions match
         run: python -c "import json; m=json.load(open('.claude-plugin/marketplace.json')); p=json.load(open('readme-forge/.claude-plugin/plugin.json')); assert m['plugins'][0]['version']==p['version'], 'bump the version in both manifests'"
 

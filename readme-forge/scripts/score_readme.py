@@ -316,6 +316,11 @@ def common_lints(r: Report, text, nocode, hs, imgs, lks, blocks, readme_path: Pa
     anim = [im for im in imgs if re.search(r"\.gif\b|readme-typing-svg|snake|animated|giphy", im["src"], re.I)]
     if len(anim) > 2:
         r.add("WARN", "accessibility", f"{len(anim)} animated images; keep ≤2 and provide static alternatives (prefers-reduced-motion)", anim[0]["line"])
+    # "fancy font" Unicode (Mathematical Alphanumeric Symbols): read out letter by letter, invisible to search
+    styled = [i for i, l in enumerate(nocode.splitlines(), 1) if len(re.findall(r"[\U0001D400-\U0001D7FF]", l)) >= 3]
+    if len(styled) > 6:
+        r.add("WARN", "accessibility", f"styled Unicode text on {len(styled)} lines; screen readers spell it letter by letter "
+              "and search can't find it. Keep it to headings and one tagline, with the facts in plain text", styled[0])
     return anchors
 
 
