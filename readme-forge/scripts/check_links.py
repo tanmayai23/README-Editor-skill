@@ -26,17 +26,84 @@ SKIP = re.compile(r"^(mailto:|tel:|#|data:)|localhost|127\.0\.0\.1|example\.com|
 ERROR_SVG = re.compile(rb"(something went wrong|rate limit|could not fetch|not found|maximum retries exceeded|user not found)", re.I)
 
 
+def strip_code(text: str) -> str:
+    """Blank out fenced code blocks (keeps line numbers)."""
+    out, fence = [], None
+    for line in text.splitlines():
+        m = re.match(r"^\s*(```+|~~~+)", line)
+        if m:
+            if fence is None:
+                fence = m.group(1)[0] * 3
+            elif line.strip().startswith(fence):
+                fence = None
+            out.append("")
+            continue
+        out.append("" if fence else line)
+    return "\n".join(out)
+
+
+def _extract_markdown_targets(text: str):
+    """Find ![...](dest) and [...](dest) handling balanced parens in dest."""
+    items = []
+    for m in re.finditer(r"(!)?\[(?:[^\]\\]|\\.)*\]\(", text):
+        is_img = bool(m.group(1))
+        start_idx = m.end()
+        # Optional leading <...>
+        if start_idx < len(text) and text[start_idx] == "<":
+            close_angle = text.find(">", start_idx + 1)
+            if close_angle != -1:
+                items.append(("image" if is_img else "link", text[start_idx + 1:close_angle].strip()))
+                continue
+        depth = 1
+        i = start_idx
+        while i < len(text):
+            c = text[i]
+            if c == "\\":
+                i += 2
+                continue
+            elif c == "(":
+                depth += 1
+            elif c == ")":
+                depth -= 1
+                if depth == 0:
+                    raw = text[start_idx:i].strip()
+                    url = raw.split()[0] if raw else ""
+                    items.append(("image" if is_img else "link", url))
+                    break
+            elif c in ("\r", "\n"):
+                break
+            i += 1
+    return items
+
+
 def extract(text: str, images_only: bool):
+    nocode = strip_code(text)
     urls = []
-    for m in re.finditer(r"!\[[^\]]*\]\((https?://[^)\s]+)", text):
-        urls.append(("image", m.group(1)))
-    for m in re.finditer(r"<(?:img|source)\b[^>]*?(?:src|srcset)=[\"'](https?://[^\"'\s]+)", text, re.I):
+
+    # Markdown inline links/images (with balanced parentheses support)
+    for kind, u in _extract_markdown_targets(nocode):
+        if u.startswith(("http://", "https://")):
+            if not images_only or kind == "image":
+                urls.append((kind, u))
+
+    # Reference link definitions: [id]: https://...
+    ref_defs = {}
+    for m in re.finditer(r"^\s*\[([^\]]+)\]:\s*<?(https?://\S+?)>?(?:\s+[\"'(].*)?$", nocode, re.M):
+        ref_defs[m.group(1).lower()] = m.group(2)
+
+    img_refs = set(m.group(1).lower() for m in re.finditer(r"!\[(?:[^\]\\]|\\.)*\]\[([^\]]+)\]", nocode))
+    for ref_id, u in ref_defs.items():
+        is_img = ref_id in img_refs or bool(re.search(r"\.(svg|png|jpe?g|gif|webp)(?:$|\?)|\b(badge|shields\.io)\b", u, re.I))
+        if not images_only or is_img:
+            urls.append(("image" if is_img else "link", u))
+
+    # HTML tags
+    for m in re.finditer(r"<(?:img|source)\b[^>]*?(?:src|srcset)=[\"'](https?://[^\"'\s]+)", nocode, re.I):
         urls.append(("image", m.group(1)))
     if not images_only:
-        for m in re.finditer(r"(?<!!)\[[^\]]+\]\((https?://[^)\s]+)", text):
+        for m in re.finditer(r"<a\b[^>]*href=[\"'](https?://[^\"']+)", nocode, re.I):
             urls.append(("link", m.group(1)))
-        for m in re.finditer(r"<a\b[^>]*href=[\"'](https?://[^\"']+)", text, re.I):
-            urls.append(("link", m.group(1)))
+
     seen, out = set(), []
     for kind, u in urls:
         u = u.replace("&amp;", "&")
