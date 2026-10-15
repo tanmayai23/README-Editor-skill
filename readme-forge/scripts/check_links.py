@@ -24,6 +24,24 @@ from pathlib import Path
 UA = "Mozilla/5.0 (readme-forge link checker; +https://github.com)"
 SKIP = re.compile(r"^(mailto:|tel:|#|data:)|localhost|127\.0\.0\.1|example\.com|\{\{")
 ERROR_SVG = re.compile(rb"(something went wrong|rate limit|could not fetch|not found|maximum retries exceeded|user not found)", re.I)
+BOT_BLOCKING_HOSTS = re.compile(
+    r"://(?:[^/]+\.)?(npmjs\.(?:com|org)|linkedin\.com|twitter\.com|x\.com)(?:/|$)",
+    re.I,
+)
+GITHUB_LOGIN_PAGES = re.compile(
+    r"^https?://github\.com/[^/]+/[^/]+/(stargazers|network/dependents|pulse|graphs/traffic)(?:/|$|\?)",
+    re.I,
+)
+
+
+class SmartRedirectHandler(urllib.request.HTTPRedirectHandler):
+    """Ensure HTTP 307 and 308 redirects are followed across Python versions."""
+
+    def http_error_307(self, req, fp, code, msg, headers):
+        return self.do_redirect(req, fp, code, msg, headers)
+
+    def http_error_308(self, req, fp, code, msg, headers):
+        return self.do_redirect(req, fp, code, msg, headers)
 
 
 def extract(text: str, images_only: bool):
@@ -48,11 +66,12 @@ def extract(text: str, images_only: bool):
 
 def check(kind, url, timeout):
     ctx = ssl.create_default_context()
+    opener = urllib.request.build_opener(urllib.request.HTTPSHandler(context=ctx), SmartRedirectHandler())
     t0 = time.time()
     for method in ("HEAD", "GET"):
         req = urllib.request.Request(url, method=method, headers={"User-Agent": UA, "Accept": "*/*"})
         try:
-            with urllib.request.urlopen(req, timeout=timeout, context=ctx) as resp:
+            with opener.open(req, timeout=timeout) as resp:
                 status = resp.status
                 ctype = resp.headers.get("Content-Type", "")
                 body = resp.read(20000) if method == "GET" and "svg" in ctype else b""
@@ -65,7 +84,14 @@ def check(kind, url, timeout):
         except urllib.error.HTTPError as e:
             if method == "HEAD" and e.code in (403, 405, 400, 404, 501):
                 continue
-            res = "RATE-LIMITED" if e.code == 429 else "BROKEN"
+            if e.code == 429:
+                res = "RATE-LIMITED"
+            elif (e.code in (401, 403, 999) and BOT_BLOCKING_HOSTS.search(url)) or (
+                e.code in (401, 403, 404) and GITHUB_LOGIN_PAGES.search(url)
+            ):
+                res = "UNVERIFIED"
+            else:
+                res = "BROKEN"
             return {"url": url, "kind": kind, "status": e.code, "result": res, "seconds": round(time.time() - t0, 2)}
         except Exception as e:  # DNS, timeout, SSL
             if method == "HEAD":

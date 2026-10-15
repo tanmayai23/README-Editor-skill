@@ -39,6 +39,8 @@ jobs:
         run: python readme-forge/scripts/analyze_repo.py demo/sample-app --compact
       - name: Import graph runs on the sample app
         run: python readme-forge/scripts/import_graph.py demo/sample-app
+      - name: Run unit tests
+        run: python -m unittest discover -s tests -p "test_*.py"
       - name: Project README scores 85+
         run: python readme-forge/scripts/score_readme.py README.md --repo . --min 85
       - name: Skill README scores 85+
