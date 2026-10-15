@@ -109,7 +109,7 @@ Read `references/design.md` first.
    python SKILL_DIR/scripts/make_banner.py --kind footer --style <minimal|wave> --title "<credit line>" --out .github/assets
    ```
    For profiles, put the assets in `assets/`. For Hugging Face, use `#hf-dark-mode-only` / `#hf-light-mode-only` instead of `<picture>`.
-3. Paste the printed `<picture>` snippet, wrap it in a link, and put the pitch, badges (one style, palette colour) and link row below it, as in design.md §2.
+3. Pass `--href <url>` so the printed snippet is already wrapped in a link, and paste it exactly as printed. Never type `<a href="…"><picture>` on one line with the `<source>` on the next: GitHub empties that `<picture>`, so the dark variant never shows and the click opens the SVG file. Then put the pitch, badges (one style, palette colour) and link row below it, as in design.md §2.
    **If the project has a logo** (look for `logo.*`, `icon.*`, `assets/brand/*`, or ask), pass `--logo`. It is embedded in the SVG (no external request). Spotlight centres it above the title; other styles place it on the left. Use a transparent PNG about 320 px wide or an SVG; a logo with a white box looks wrong on dark banners. Pick a palette (or `--accent`) that matches the logo's colours.
    For a **landing-page** feel (apps, SaaS, launches), use the spotlight hero + CTA buttons (`--kind button`) from design.md §10 and `templates/design/hero-landing.md`. Optionally repeat the CTA before the footer with `templates/design/cta-section.md`. For a **ShaderGradient** look, use `--style shader --palette halo|pensive|interstella|universe|mandarin|nighty`.
 4. End with a footer (design.md §3): license line, credit, back-to-top, plus the footer SVG for polished projects and profiles.

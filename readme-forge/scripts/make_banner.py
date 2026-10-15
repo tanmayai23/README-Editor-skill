@@ -23,7 +23,9 @@ Options:
   --theme dark|light|both        (default both)
   --static                       no animation
   --out DIR                      output folder (default .)
-Prints the <picture> snippet to paste into the README.
+  --href URL                     make the image clickable (prints a GitHub-safe <a> wrapper)
+Prints the <picture> snippet to paste into the README. Paste it as printed: GitHub breaks
+dark mode and the link if <a> and <picture> share a line while the <source> is on the next.
 """
 from __future__ import annotations
 
@@ -729,11 +731,18 @@ def render(a, theme) -> str:
             f'<defs>{"".join(x.defs)}</defs>{"".join(x.body)}</svg>\n')
 
 
-def snippet(base: str, alt: str, width_attr="100%") -> str:
-    return ("<picture>\n"
-            f'  <source media="(prefers-color-scheme: dark)" srcset="{base}-dark.svg">\n'
-            f'  <img alt="{esc(alt)}" src="{base}-light.svg" width="{width_attr}">\n'
-            "</picture>")
+def snippet(base: str, alt: str, width_attr="100%", href=None) -> str:
+    """<picture> markup for the README. With href, <a> and </a> each go on their own line:
+    GitHub empties a <picture> that opens on the same line as <a> and closes on a later one,
+    so the dark variant never shows and the image links to its own file instead of href."""
+    size = ' height="44"' if width_attr == "auto" else f' width="{width_attr}"'
+    pic = ("<picture>\n"
+           f'  <source media="(prefers-color-scheme: dark)" srcset="{base}-dark.svg">\n'
+           f'  <img alt="{esc(alt)}" src="{base}-light.svg"{size}>\n'
+           "</picture>")
+    if not href:
+        return pic
+    return f'<a href="{esc(href)}">\n' + "\n".join("  " + ln for ln in pic.splitlines()) + "\n</a>"
 
 
 def readme_path(target: Path) -> str:
@@ -763,7 +772,7 @@ def main(argv=None):
     p = argparse.ArgumentParser(description="Animated SVG headers/footers/dividers for READMEs")
     p.add_argument("--kind", choices=["header", "footer", "divider", "button"], default="header")
     p.add_argument("--variant", choices=["primary", "secondary"], default="primary", help="button style")
-    p.add_argument("--href", default="#", help="button link target")
+    p.add_argument("--href", help="link target; the printed snippet wraps the image in a GitHub-safe <a> (buttons default to #)")
     p.add_argument("--style", default="aurora", choices=sorted(STYLES))
     p.add_argument("--palette", choices=sorted(PALETTES))
     p.add_argument("--accent")
@@ -804,7 +813,7 @@ def main(argv=None):
         for variant, label in (("primary", "Get started"), ("secondary", "Read the docs")):
             a4 = argparse.Namespace(**{**vars(a), "kind": "button", "variant": variant, "palette": "midnight", "title": label})
             write(a4, out, f"button-{variant}")
-            rows.append(f"## button: {variant}\n\n" + snippet(f"button-{variant}", label, width_attr="auto").replace(' width="auto"', ' height="44"') + "\n")
+            rows.append(f"## button: {variant}\n\n" + snippet(f"button-{variant}", label, width_attr="auto") + "\n")
         (out / "gallery.md").write_text("\n".join(rows), encoding="utf-8")
         print(f"wrote {len(STYLES)} headers + 2 footers + 1 divider + 2 buttons (dark+light) to {out}")
         return 0
@@ -832,10 +841,13 @@ def main(argv=None):
     rel = readme_path(Path(a.out) / stem)
     print(f"wrote {', '.join(f'{stem}-{t}.svg' for t in themes)} in {a.out}\n")
     if a.kind == "button":
-        alt = a.title or "Get started"
-        print(f'<a href="{esc(a.href)}">' + snippet(rel, alt, width_attr="auto").replace(' width="auto"', ' height="44"') + "</a>")
+        print(snippet(rel, a.title or "Get started", width_attr="auto", href=a.href or "#"))
         return 0
-    print(snippet(rel, alt) if a.theme == "both" else f'<img alt="{esc(alt)}" src="{rel}-{themes[0]}.svg" width="100%">')
+    if a.theme == "both":
+        print(snippet(rel, alt, href=a.href))
+    else:
+        img = f'<img alt="{esc(alt)}" src="{rel}-{themes[0]}.svg" width="100%">'
+        print(f'<a href="{esc(a.href)}">\n  {img}\n</a>' if a.href else img)
     return 0
 
 

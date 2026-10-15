@@ -7,6 +7,13 @@ All notable changes to this project are documented here. The format follows [Kee
 ### Added
 
 - `make_banner.py --style pulse`: soft concentric rings breathing behind the title, with dark and light variants (#15, thanks @Sultanast01).
+- `make_banner.py --href URL` for headers and footers: prints the banner already wrapped in a link, in the form GitHub renders correctly.
+- `score_readme.py` reports a `<picture>` that GitHub empties, either opened after `<a href>` on the same line or glued to the paragraph line above it.
+
+### Fixed
+
+- Linked banners and CTA buttons showed the light variant in dark mode and opened the SVG file instead of the link. `make_banner.py --kind button` printed `<a href><picture>` on one line with the `<source>` on the next, and GitHub drops the `<source>` from that form. The snippet now puts `<a>`, `<picture>` and `</a>` on separate lines.
+- `hero-landing.md`, `header-profile.md` and `header-centered.md` templates: blank line after `<a id="top"></a>`, so the header `<picture>` no longer gets emptied.
 
 ## [1.1.0] - 2026-10-13
 

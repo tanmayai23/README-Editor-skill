@@ -1,5 +1,6 @@
 <!-- readme-forge design: landing-page hero (supahero pattern). Generate the banner and buttons with the commands in references/design.md §10. -->
 <a id="top"></a>
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset=".github/assets/header-dark.svg">
   <img alt="{{NAME}}: {{PITCH}}" src=".github/assets/header-light.svg" width="100%">

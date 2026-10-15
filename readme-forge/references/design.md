@@ -21,6 +21,7 @@ Generate every visual asset locally with `scripts/make_banner.py` and commit it,
 4. Ambient loops are slow (≥ 4 s). There are no strobes, and `prefers-reduced-motion` stops everything (a progressive enhancement).
 5. Keep header SVGs under 20 KB (100 KB at most). Always set `viewBox`, and use `width="100%"` on the `<img>`.
 6. Text that must be searchable or translatable (the pitch) also goes in Markdown, below the banner. The banner's `alt` repeats the title and tagline.
+7. **Linking a `<picture>`: `<a href>`, `<picture>` and `</a>` each go on their own line** (pattern A below), or the whole element goes on one line (the CTA buttons). The tempting middle form, `<a href="…"><picture>` with `<source>` on the next line, renders on GitHub as an empty `<picture>` plus a bare light `<img>`: dark mode never switches and the click opens the SVG instead of your URL. `make_banner.py --href URL` prints the safe form, and `score_readme.py` reports the broken one as an error.
 
 ## 2. Header patterns
 

@@ -1,6 +1,7 @@
 <!-- readme-forge design: centered stack header (default for projects). Generate assets:
      python SKILL_DIR/scripts/make_banner.py --style {{STYLE}} --title "{{NAME}}" --subtitle "{{PITCH}}" --tag "{{CATEGORY}}" --out .github/assets -->
 <a id="top"></a>
+
 <a href="{{REPO_URL}}">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset=".github/assets/header-dark.svg">

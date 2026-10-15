@@ -399,6 +399,22 @@ def design_lints(r: Report, text: str, imgs, readme_path: Path):
             r.add("ERROR", "design", f"{src} is {size // 1024} KB; keep README SVGs under 100 KB", im["line"])
         elif size > 100_000:
             r.add("WARN", "design", f"{src} is {size // 1024} KB; aim for < 20 KB headers, < 100 KB max", im["line"])
+    # GitHub empties a <picture> that opens after other markup on its line and closes on a later
+    # line (e.g. `<a href="..."><picture>` then `<source>` below): dark mode and the link both break.
+    # The same happens when a multi-line <picture> continues a paragraph, e.g. right under `<a id="top"></a>`.
+    lines = strip_code(text).splitlines()
+    for i, line in enumerate(lines, 1):
+        m = re.search(r"<picture\b", line, re.I)
+        if not m or re.search(r"</picture>", line[m.start():], re.I):
+            continue
+        prev = lines[i - 2] if i > 1 else ""
+        if line[:m.start()].strip():
+            r.add("ERROR", "design", "<picture> opens mid-line and closes on a later line; GitHub drops the "
+                  "<source>, so the dark variant never shows and the link opens the image. Put <a>, "
+                  "<picture> and </a> on their own lines, or the whole element on one line", i)
+        elif prev.strip() and (not prev.lstrip().startswith("<") or re.fullmatch(r"\s*<a\b[^>]*>\s*</a>\s*", prev)):
+            r.add("ERROR", "design", "<picture> continues the paragraph on the line above; GitHub drops the "
+                  "<source>, so the dark variant never shows. Add a blank line before it", i)
     # dark/light: a local banner-like SVG shown without <picture>/theme fragment
     has_picture = "prefers-color-scheme" in text or "-mode-only" in text
     banners = [s_ for s_ in seen if re.search(r"(header|banner|hero|footer|logo)", s_, re.I)]
