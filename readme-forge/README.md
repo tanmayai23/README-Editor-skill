@@ -58,7 +58,7 @@ Then, in any project:
 | You say | Mode |
 |---|---|
 | "Write a README for this repo" | Project README from code facts |
-| "Make my GitHub profile README, creative style" | Profile README (11 archetypes) |
+| "Make my GitHub profile README, creative style" | Profile README (19 archetypes) |
 | "Create a model card for this fine-tune" | Hugging Face card |
 | "Review / improve my README" | Audit: score, drift, ranked fixes, rewrite |
 | "Make a PyPI version of the README" | Port to another platform |
@@ -124,7 +124,7 @@ readme-forge/
 ├── SKILL.md              # mode routing, hard rules, step-by-step workflows
 ├── references/           # loaded on demand
 │   ├── project-readme.md # blueprints for 10 project types
-│   ├── profile-readme.md # 11 profile archetypes + interview
+│   ├── profile-readme.md # 19 profile archetypes + interview
 │   ├── widgets.md        # stats/streak/snake/typing/skill-icons, with reliability tiers
 │   ├── badges.md         # shields.io recipes per ecosystem
 │   ├── diagrams.md       # Mermaid architecture, sequence, ER, charts
@@ -135,12 +135,12 @@ readme-forge/
 │   └── writing-style.md  # banned filler, tone, code-block rules
 ├── templates/
 │   ├── project/          # library, cli, webapp, api, ml-project, monorepo, minimal
-│   ├── profile/          # 11 archetypes + workflows/ (snake, metrics, blog posts, WakaTime)
+│   ├── profile/          # 19 archetypes + workflows/ (snake, metrics, blog posts, WakaTime, tic-tac-toe)
 │   ├── huggingface/      # model-card, dataset-card, space-readme
 │   ├── design/           # header-centered, header-profile, footer-quiet, footer-svg
 │   └── extras/           # CONTRIBUTING, CODE_OF_CONDUCT, SECURITY, SUPPORT, CHANGELOG, CITATION.cff, FUNDING, issue/PR templates
 ├── assets/banners/       # gallery: every style, dark + light
-└── scripts/              # analyze_repo, import_graph, score_readme, check_links, make_banner
+└── scripts/              # analyze_repo, import_graph, score_readme, check_links, make_banner, fancy_text
 ```
 
 ## Guarantees

@@ -1,0 +1,66 @@
+# Community tic-tac-toe (Game Mode). A visitor clicks a square in README.md, which opens an
+# issue titled "ttt|move|N"; this workflow plays the move, redraws the board, replies and closes the issue.
+# Setup:
+#   1. Copy game/tictactoe.py to .github/scripts/tictactoe.py
+#   2. Put <!-- TICTACTOE:START --> and <!-- TICTACTOE:END --> in README.md (see templates/profile/game-mode.md)
+#   3. Settings → Actions → General → Workflow permissions → "Read and write"
+#   4. Actions → "Tic-tac-toe" → Run workflow once to draw the first board
+name: Tic-tac-toe
+
+on:
+  issues:
+    types: [opened]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  issues: write
+
+concurrency:
+  group: tictactoe      # one move at a time; queued moves run in order
+  cancel-in-progress: false
+
+jobs:
+  move:
+    if: github.event_name == 'workflow_dispatch' || startsWith(github.event.issue.title, 'ttt|')
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Play the move
+        id: play
+        env:
+          TITLE: ${{ github.event.issue.title }}   # untrusted input: passed via env, never inlined into the script
+          PLAYER: ${{ github.event.issue.user.login }}
+          REPO: ${{ github.repository }}
+          EVENT: ${{ github.event_name }}
+        run: |
+          if [ "$EVENT" = "workflow_dispatch" ]; then
+            python .github/scripts/tictactoe.py --repo "$REPO" --render > reply.txt && status=0 || status=$?
+          else
+            python .github/scripts/tictactoe.py --repo "$REPO" --title "$TITLE" --user "$PLAYER" > reply.txt && status=0 || status=$?
+          fi
+          cat reply.txt
+          echo "ok=$([ "$status" = 0 ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
+
+      - name: Commit the board
+        if: steps.play.outputs.ok == 'true'
+        env:
+          PLAYER: ${{ github.event.issue.user.login || github.actor }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add README.md .github/game/tictactoe.json
+          git diff --cached --quiet || git commit -m "Tic-tac-toe move by @$PLAYER"
+          git pull --rebase --quiet && git push
+
+      - name: Reply and close the issue
+        if: github.event_name == 'issues'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NUMBER: ${{ github.event.issue.number }}
+          REPO: ${{ github.repository }}
+        run: |
+          gh issue comment "$NUMBER" --repo "$REPO" --body-file reply.txt
+          gh issue close "$NUMBER" --repo "$REPO"

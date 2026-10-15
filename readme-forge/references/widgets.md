@@ -96,7 +96,7 @@ Action needs `WAKATIME_API_KEY` secret and markers `<!--START_SECTION:waka-->` /
 | Profile views | `https://komarev.com/ghpvc/?username=USER&style=flat-square&color=blue&label=Profile+views` — vanity metric; optional |
 | LeetCode card | `https://leetcard.jacoblin.cool/LCUSER?theme=dark&font=Fira%20Code&ext=heatmap` |
 | Stack Overflow | `https://stackoverflow-card.vercel.app/?userID=ID&theme=dark` (Tier B) |
-| Spotify now playing | novatorem/novatorem — **requires self-hosting** with Spotify API keys |
+| Spotify now playing | kittinan/spotify-github-profile (Tier B): the user connects Spotify once at its site to get a `uid`, then `https://spotify-github-profile.kittinanx.com/api/view?uid=UID&cover_image=true&theme=default&bar_color=HEX`. novatorem/novatorem needs self-hosting with Spotify API keys |
 | Star history (project) | `https://api.star-history.com/svg?repos=OWNER/REPO&type=Date` (+`&theme=dark` in a `<picture>` source) |
 | Contributors grid (project) | `https://contrib.rocks/image?repo=OWNER/REPO` (alt: "Contributors to REPO") |
 | Repobeats activity (project) | generate an embed at repobeats.axiom.co (unique key per repo — can't be guessed) |

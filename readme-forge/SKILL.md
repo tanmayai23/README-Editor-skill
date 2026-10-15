@@ -73,10 +73,11 @@ Modes combine (e.g. A + C for an ML repo that ships to GitHub and HF; A + F for 
 
 ## Mode B — Profile README
 
-1. Read `references/profile-readme.md`. Collect (batch in one question): GitHub username, name/role/one-liner, current focus, top skills (or derive from their public repos if they allow), socials, preferred **archetype** (minimal · stats dashboard · creative/animated · code-mode · data/ML · student · OSS maintainer · retro · badges wall · Actions-dynamic · org), and dark-mode preference.
+1. Read `references/profile-readme.md`. Collect (batch in one question): GitHub username, name/role/one-liner, current focus, top skills (or derive from their public repos if they allow), socials, preferred **archetype** (minimal · stats dashboard · creative/animated · code-mode · data/ML · student · OSS maintainer · retro · badges wall · Actions-dynamic · org · game mode · typing · anime/art · fancy fonts · descriptive · simple-but-innovative · icons · just an image; if they name an awesome-github-profile category, use the mapping in profile-readme.md), and dark-mode preference.
 2. Start from `templates/profile/<archetype>.md`. Replace every `{{PLACEHOLDER}}`; delete sections with no data rather than leaving placeholders. Generate the profile hero banner and footer with `make_banner.py` (Mode G) in the user's accent colour. Offer the 3D contribution calendar (`workflows/profile-3d.yml`) for profiles that want a 3D visual.
 3. Widgets: pick from `references/widgets.md`. Rules: ≤ 4 dynamic cards; use `<picture>` or theme params for dark/light; give each a descriptive alt; add the self-host / Actions fallback comment for stats cards; skill icons only for skills the user really uses (≤ 15).
-4. If the archetype needs automation (snake, latest blog posts, WakaTime, metrics), also write the workflow from `templates/profile/workflows/` and tell the user which secrets/settings to add.
+4. If the archetype needs automation (snake, latest blog posts, WakaTime, metrics, the tic-tac-toe game), also write the workflow from `templates/profile/workflows/` (the game also needs `templates/profile/game/tictactoe.py` at `.github/scripts/`) and tell the user which secrets/settings to add.
+   For **fancy fonts**, generate every styled string with `python SKILL_DIR/scripts/fancy_text.py "TEXT" --style <style>`; never type the Unicode yourself.
 5. Run `score_readme.py --profile` and `check_links.py` (if network allowed) and fix failures.
 6. Tell the user exactly where it goes: repo named exactly like their username, public, `README.md` at root (org: `.github` repo → `profile/README.md`).
 
