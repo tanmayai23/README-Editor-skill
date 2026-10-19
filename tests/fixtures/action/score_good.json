@@ -1,0 +1,14 @@
+{
+  "file": "README.md",
+  "mode": "project",
+  "score": 92,
+  "grade": "A",
+  "categories": {
+    "identity": {"score": 15, "max": 15},
+    "getting-started": {"score": 24, "max": 25},
+    "quality": {"score": 18, "max": 20}
+  },
+  "findings": [
+    {"level": "INFO", "category": "identity", "message": "consider a logo", "line": null}
+  ]
+}

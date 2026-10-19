@@ -1,0 +1,85 @@
+name: README Forge check
+description: Score your README (0-100), check its commands, env vars and paths against the code, and comment the result on pull requests.
+author: tanmayai23
+branding:
+  icon: book-open
+  color: purple
+
+inputs:
+  path:
+    description: README file to check. Several files can be given, separated by spaces or newlines.
+    required: false
+    default: README.md
+  repo-root:
+    description: Repository root the README describes (used to check commands, scripts and paths).
+    required: false
+    default: .
+  min-score:
+    description: Fail the step when a README scores below this (0-100). 0 never fails.
+    required: false
+    default: "0"
+  min-accuracy:
+    description: Fail the step when the share of README claims found in the code is below this percent. 0 never fails.
+    required: false
+    default: "0"
+  comment:
+    description: Post (and keep updating) one report comment on pull_request / pull_request_target events.
+    required: false
+    default: "true"
+  github-token:
+    description: Token used to comment. Needs pull-requests write permission.
+    required: false
+    default: ${{ github.token }}
+
+outputs:
+  score:
+    description: README score 0-100 (the lowest one when several files are checked).
+    value: ${{ steps.report.outputs.score }}
+  grade:
+    description: Letter grade A-F for that score.
+    value: ${{ steps.report.outputs.grade }}
+  accuracy:
+    description: Percent of checked claims that match the code (empty when nothing was checked).
+    value: ${{ steps.report.outputs.accuracy }}
+  report:
+    description: Path to the Markdown report file.
+    value: ${{ steps.report.outputs.report }}
+
+runs:
+  using: composite
+  steps:
+    - id: report
+      shell: bash
+      # Every input goes through env and is quoted below: never expand ${{ }} inside run.
+      env:
+        RF_PATHS: ${{ inputs.path }}
+        RF_REPO_ROOT: ${{ inputs.repo-root }}
+        RF_MIN_SCORE: ${{ inputs.min-score }}
+        RF_MIN_ACCURACY: ${{ inputs.min-accuracy }}
+        RF_COMMENT: ${{ inputs.comment }}
+        RF_GITHUB_TOKEN: ${{ inputs.github-token }}
+        RF_ACTION_PATH: ${{ github.action_path }}
+      run: |
+        set -euo pipefail
+        PY=""
+        if [ "${RUNNER_OS:-}" = "Windows" ]; then
+          candidates="python python3"
+        else
+          candidates="python3 python"
+        fi
+        for c in $candidates; do
+          if command -v "$c" >/dev/null 2>&1 && "$c" -c 'import sys; sys.exit(0 if sys.version_info >= (3, 8) else 1)' >/dev/null 2>&1; then
+            PY="$c"; break
+          fi
+        done
+        if [ -z "$PY" ]; then
+          echo "::error::readme-forge needs Python 3.8+ on the runner (add actions/setup-python before this step)."
+          exit 1
+        fi
+        "$PY" "$RF_ACTION_PATH/action/report.py" \
+          --paths="$RF_PATHS" \
+          --repo="$RF_REPO_ROOT" \
+          --min-score="$RF_MIN_SCORE" \
+          --min-accuracy="$RF_MIN_ACCURACY" \
+          --comment="$RF_COMMENT" \
+          --report-file="${RUNNER_TEMP:-.}/readme-forge-report.md"
