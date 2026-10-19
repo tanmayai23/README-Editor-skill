@@ -1,98 +1,85 @@
 <a id="top"></a>
 
 <a href="#readme-forge">
-  <picture><source media="(prefers-color-scheme: dark)" srcset=".github/assets/header-dark.svg"><img alt="readme-forge logo, a ghost inside a circuit chip, above the title readme-forge and the line: Your code is the source of truth. Your README should be too." src=".github/assets/header-light.svg" width="100%"></picture>
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset=".github/assets/header-dark.svg">
+    <img alt="readme-forge: Your code is the source of truth. Your README should be too." src=".github/assets/header-light.svg" width="100%">
+  </picture>
 </a>
 
-<p align="center"><b>A Claude skill that writes, designs, scores and fixes READMEs using facts from your actual code.</b></p>
+<p align="center"><b>A Claude skill that writes READMEs from your code, then checks every command, env var and path in them against the repo.</b></p>
 
 <p align="center">
-  <a href="#quickstart"><picture><source media="(prefers-color-scheme: dark)" srcset=".github/assets/cta-primary-dark.svg"><img alt="Get started" src=".github/assets/cta-primary-light.svg" height="44"></picture></a>
-  &nbsp;
-  <a href="#banner-gallery"><picture><source media="(prefers-color-scheme: dark)" srcset=".github/assets/cta-secondary-dark.svg"><img alt="Banner gallery" src=".github/assets/cta-secondary-light.svg" height="44"></picture></a>
-</p>
-
-<p align="center"><sub>MIT licensed · Python standard library only · Works in Claude Code, claude.ai and Claude Desktop</sub></p>
-
-<p align="center">
-  <a href="https://github.com/tanmayai23/README-Editor-skill/stargazers"><img alt="GitHub stars" src="https://img.shields.io/github/stars/tanmayai23/README-Editor-skill?style=flat&color=13A7D5&logo=github"></a>
   <a href="https://github.com/tanmayai23/README-Editor-skill/actions/workflows/ci.yml"><img alt="CI status" src="https://github.com/tanmayai23/README-Editor-skill/actions/workflows/ci.yml/badge.svg"></a>
-  <a href="https://github.com/tanmayai23/README-Editor-skill/releases"><img alt="Latest release" src="https://img.shields.io/github/v/release/tanmayai23/README-Editor-skill?color=13A7D5"></a>
-  <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-13A7D5"></a>
-  <img alt="Claude Agent Skill" src="https://img.shields.io/badge/Claude-Agent%20Skill-13A7D5">
-  <img alt="Scripts: Python 3.8+, standard library only" src="https://img.shields.io/badge/python-3.8%2B%20stdlib-13A7D5?logo=python&logoColor=white">
+  <a href="https://github.com/tanmayai23/README-Editor-skill/releases"><img alt="Latest release" src="https://img.shields.io/github/v/release/tanmayai23/README-Editor-skill?color=19C3EC"></a>
+  <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-19C3EC"></a>
 </p>
 
+<p align="center"><sub>Python standard library only · Works in Claude Code, claude.ai and Claude Desktop</sub></p>
+
+<p align="center"><a href="#why">Why</a> · <a href="#quickstart">Quickstart</a> · <a href="#check-readmes-in-ci">CI</a> · <a href="#what-it-does">What it does</a> · <a href="#scripts">Scripts</a> · <a href="#optional-design-and-profiles">Design</a> · <a href="#faq">FAQ</a> · <a href="#roadmap">Roadmap</a></p>
+
+## Why
+
+A README generator that guesses is worse than none: a wrong install command costs a new user more than a missing one. readme-forge reads the repo first, writes only what it can point to in a file, and leaves a `TODO` where it can't. Then `verify_readme.py` checks the result claim by claim:
+
+This is its real output on a test fixture: a pnpm app whose README was seeded with five mistakes.
+
+```text
+$ python readme-forge/scripts/verify_readme.py README.bad.md --repo tests/fixtures/verify/node-app
+✓    6  command         npm install  [package.json exists]
+✗    6  package_manager npm  [repo uses pnpm (pnpm-lock.yaml), not npm]
+✗    7  script          pnpm run deploy  [no 'deploy' script in package.json (scripts: dev, test)]
+✓    7  package_manager pnpm  [pnpm-lock.yaml matches pnpm]
+✗    8  env_var         REDIS_URL  [not referenced in any code, config or .env file]
+✗    9  command         docker compose up worker  [no service worker in docker-compose.yml (services: api, db)]
+✗   12  path            docs/setup.md  [no docs/setup.md in the repo]
+claims: 7 checked · 2 verified · 5 not found · 0 unverifiable · 1 generic · accuracy 28.6%
+```
+
+Every `✗` is something the README says that the code doesn't have. The skill doesn't finish until there are none.
+
+Try it on the sample app in this repo, no Claude account needed:
+
+```bash
+git clone https://github.com/tanmayai23/README-Editor-skill.git
+cd README-Editor-skill
+python readme-forge/scripts/verify_readme.py demo/sample-app/README.after.md --repo demo/sample-app   # 12 of 12 claims match
+python readme-forge/scripts/score_readme.py demo/sample-app/README.before.md --repo demo/sample-app   # 43/100, grade F
+python readme-forge/scripts/score_readme.py demo/sample-app/README.after.md --repo demo/sample-app    # 95/100, grade A
+```
+
+<details>
+<summary><b>Watch the demo</b> (a 43/100 README rewritten by one command)</summary>
 <br>
 
 <p align="center">
   <img src="demo/readme-forge-demo.gif" width="820" alt="Demo: a README scoring 43/100 (grade F) is rewritten by one /readme-forge command in Claude Code. The new README has a quickstart, an API table and an architecture diagram, and scores 95/100 (grade A).">
 </p>
 
-<!-- Inline video player: edit this README on github.com, drag demo/readme-forge-cinematic.mp4 into the editor,
-     and put the https://github.com/user-attachments/assets/… link GitHub inserts on its own line here. -->
-<p align="center"><a href="demo/readme-forge-cinematic.mp4"><b>▶ Watch the full 34-second demo in HD</b></a> · <sub>43/100 → 95/100 on a real sample app, with one command</sub></p>
-
-<details>
-<summary><b>Reproduce the 43 → 95 demo yourself</b> (no Claude account needed)</summary>
-
-```bash
-git clone https://github.com/tanmayai23/README-Editor-skill.git
-cd README-Editor-skill/demo/sample-app
-cp README.before.md README.md && python ../../readme-forge/scripts/score_readme.py README.md --repo .   # 43/100, grade F
-cp README.after.md README.md && python ../../readme-forge/scripts/score_readme.py README.md --repo .    # 95/100, grade A
-```
-
-`README.after.md` is the README the skill wrote for this sample app. The scorer is plain Python, so you can run it on your own README the same way.
+<a href="demo/readme-forge-cinematic.mp4">Full 34-second demo in HD</a>. The scorer is this repo's own, so treat the score as a checklist, not proof; the claim check is the part you can audit line by line.
 
 </details>
-
-<details>
-<summary><b>Contents</b></summary>
-
-- [Why](#why)
-- [Quickstart](#quickstart)
-- [Banner gallery](#banner-gallery)
-- [What you can ask](#what-you-can-ask)
-- [Templates included](#templates-included)
-- [How it works](#how-it-works)
-- [Scripts](#scripts)
-- [Troubleshooting](#troubleshooting)
-- [FAQ](#faq)
-- [Roadmap](#roadmap)
-- [Contributing](#contributing)
-- [License](#license)
-
-</details>
-
-## Why
-
-Most README generators fill one template. Most profile galleries ask you to copy someone else's file. Neither reads your code, and neither designs anything. readme-forge does both:
-
-| | Other tools | readme-forge |
-|---|---|---|
-| **Facts** | Typed in by hand, or read from `package.json` only | Detects 15+ ecosystems, scripts, env vars, Docker, CI, routes; never invents commands |
-| **Visuals** | A logo if you have one | Mermaid architecture **from real imports**, plus 16 animated banner styles and CTA buttons with dark/light variants |
-| **Widgets** | Hard-coded public URLs (some now return HTTP 402) | Tested endpoints, self-hosted SVGs that can't rate-limit, reliability tiers |
-| **Quality** | None | A 0–100 score and linter: structure, accessibility, dead links, drift, design |
-| **Platforms** | GitHub only | GitHub, Hugging Face cards, PyPI, npm, GitLab |
 
 ## Quickstart
 
-**Claude Code (recommended).** Install it once from any terminal (PowerShell, Git Bash, macOS or Linux). It then works in every project:
+Install the skill once from any terminal. It then works in every project:
 
 ```bash
 claude plugin install readme-forge --marketplace tanmayai23/README-Editor-skill
 ```
 
-Or type it inside a Claude Code chat in the terminal (Claude Code 2.1.275 or later):
+Then, in Claude Code:
 
 ```text
-/plugin install readme-forge --marketplace tanmayai23/README-Editor-skill
+/readme-forge write a README for this repo
 ```
 
-> [!TIP]
-> **Seeing "/plugin isn't available in this environment"?** Some chat panels, such as the VS Code extension, don't support the `/plugin` command. Run the `claude plugin install …` line above in a normal terminal instead, then start a new chat. The skill is available everywhere after that, including VS Code.
+You can also just say "improve my README" or "is my README accurate?". From a script: `claude -p "/readme-forge audit README.md and fix every error"`.
+
+**claude.ai or Claude Desktop:** download `readme-forge.zip` from the [latest release](https://github.com/tanmayai23/README-Editor-skill/releases/latest) and upload it under **Settings → Capabilities → Skills**.
+
+**No Claude at all:** the scripts run on their own as a free README linter and fact checker. See [Scripts](#scripts).
 
 <details>
 <summary>Older Claude Code, project-only install, updating, or manual install</summary>
@@ -104,281 +91,100 @@ claude plugin marketplace add tanmayai23/README-Editor-skill
 claude plugin install readme-forge@readme-forge
 ```
 
-To install for one project only, and share it with your team through `.claude/settings.json`, add `--scope project`.
-
-Get new versions with:
-
-```bash
-claude plugin marketplace update readme-forge
-claude plugin update readme-forge@readme-forge
-```
-
-Or copy the skill folder yourself:
-
-```bash
-git clone https://github.com/tanmayai23/README-Editor-skill.git
-cp -r README-Editor-skill/readme-forge ~/.claude/skills/readme-forge
-```
+Add `--scope project` to install for one project and share it with your team. Update with `claude plugin marketplace update readme-forge`, then `claude plugin update readme-forge@readme-forge`. To install by hand, copy the `readme-forge` folder to `~/.claude/skills/readme-forge`.
 
 </details>
 
-Then open Claude Code in any project and run:
+## Check READMEs in CI
 
-```text
-/readme-forge write a README for this repo, with a header and footer
+The repo is also a GitHub Action. It scores and fact-checks the README on every pull request and keeps one comment up to date:
+
+```yaml
+name: README check
+on: pull_request
+permissions: { contents: read, pull-requests: write }
+jobs:
+  readme:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: tanmayai23/README-Editor-skill@v1
+        with: { min-score: 80, min-accuracy: 100 }
 ```
 
-Plugin skills are namespaced. If another command already uses the name, type `/readme-forge:readme-forge` instead. You can also skip the command and say "improve my README"; Claude loads the skill on its own.
+Inputs, outputs and a sample comment are in [action/README.md](action/README.md).
 
-**From the terminal, without a chat:**
+## What it does
 
-```bash
-claude -p "/readme-forge audit README.md and fix every error"
-```
-
-**claude.ai or Claude Desktop:** download `readme-forge.zip` from the [latest release](https://github.com/tanmayai23/README-Editor-skill/releases/latest) and upload it under **Settings → Capabilities → Skills**.
-
-**No Claude at all:** the scripts work on their own as a free README linter. See [Scripts](#scripts).
-
-## Banner gallery
-
-Inspired by ShaderGradient, Supahero, Call to Inspiration, dark-design galleries and Dribbble, then rebuilt for what GitHub can render. Every banner is a **self-contained animated SVG** that you commit to your repo, so there are no external services, rate limits or broken images. Each comes in a dark and a light variant (switch your GitHub theme to see both), shows a complete first frame, and stops moving for visitors who turn on reduce motion.
-
-<table>
-<tr>
-<td width="33%" valign="top">
-
-<picture><source media="(prefers-color-scheme: dark)" srcset="readme-forge/assets/banners/shader-dark.svg"><img alt="shader banner style: grainy 3D colour field (ShaderGradient)" src="readme-forge/assets/banners/shader-light.svg" width="100%"></picture>
-
-<b><code>--style shader</code></b><br><sub>grainy 3D colour field (ShaderGradient)</sub>
-
-</td>
-<td width="33%" valign="top">
-
-<picture><source media="(prefers-color-scheme: dark)" srcset="readme-forge/assets/banners/spotlight-dark.svg"><img alt="spotlight banner style: landing-page hero: grid, beam, pill" src="readme-forge/assets/banners/spotlight-light.svg" width="100%"></picture>
-
-<b><code>--style spotlight</code></b><br><sub>landing-page hero: grid, beam, pill</sub>
-
-</td>
-<td width="33%" valign="top">
-
-<picture><source media="(prefers-color-scheme: dark)" srcset="readme-forge/assets/banners/ribbon-dark.svg"><img alt="ribbon banner style: twisting silk strands, 3D depth" src="readme-forge/assets/banners/ribbon-light.svg" width="100%"></picture>
-
-<b><code>--style ribbon</code></b><br><sub>twisting silk strands, 3D depth</sub>
-
-</td>
-</tr>
-<tr>
-<td width="33%" valign="top">
-
-<picture><source media="(prefers-color-scheme: dark)" srcset="readme-forge/assets/banners/aurora-dark.svg"><img alt="aurora banner style: drifting mesh-gradient light" src="readme-forge/assets/banners/aurora-light.svg" width="100%"></picture>
-
-<b><code>--style aurora</code></b><br><sub>drifting mesh-gradient light</sub>
-
-</td>
-<td width="33%" valign="top">
-
-<picture><source media="(prefers-color-scheme: dark)" srcset="readme-forge/assets/banners/synthwave-dark.svg"><img alt="synthwave banner style: 3D perspective grid + striped sun" src="readme-forge/assets/banners/synthwave-light.svg" width="100%"></picture>
-
-<b><code>--style synthwave</code></b><br><sub>3D perspective grid + striped sun</sub>
-
-</td>
-<td width="33%" valign="top">
-
-<picture><source media="(prefers-color-scheme: dark)" srcset="readme-forge/assets/banners/isometric-dark.svg"><img alt="isometric banner style: 3D floating isometric cubes" src="readme-forge/assets/banners/isometric-light.svg" width="100%"></picture>
-
-<b><code>--style isometric</code></b><br><sub>3D floating isometric cubes</sub>
-
-</td>
-</tr>
-<tr>
-<td width="33%" valign="top">
-
-<picture><source media="(prefers-color-scheme: dark)" srcset="readme-forge/assets/banners/orbit-dark.svg"><img alt="orbit banner style: 3D tilted orbits, revolving planets" src="readme-forge/assets/banners/orbit-light.svg" width="100%"></picture>
-
-<b><code>--style orbit</code></b><br><sub>3D tilted orbits, revolving planets</sub>
-
-</td>
-<td width="33%" valign="top">
-
-<picture><source media="(prefers-color-scheme: dark)" srcset="readme-forge/assets/banners/glass-dark.svg"><img alt="glass banner style: frosted glass over moving colour" src="readme-forge/assets/banners/glass-light.svg" width="100%"></picture>
-
-<b><code>--style glass</code></b><br><sub>frosted glass over moving colour</sub>
-
-</td>
-<td width="33%" valign="top">
-
-<picture><source media="(prefers-color-scheme: dark)" srcset="readme-forge/assets/banners/terminal-dark.svg"><img alt="terminal banner style: code window that retypes the title" src="readme-forge/assets/banners/terminal-light.svg" width="100%"></picture>
-
-<b><code>--style terminal</code></b><br><sub>code window that retypes the title</sub>
-
-</td>
-</tr>
-<tr>
-<td width="33%" valign="top">
-
-<picture><source media="(prefers-color-scheme: dark)" srcset="readme-forge/assets/banners/neon-dark.svg"><img alt="neon banner style: glowing neon outline" src="readme-forge/assets/banners/neon-light.svg" width="100%"></picture>
-
-<b><code>--style neon</code></b><br><sub>glowing neon outline</sub>
-
-</td>
-<td width="33%" valign="top">
-
-<picture><source media="(prefers-color-scheme: dark)" srcset="readme-forge/assets/banners/wave-dark.svg"><img alt="wave banner style: layered animated waves" src="readme-forge/assets/banners/wave-light.svg" width="100%"></picture>
-
-<b><code>--style wave</code></b><br><sub>layered animated waves</sub>
-
-</td>
-<td width="33%" valign="top">
-
-<picture><source media="(prefers-color-scheme: dark)" srcset="readme-forge/assets/banners/blueprint-dark.svg"><img alt="blueprint banner style: engineering drawing that redraws" src="readme-forge/assets/banners/blueprint-light.svg" width="100%"></picture>
-
-<b><code>--style blueprint</code></b><br><sub>engineering drawing that redraws</sub>
-
-</td>
-</tr>
-<tr>
-<td width="33%" valign="top">
-
-<picture><source media="(prefers-color-scheme: dark)" srcset="readme-forge/assets/banners/constellation-dark.svg"><img alt="constellation banner style: twinkling particle network" src="readme-forge/assets/banners/constellation-light.svg" width="100%"></picture>
-
-<b><code>--style constellation</code></b><br><sub>twinkling particle network</sub>
-
-</td>
-<td width="33%" valign="top">
-
-<picture><source media="(prefers-color-scheme: dark)" srcset="readme-forge/assets/banners/minimal-dark.svg"><img alt="minimal banner style: clean type, one sweeping accent" src="readme-forge/assets/banners/minimal-light.svg" width="100%"></picture>
-
-<b><code>--style minimal</code></b><br><sub>clean type, one sweeping accent</sub>
-
-</td>
-<td width="33%" valign="top">
-
-<picture><source media="(prefers-color-scheme: dark)" srcset="readme-forge/assets/banners/bold-dark.svg"><img alt="bold banner style: oversized type, moving gradient" src="readme-forge/assets/banners/bold-light.svg" width="100%"></picture>
-
-<b><code>--style bold</code></b><br><sub>oversized type, moving gradient</sub>
-
-</td>
-</tr>
-<tr>
-<td width="33%" valign="top">
-
-<picture><source media="(prefers-color-scheme: dark)" srcset="readme-forge/assets/banners/pulse-dark.svg"><img alt="pulse banner style: soft rings breathing behind the title" src="readme-forge/assets/banners/pulse-light.svg" width="100%"></picture>
-
-<b><code>--style pulse</code></b><br><sub>soft rings breathing behind the title</sub>
-
-</td>
-<td width="33%" valign="top"></td>
-<td width="33%" valign="top"></td>
-</tr>
-</table>
-
-```bash
-python readme-forge/scripts/make_banner.py --style isometric --palette ocean --title "kubeforge" --subtitle "Clusters in one command" --out .github/assets
-python readme-forge/scripts/make_banner.py --style spotlight --logo logo.png --palette ghost --title "my-app" --height 400 --out .github/assets
-python readme-forge/scripts/make_banner.py --kind footer --style wave --title "Thanks for visiting" --out .github/assets
-```
-
-<details>
-<summary><b>ShaderGradient presets, CTA buttons, footers and dividers</b></summary>
-<br>
-
-<picture><source media="(prefers-color-scheme: dark)" srcset="readme-forge/assets/banners/footer-wave-dark.svg"><img alt="Wave footer: Thanks for reading" src="readme-forge/assets/banners/footer-wave-light.svg" width="100%"></picture>
-
-<picture><source media="(prefers-color-scheme: dark)" srcset="readme-forge/assets/banners/footer-minimal-dark.svg"><img alt="Minimal footer with an accent rule: Made with readme-forge" src="readme-forge/assets/banners/footer-minimal-light.svg" width="100%"></picture>
-
-<picture><source media="(prefers-color-scheme: dark)" srcset="readme-forge/assets/banners/divider-aurora-dark.svg"><img alt="Animated gradient section divider" src="readme-forge/assets/banners/divider-aurora-light.svg" width="100%"></picture>
-
-**ShaderGradient presets** (`--style shader --palette …`):
-
-<picture><source media="(prefers-color-scheme: dark)" srcset="readme-forge/assets/banners/presets/shader-halo-dark.svg"><img alt="Shader banner with the halo preset" src="readme-forge/assets/banners/presets/shader-halo-light.svg" width="100%"></picture>
-
-<picture><source media="(prefers-color-scheme: dark)" srcset="readme-forge/assets/banners/presets/shader-pensive-dark.svg"><img alt="Shader banner with the pensive preset" src="readme-forge/assets/banners/presets/shader-pensive-light.svg" width="100%"></picture>
-
-<picture><source media="(prefers-color-scheme: dark)" srcset="readme-forge/assets/banners/presets/shader-interstella-dark.svg"><img alt="Shader banner with the interstella preset" src="readme-forge/assets/banners/presets/shader-interstella-light.svg" width="100%"></picture>
-
-<picture><source media="(prefers-color-scheme: dark)" srcset="readme-forge/assets/banners/presets/shader-universe-dark.svg"><img alt="Shader banner with the universe preset" src="readme-forge/assets/banners/presets/shader-universe-light.svg" width="100%"></picture>
-
-<picture><source media="(prefers-color-scheme: dark)" srcset="readme-forge/assets/banners/presets/shader-mandarin-dark.svg"><img alt="Shader banner with the mandarin preset" src="readme-forge/assets/banners/presets/shader-mandarin-light.svg" width="100%"></picture>
-
-<picture><source media="(prefers-color-scheme: dark)" srcset="readme-forge/assets/banners/presets/shader-nighty-dark.svg"><img alt="Shader banner with the nighty preset" src="readme-forge/assets/banners/presets/shader-nighty-light.svg" width="100%"></picture>
-
-**CTA buttons** (`--kind button --variant primary|secondary`), clickable because each one is an image inside a link:
-
-<picture><source media="(prefers-color-scheme: dark)" srcset="readme-forge/assets/banners/button-primary-dark.svg"><img alt="Get started" src="readme-forge/assets/banners/button-primary-light.svg" height="44"></picture> <picture><source media="(prefers-color-scheme: dark)" srcset="readme-forge/assets/banners/button-secondary-dark.svg"><img alt="Read the docs" src="readme-forge/assets/banners/button-secondary-light.svg" height="44"></picture>
-
-Palettes: `ember` · `ocean` · `violet` · `mint` · `sunset` · `mono` · `cyber` · dark-design `midnight` · `carbon` · `obsidian` · ShaderGradient `halo` · `pensive` · `interstella` · `universe` · `mandarin` · `nighty`, or pass any brand colour with `--accent "#HEX"`.
-
-</details>
-
-## What you can ask
-
-| You say | You get |
+| | |
 |---|---|
-| "Write a README for this repo" | Project README from code facts, a designed header and footer, and an architecture diagram |
-| "Make my GitHub profile README, creative style" | A profile from 19 archetypes (every awesome-github-profile category) with a hero banner, working widgets and an optional 3D contribution calendar |
-| "Review my README and fix it" | A score, drift report and ranked fixes, then a rewrite in your voice |
-| "Give my README a better header" | 2–3 banner options in your brand colour, ready to paste |
-| "Create a model card for this fine-tune" | A Hugging Face card with validated YAML |
-| "Make this repo open-source ready" | README + CONTRIBUTING, SECURITY, Code of Conduct, issue/PR templates |
-| "Make a PyPI version of my README" | A copy with absolute image links and no GitHub-only syntax, so it renders on PyPI and npm |
-
-## Templates included
-
-| Kind | Templates |
-|---|---|
-| **Profile READMEs** (19) | `minimal` · `creative` · `stats-dashboard` · `code-mode` · `badges-wall` · `retro` · `student` · `data-scientist` · `oss-maintainer` · `actions-dynamic` · `org-profile` · `game-mode` · `typing` · `anime-art` · `fancy-fonts` · `descriptive` · `simple-innovative` · `icons` · `just-image` |
-| **Project READMEs** (7) | `api` · `cli` · `library` · `webapp` · `ml-project` · `monorepo` · `minimal` |
-| **Hugging Face** (3) | model card · dataset card · Space README, each with validated YAML frontmatter |
-| **Design blocks** (6) | centered header · profile header · landing-page hero · CTA section · SVG footer · quiet footer |
-| **Companion docs** | CONTRIBUTING · CODE_OF_CONDUCT · SECURITY · SUPPORT · CHANGELOG · CITATION.cff · FUNDING · issue forms · PR template |
-| **Profile Actions** (6) | contribution snake · latest blog posts · WakaTime stats · metrics · 3D contribution calendar · community tic-tac-toe |
-
-Every widget URL in the profile templates was checked with `check_links.py`. Services that now fail, such as the public trophy and activity-graph hosts that return HTTP 402, are left out or replaced by self-hosted Actions.
-
-## How it works
+| **Facts** | `analyze_repo.py` reads manifests, lockfiles, scripts, env vars, Docker, CI and routes for 15 ecosystems: Node, Python, Rust, Go, JVM, Ruby, PHP, Dart, Elixir, .NET, C/C++, Deno, Swift, Zig and Haskell. Each one has a fixture and a unit test. |
+| **Claim check** | `verify_readme.py` checks commands, package-manager scripts, CLI flags, env vars and paths against the repo. |
+| **Architecture** | `import_graph.py` drafts a Mermaid diagram from real imports in Python, JS/TS, Go and Rust. |
+| **Score and drift** | `score_readme.py` grades structure, accessibility, links and drift from 0 to 100. |
+| **Platforms** | GitHub READMEs, Hugging Face model/dataset/Space cards with validated YAML, and PyPI/npm/GitLab ports. |
+| **Companion docs** | CONTRIBUTING, SECURITY, Code of Conduct, CITATION.cff, issue and PR templates. |
 
 ```mermaid
 flowchart LR
     accTitle: readme-forge workflow
-    accDescr: Scripts read the repository, then Claude writes and designs the README from those facts, then the scorer checks it in a loop.
+    accDescr: Scripts read the repository, Claude writes the README from those facts, then the verifier and scorer check it in a loop.
     repo[("Your repo")] --> facts["analyze_repo.py<br/>stack, commands, env, CI"]
     repo --> imports["import_graph.py<br/>architecture draft"]
     facts --> claude["Claude + references"]
     imports --> claude
-    claude --> design["make_banner.py<br/>header, footer, dividers"]
     claude --> readme["README.md"]
-    design --> readme
-    readme --> score["score_readme.py<br/>score, lint, drift, design"]
+    readme --> verify["verify_readme.py<br/>every claim vs the repo"]
+    readme --> score["score_readme.py<br/>score, lint, drift"]
+    verify -->|"fix or TODO each miss"| claude
     score -->|"fix until it passes"| claude
 ```
-
-Every script runs on its own with Python 3.8+ and no dependencies. See the [skill docs](readme-forge/README.md).
 
 ## Scripts
 
 | Script | What it does | Example |
 |---|---|---|
-| `analyze_repo.py` | Prints the repo's facts as JSON: languages, package manager, scripts, env vars, Docker, CI, license, Hugging Face files | `python readme-forge/scripts/analyze_repo.py . --compact` |
-| `import_graph.py` | Draws a Mermaid architecture draft from real imports (Python, JS/TS, Go, Rust) | `python readme-forge/scripts/import_graph.py . --mermaid` |
-| `score_readme.py` | Scores a README 0–100, lints it and checks it against the code | `python readme-forge/scripts/score_readme.py README.md --repo . --min 85` |
+| `analyze_repo.py` | Prints the repo's facts as JSON | `python readme-forge/scripts/analyze_repo.py . --compact` |
+| `verify_readme.py` | Checks every claim in a README against the repo | `python readme-forge/scripts/verify_readme.py README.md --repo .` |
+| `score_readme.py` | Scores a README 0–100, lints it and checks drift | `python readme-forge/scripts/score_readme.py README.md --repo . --min 85` |
+| `import_graph.py` | Draws a Mermaid architecture draft from real imports | `python readme-forge/scripts/import_graph.py . --mermaid` |
 | `check_links.py` | Finds dead links, broken badges and widgets that return error cards | `python readme-forge/scripts/check_links.py README.md` |
-| `make_banner.py` | Generates animated SVG headers, footers, dividers and buttons | `python readme-forge/scripts/make_banner.py --list` |
-| `fancy_text.py` | Converts text to Unicode bold, italic, mono and double-struck styles for profile headings | `python readme-forge/scripts/fancy_text.py "Hi, I'm Ada" --all` |
 
-Use `score_readme.py --min 85` in CI to stop a README from getting worse. This repo's own [CI](.github/workflows/ci.yml) does exactly that.
+This README passes its own checks: [CI](.github/workflows/ci.yml) runs `verify_readme.py --min-accuracy 100` and `score_readme.py --min 85` on it, plus the unit tests in `tests/`.
+
+## Optional: design and profiles
+
+Banners, CTA buttons and GitHub profile READMEs live in a separate plugin, so the core skill stays about accuracy:
+
+```bash
+claude plugin install readme-forge-design --marketplace tanmayai23/README-Editor-skill
+```
+
+It generates self-contained animated SVG headers in 20 styles. The newest four rebuild the look of WebGL shader scenes in plain SVG and CSS, so GitHub can render them: a spinning vortex, a light beam racing around the edge, voronoi glass and RGB-split blinds. The header above is `--style vortex` with the logo in its eye.
+
+<table>
+<tr>
+<td width="50%"><picture><source media="(prefers-color-scheme: dark)" srcset="readme-forge-design/assets/banners/beam-dark.svg"><img alt="beam banner style: a light beam racing around the edge over a nebula glow" src="readme-forge-design/assets/banners/beam-light.svg" width="100%"></picture></td>
+<td width="50%"><picture><source media="(prefers-color-scheme: dark)" srcset="readme-forge-design/assets/banners/prism-dark.svg"><img alt="prism banner style: RGB-split light blinds with a swipe reveal" src="readme-forge-design/assets/banners/prism-light.svg" width="100%"></picture></td>
+</tr>
+</table>
+
+It also has 19 profile README archetypes with tested widgets and 6 profile Actions. See the [design README](readme-forge-design/README.md) for every style.
 
 ## Troubleshooting
+
+<details>
+<summary>Install and run problems</summary>
 
 | Problem | Fix |
 |---|---|
 | `/plugin isn't available in this environment` | Run `claude plugin install readme-forge --marketplace tanmayai23/README-Editor-skill` in a normal terminal, then open a new chat |
 | `Unknown command: /readme-forge` after installing | Start a new Claude Code session. Plugins load at startup |
-| Two `readme-forge` skills, or the wrong one runs | You have both the plugin and a manual copy. Use `/readme-forge:readme-forge`, or delete `~/.claude/skills/readme-forge` |
-| `python: command not found` | Install Python 3.8+. On macOS and Linux, tell Claude to use `python3`. The skill accepts either |
-| Old behaviour after an update | `claude plugin marketplace update readme-forge`, then `claude plugin update readme-forge@readme-forge`, then restart |
+| Two `readme-forge` skills, or the wrong one runs | You have the plugin and a manual copy. Use `/readme-forge:readme-forge`, or delete `~/.claude/skills/readme-forge` |
+| `python: command not found` | Install Python 3.8+. On macOS and Linux, tell Claude to use `python3` |
 | Garbled `█` bars in Windows PowerShell | Run `[Console]::OutputEncoding = [Text.Encoding]::UTF8` once, or use Windows Terminal |
-| Widget images broken on your profile | Run `python readme-forge/scripts/check_links.py README.md`, then [report the widget](https://github.com/tanmayai23/README-Editor-skill/issues/new?template=broken_widget.yml) |
+
+</details>
 
 Something else? [Open an issue](https://github.com/tanmayai23/README-Editor-skill/issues/new?template=bug_report.yml) with your OS, Claude Code version (`claude --version`) and the error.
 
@@ -391,63 +197,38 @@ The scripts only read files on your machine. Only `check_links.py` uses the netw
 </details>
 
 <details>
+<summary><b>What can't the claim check verify?</b></summary>
+
+It works offline, so it can't tell whether `pip install NAME` resolves on PyPI or whether a command succeeds at runtime. Those claims are reported as unverifiable, never as correct. Commands written in plain prose, outside code, aren't extracted.
+</details>
+
+<details>
 <summary><b>What if it can't find something, like the install command?</b></summary>
 
-It leaves a `TODO` in the README and lists every TODO back to you. It never makes up commands, versions or benchmark numbers.
-</details>
-
-<details>
-<summary><b>Will the animated banners work on PyPI, npm or Hugging Face?</b></summary>
-
-GitHub renders them, including dark and light variants. Other platforms ignore `<picture>`, so ask for "a PyPI version" and the skill switches to absolute URLs and single images.
-</details>
-
-<details>
-<summary><b>Which languages get architecture diagrams?</b></summary>
-
-Python, JavaScript/TypeScript, Go and Rust. For other languages the skill still writes the README and sketches the diagram from the folder layout, marked as a draft.
+It leaves a `TODO` in the README and lists every TODO back to you.
 </details>
 
 ## Roadmap
 
-- [x] Project, profile and Hugging Face READMEs grounded in code
-- [x] 0–100 scorer with drift detection
-- [x] 16 animated banner styles with dark/light variants
-- [x] Claude Code plugin install
-- [ ] GitHub Action that comments the README score on pull requests ([#1](https://github.com/tanmayai23/README-Editor-skill/issues/1))
+- [x] Project and Hugging Face READMEs grounded in code, with tests for 15 ecosystems
+- [x] Claim-by-claim verification of commands, flags, env vars and paths
+- [x] GitHub Action that comments the score and claim check on pull requests ([#1](https://github.com/tanmayai23/README-Editor-skill/issues/1))
+- [ ] Published benchmark against Claude without the skill on 20 pinned third-party repos ([#12](https://github.com/tanmayai23/README-Editor-skill/issues/12))
 - [ ] Architecture diagrams for Java/Kotlin ([#3](https://github.com/tanmayai23/README-Editor-skill/issues/3)), C# ([#4](https://github.com/tanmayai23/README-Editor-skill/issues/4)), PHP and Ruby ([#5](https://github.com/tanmayai23/README-Editor-skill/issues/5))
-- [ ] Check that documented CLI flags and API routes exist in the code ([#6](https://github.com/tanmayai23/README-Editor-skill/issues/6))
-- [ ] More banner styles from the community ([#10](https://github.com/tanmayai23/README-Editor-skill/issues/10))
-- [ ] Weekly automatic widget health check ([#2](https://github.com/tanmayai23/README-Editor-skill/issues/2))
+- [ ] Check documented API routes against the code ([#6](https://github.com/tanmayai23/README-Editor-skill/issues/6))
 - [ ] Mermaid pre-rendering for PyPI, npm and Hugging Face ([#7](https://github.com/tanmayai23/README-Editor-skill/issues/7))
 
 See all [open issues](https://github.com/tanmayai23/README-Editor-skill/issues), or start with a [`good first issue`](https://github.com/tanmayai23/README-Editor-skill/issues?q=is%3Aopen+label%3A%22good+first+issue%22).
 
-<div align="center">
-
-### Start writing READMEs people actually read
-
-One command reads your code, designs the page and checks it.
-
-<a href="#quickstart"><picture><source media="(prefers-color-scheme: dark)" srcset=".github/assets/cta-primary-dark.svg"><img alt="Get started" src=".github/assets/cta-primary-light.svg" height="44"></picture></a>
-
-<sub>Free and open source · 2-minute setup</sub>
-
-</div>
-
 ## Contributing
 
-Issues and pull requests are welcome. Read [CONTRIBUTING.md](CONTRIBUTING.md) first. Good places to start:
-
-- **Report a broken widget** with the [widget form](https://github.com/tanmayai23/README-Editor-skill/issues/new?template=broken_widget.yml). Widget hosts change often, and this keeps the profile templates working.
-- **Add a banner style.** Include both the dark and light renders and keep the first frame complete.
-- **Share a README you made** in [Discussions](https://github.com/tanmayai23/README-Editor-skill/discussions).
+Issues and pull requests are welcome. Read [CONTRIBUTING.md](CONTRIBUTING.md) first; `python -m unittest discover -s tests` runs the same tests as CI. Using readme-forge or the Action in your own repo? [Tell us in Discussions](https://github.com/tanmayai23/README-Editor-skill/discussions); real-world reports are the most useful feedback we get.
 
 Please follow the [Code of Conduct](CODE_OF_CONDUCT.md). Report security issues privately as described in [SECURITY.md](SECURITY.md).
 
 ### Contributors
 
-Thanks to everyone who has helped build readme-forge. Code, design, docs, ideas and bug reports all count ([emoji key](https://allcontributors.org/emoji-key/)).
+Code, design, docs, ideas and bug reports all count ([emoji key](https://allcontributors.org/emoji-key/)).
 
 <!-- ALL-CONTRIBUTORS-LIST:START - Do not remove or modify this section -->
 <!-- prettier-ignore-start -->
@@ -466,24 +247,14 @@ Thanks to everyone who has helped build readme-forge. Code, design, docs, ideas 
 
 <!-- ALL-CONTRIBUTORS-LIST:END -->
 
-### Star history
-
-<a href="https://star-history.com/#tanmayai23/README-Editor-skill&Date">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=tanmayai23/README-Editor-skill&type=Date&theme=dark">
-    <img alt="Star history chart for readme-forge" src="https://api.star-history.com/svg?repos=tanmayai23/README-Editor-skill&type=Date" width="600">
-  </picture>
-</a>
-
-## Acknowledgements
-
-Built after studying [readme-md-generator](https://github.com/kefranabg/readme-md-generator), [The Documentation Compendium](https://github.com/race2infinity/The-Documentation-Compendium), [awesome-github-profile-readme](https://github.com/abhisheknaiidu/awesome-github-profile-readme), [awesome-github-profile-readme-templates](https://github.com/durgeshsamariya/awesome-github-profile-readme-templates) and [Best-README-Template](https://github.com/othneildrew/Best-README-Template). Widgets by [shields.io](https://shields.io), [github-readme-stats](https://github.com/anuraghazra/github-readme-stats), [readme-typing-svg](https://github.com/DenverCoder1/readme-typing-svg) and [skill-icons](https://github.com/tandpfun/skill-icons).
-
 ## License
 
 Distributed under the MIT License. See [LICENSE](LICENSE).
 
----
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset=".github/assets/divider-dark.svg">
+  <img alt="Section divider" src=".github/assets/divider-light.svg" width="100%">
+</picture>
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset=".github/assets/footer-dark.svg">

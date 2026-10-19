@@ -1,18 +1,30 @@
 {
   "name": "readme-forge",
-  "description": "README design and audit skill for Claude Code",
+  "description": "README skills for Claude Code: fact-checked READMEs (readme-forge) and an optional design layer (readme-forge-design)",
   "owner": { "name": "tanmayai23" },
   "plugins": [
     {
       "name": "readme-forge",
       "source": "./readme-forge",
-      "description": "Create, audit, design and fix READMEs, GitHub profile READMEs and Hugging Face cards from facts in your real code",
-      "version": "1.1.0",
+      "description": "Write, audit and fix READMEs from facts in your real code, and check every command, env var and path in them against the repo",
+      "version": "1.2.0",
       "author": { "name": "tanmayai23" },
       "homepage": "https://github.com/tanmayai23/README-Editor-skill",
       "repository": "https://github.com/tanmayai23/README-Editor-skill",
       "license": "MIT",
-      "keywords": ["readme", "documentation", "github-profile", "huggingface", "mermaid", "badges"],
+      "keywords": ["readme", "documentation", "hallucination", "linter", "huggingface", "mermaid"],
+      "category": "documentation"
+    },
+    {
+      "name": "readme-forge-design",
+      "source": "./readme-forge-design",
+      "description": "Optional design layer for readme-forge: animated SVG banners, CTA buttons, footers, and GitHub profile READMEs from 19 archetypes",
+      "version": "1.2.0",
+      "author": { "name": "tanmayai23" },
+      "homepage": "https://github.com/tanmayai23/README-Editor-skill",
+      "repository": "https://github.com/tanmayai23/README-Editor-skill",
+      "license": "MIT",
+      "keywords": ["readme", "banner", "svg", "github-profile", "design"],
       "category": "documentation"
     }
   ]

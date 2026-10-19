@@ -17,7 +17,8 @@ You need Python 3.8+ (standard library only). To try the skill end to end you al
 ```bash
 git clone https://github.com/tanmayai23/README-Editor-skill.git
 cd README-Editor-skill
-cp -r readme-forge ~/.claude/skills/readme-forge   # use your local copy as the skill
+cp -r readme-forge ~/.claude/skills/readme-forge                 # core skill: facts, verification, scoring
+cp -r readme-forge-design ~/.claude/skills/readme-forge-design   # optional: banners and profile READMEs
 ```
 
 ## Before you open a PR
@@ -25,10 +26,13 @@ cp -r readme-forge ~/.claude/skills/readme-forge   # use your local copy as the 
 Run the same checks as CI:
 
 ```bash
-python -m py_compile readme-forge/scripts/*.py
-python readme-forge/scripts/score_readme.py README.md --repo .
-python readme-forge/scripts/analyze_repo.py demo/sample-app --compact
+python -m unittest discover -s tests -v
+python -m py_compile readme-forge/scripts/*.py readme-forge-design/scripts/*.py action/report.py
+python readme-forge/scripts/score_readme.py README.md --repo . --min 85
+python readme-forge/scripts/verify_readme.py README.md --repo . --min-accuracy 100
 ```
+
+Changed detection logic in `analyze_repo.py`, `import_graph.py` or `verify_readme.py`? Add a fixture under `tests/fixtures/` and a test that fails without your change.
 
 - Branch from `main`: `git checkout -b feat/short-description`.
 - Keep each PR to one change, and add a line to `CHANGELOG.md` under **Unreleased**.
@@ -38,8 +42,9 @@ python readme-forge/scripts/analyze_repo.py demo/sample-app --compact
 
 - **Scripts stay standard-library only.** Nobody should need a `pip install` step.
 - **Never invent facts.** Anything the analyzer can't find becomes a `TODO`, not a guess.
-- **Banners:** ship a dark and a light SVG, make the first frame complete, and honour `prefers-reduced-motion`. Generate them with `make_banner.py`.
-- **Widgets:** add a URL to `references/widgets.md` only after `check_links.py` returns 200 for it, and note the date you tested it.
+- **Every claim in a README must pass `verify_readme.py`.** That includes this repo's own README.
+- **Banners** (`readme-forge-design`): ship a dark and a light SVG, make the first frame complete, and animate with CSS, not SMIL, so `prefers-reduced-motion` stops it. Regenerate the gallery with `python readme-forge-design/scripts/make_banner.py --gallery readme-forge-design/assets/banners`.
+- **Widgets:** add a URL to `readme-forge-design/references/widgets.md` only after `check_links.py` returns 200 for it, and note the date you tested it.
 - **Templates:** every placeholder uses `{{UPPER_SNAKE}}` so the scorer flags any that are left over.
 
 ## Code of conduct

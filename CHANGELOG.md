@@ -4,7 +4,17 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-10-19
+
+This release makes accuracy the headline: every README the skill writes is checked claim by claim against the code, and the design features move to an optional plugin.
+
 ### Added
+
+- `scripts/verify_readme.py`: extracts every command, script, flag, env var and path from a README and checks each one against the repository. Reports verified / not found / unverifiable and an accuracy percentage; `--min-accuracy` gates CI. The skill now requires zero "not found" claims before it finishes.
+- GitHub Action (`uses: tanmayai23/README-Editor-skill@v1`): scores and fact-checks READMEs on pull requests, upserts one PR comment, writes the job summary, and can fail below `min-score` / `min-accuracy`. Forked PRs degrade to a warning (#1).
+- Unit tests (`python -m unittest discover -s tests`) with fixtures for all 15 ecosystems `analyze_repo.py` detects, for `import_graph.py` in Python, JS/TS, Go and Rust, for the verifier and for the Action.
+- Swift (SwiftPM), Zig and Haskell (Stack, Cabal) detection; Deno tasks and `Deno.env.get`; `mix phx.server` for Phoenix.
+- Shader banner styles in readme-forge-design, rebuilt in SVG from the look of no-code WebGL shader scenes: `vortex` (spinning blades, liquified contour swirl, condensed serif caps; logo sits in the eye), `beam` (light racing around the edge over a nebula), `shatter` (voronoi glass with glowing cracks), `prism` (RGB-split blinds with a swipe reveal). `vortex` footer, `beam` divider, and `inferno` and `prism` palettes. All four animate with CSS only, so reduced motion stops them.
 
 - `make_banner.py --style pulse`: soft concentric rings breathing behind the title, with dark and light variants (#15, thanks @Sultanast01).
 - `make_banner.py --href URL` for headers and footers: prints the banner already wrapped in a link, in the form GitHub renders correctly.
@@ -15,8 +25,18 @@ All notable changes to this project are documented here. The format follows [Kee
 - Spotify now-playing widget (kittinan/spotify-github-profile) in `widgets.md`.
 - `score_readme.py` reports a `<picture>` that GitHub empties, either opened after `<a href>` on the same line or glued to the paragraph line above it.
 
+### Changed
+
+- **Split into two plugins.** `readme-forge` keeps facts, verification, scoring, Hugging Face cards and companion docs. Banners, CTA buttons, design templates, profile READMEs, widgets and `fancy_text.py` move to the optional `readme-forge-design` plugin (`claude plugin install readme-forge-design --marketplace tanmayai23/README-Editor-skill`). Releases ship `readme-forge.zip` and `readme-forge-design.zip`.
+- The project README leads with the claim check, drops the banner gallery (now in readme-forge-design), the badge wall and the star-history chart, passes `verify_readme.py` at 100%, and uses the new vortex header.
+- `pulse` banners animate with CSS instead of SMIL, so reduced motion stops them.
+- The release job fails when the tag doesn't match the plugin version or the CHANGELOG has no section for it (#19).
+
 ### Fixed
 
+- `score_readme.py` counted `<img>` written inside inline code or code blocks as a real image and reported missing alt text.
+- `analyze_repo.py`: Java's `src/main/java/com/example/` was treated as a sample folder, hiding its env vars; Go modules with only `cmd/<x>` got an `go install` path that fails; justfile assignments were listed as recipes and recipes with default parameters were missed.
+- `import_graph.py`: tsconfig path aliases were lost when the file had a `//` comment; `from . import x` linked to `__init__.py` instead of the submodule; `go.mod` in a subfolder wasn't found; Rust `mod x;` inside `net/mod.rs` and nested `use crate::` paths resolved to the wrong file (#25, #31).
 - Linked banners and CTA buttons showed the light variant in dark mode and opened the SVG file instead of the link. `make_banner.py --kind button` printed `<a href><picture>` on one line with the `<source>` on the next, and GitHub drops the `<source>` from that form. The snippet now puts `<a>`, `<picture>` and `</a>` on separate lines.
 - `hero-landing.md`, `header-profile.md` and `header-centered.md` templates: blank line after `<a id="top"></a>`, so the header `<picture>` no longer gets emptied.
 

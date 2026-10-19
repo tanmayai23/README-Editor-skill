@@ -37,7 +37,7 @@ FILLER_WORDBOUND = {"simply", "robust", "leverage", "leverages", "delve", "obvio
 GITHUB_ROUTE = re.compile(r"^(\.\./)+(actions|issues|pulls|wiki|releases|discussions|blob|tree|graphs|network|stargazers|fork|security|projects|compare|commits|labels|milestones)(/|$)")
 
 FRAGILE_WIDGET_HOSTS = {
-    "github-readme-stats.vercel.app": "public github-readme-stats instance is best-effort/rate-limited; self-host on Vercel or use the GitHub Action (see references/widgets.md)",
+    "github-readme-stats.vercel.app": "public github-readme-stats instance is best-effort/rate-limited; self-host on Vercel or use the GitHub Action (see widgets.md in readme-forge-design)",
     "komarev.com/ghpvc": None,
 }
 DEAD_HOSTS = {
@@ -165,8 +165,9 @@ def find_section(hs, *patterns):
 
 
 def images(text: str):
+    """Markdown and <img> images outside code: `<img>` in inline code is prose, not an image."""
     out = []
-    for i, line in enumerate(text.splitlines(), 1):
+    for i, line in enumerate(strip_code(text).splitlines(), 1):
         for m in re.finditer(r"!\[([^\]]*)\]\(([^)\s]+)(?:\s+\"[^\"]*\")?\)", line):
             out.append({"alt": m.group(1).strip(), "src": m.group(2), "line": i, "kind": "md"})
         for m in re.finditer(r"<img\b([^>]*)>", line, re.I):
@@ -424,7 +425,7 @@ def design_lints(r: Report, text: str, imgs, readme_path: Path):
     has_picture = "prefers-color-scheme" in text or "-mode-only" in text
     banners = [s_ for s_ in seen if re.search(r"(header|banner|hero|footer|logo)", s_, re.I)]
     if banners and not has_picture:
-        r.add("INFO", "design", f"{banners[0]} has no dark/light variant switch; use <picture> + prefers-color-scheme (make_banner.py writes both)")
+        r.add("INFO", "design", f"{banners[0]} has no dark/light variant switch; use <picture> + prefers-color-scheme (readme-forge-design's make_banner.py writes both)")
     # one badge style per page
     styles = set()
     for im in imgs:
