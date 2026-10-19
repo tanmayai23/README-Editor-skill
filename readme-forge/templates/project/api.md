@@ -1,5 +1,5 @@
 <!-- readme-forge template: API / backend service. Replace {{…}}; delete sections with no real content. -->
-<!-- Design pass: swap the title block for templates/design/header-centered.md (generated banner) when the project wants a visual header. -->
+<!-- Optional design pass (readme-forge-design plugin): swap the title block for its templates/design/header-centered.md when the project wants a generated banner. -->
 <a id="top"></a>
 # {{NAME}}
 

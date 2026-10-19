@@ -1,0 +1,14 @@
+[tool.poetry]
+name = "poetry-api"
+version = "1.0.0"
+description = "Poetry FastAPI service"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+fastapi = "^0.110"
+
+[tool.poetry.scripts]
+poetry-api = "poetry_api.main:run"
+
+[tool.pytest.ini_options]
+addopts = "-q"

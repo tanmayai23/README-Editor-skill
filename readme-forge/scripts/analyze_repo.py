@@ -89,6 +89,7 @@ ENV_PATTERNS = [
     re.compile(r"env::var\(\s*\"([A-Z][A-Z0-9_]{2,})\""),
     re.compile(r"System\.getenv\(\s*\"([A-Z][A-Z0-9_]{2,})\""),
     re.compile(r"ENV\[['\"]([A-Z][A-Z0-9_]{2,})['\"]\]"),
+    re.compile(r"Deno\.env\.get\(\s*['\"]([A-Z][A-Z0-9_]{2,})['\"]"),
 ]
 ENV_IGNORE = {"NODE_ENV", "PATH", "HOME", "PWD", "USER", "CI", "DEBUG", "PORT_", "TERM", "SHELL"}
 
@@ -194,10 +195,18 @@ def mini_toml(text: str) -> dict:
     return data
 
 
+def is_sample_dir(root: Path, dirpath: str, d: str) -> bool:
+    """demo/, examples/ ... hold sample code, except inside JVM source sets (src/main/java/com/example)."""
+    if d.lower() not in SAMPLE_DIRS:
+        return False
+    parent = os.path.relpath(dirpath, root).replace(os.sep, "/")
+    return not re.search(r"(^|/)src/(main|test)(/|$)", parent)
+
+
 def walk(root: Path):
     count = 0
     for dirpath, dirnames, filenames in os.walk(root):
-        dirnames[:] = [d for d in dirnames if d not in IGNORE_DIRS and d.lower() not in SAMPLE_DIRS
+        dirnames[:] = [d for d in dirnames if d not in IGNORE_DIRS and not is_sample_dir(root, dirpath, d)
                        and (not d.startswith(".") or d in KEEP_DOT_DIRS)]
         for name in filenames:
             count += 1
@@ -211,7 +220,7 @@ def find_example_dirs(root: Path, limit: int = 10):
     for dirpath, dirnames, _ in os.walk(root):
         keep = []
         for d in dirnames:
-            if d.lower() in SAMPLE_DIRS:
+            if is_sample_dir(root, dirpath, d):
                 found.append(rel(root, Path(dirpath) / d))
             elif d not in IGNORE_DIRS and not d.startswith("."):
                 keep.append(d)
@@ -467,7 +476,13 @@ def analyze(root: Path) -> dict:
         gov = re.search(r"^go\s+(\S+)", txt, re.M)
         if m:
             package["go_module"] = m.group(1)
-            package["go_install"] = f"go install {m.group(1)}@latest" if (root / "main.go").exists() or (root / "cmd").is_dir() else f"go get {m.group(1)}"
+            cmd_dirs = sorted(d.name for d in (root / "cmd").iterdir() if d.is_dir()) if (root / "cmd").is_dir() else []
+            if (root / "main.go").exists():
+                package["go_install"] = f"go install {m.group(1)}@latest"
+            elif cmd_dirs:  # no main package at the module root: install the commands under cmd/
+                package["go_install"] = f"go install {m.group(1)}/cmd/{cmd_dirs[0] if len(cmd_dirs) == 1 else '...'}@latest"
+            else:
+                package["go_install"] = f"go get {m.group(1)}"
         if gov:
             package["go_version"] = gov.group(1)
         commands.update({"build": "go build ./...", "test": "go test ./..."})
@@ -508,6 +523,7 @@ def analyze(root: Path) -> dict:
         commands.update({"install": "mix deps.get", "test": "mix test"})
         if "phoenix" in read_text(top["mix.exs"]):
             frameworks.add("Phoenix")
+            commands.setdefault("run", "mix phx.server")
     csproj = [p for p in files if p.suffix in (".csproj", ".sln")]
     if csproj:
         manifests.append(rel(root, csproj[0]))
@@ -516,8 +532,35 @@ def analyze(root: Path) -> dict:
         manifests.append("CMakeLists.txt")
         commands.setdefault("build", "cmake -B build && cmake --build build")
     if "deno.json" in top or "deno.jsonc" in top:
-        manifests.append("deno.json")
+        dj = "deno.json" if "deno.json" in top else "deno.jsonc"
+        manifests.append(dj)
         frameworks.add("Deno")
+        commands.setdefault("test", "deno test")
+        txt = re.sub(r"^\s*//.*$", "", read_text(top[dj]), flags=re.M)
+        try:
+            tasks = (json.loads(txt) or {}).get("tasks") or {}
+        except (ValueError, AttributeError):
+            tasks = {}
+        if isinstance(tasks, dict):
+            scripts = commands.setdefault("scripts", {})
+            for k, v in tasks.items():
+                scripts.setdefault(k, {"run": f"deno task {k}", "does": v if isinstance(v, str) else (v or {}).get("command")})
+    if "Package.swift" in top:
+        manifests.append("Package.swift")
+        commands.update({"build": "swift build", "test": "swift test", "run": "swift run"})
+        if "vapor" in read_text(top["Package.swift"]).lower():
+            frameworks.add("Vapor")
+    if "build.zig" in top:
+        manifests.append("build.zig")
+        commands.update({"build": "zig build", "test": "zig build test"})
+    cabal = sorted(n for n in top if n.endswith(".cabal"))
+    if "stack.yaml" in top:
+        manifests.append("stack.yaml")
+        manifests += cabal[:1]
+        commands.update({"build": "stack build", "test": "stack test"})
+    elif cabal:
+        manifests.append(cabal[0])
+        commands.update({"build": "cabal build", "test": "cabal test"})
 
     # ---- Make / Just / Task ------------------------------------------------
     for mf in ("Makefile", "makefile", "GNUmakefile"):
@@ -526,7 +569,7 @@ def analyze(root: Path) -> dict:
             commands["make_targets"] = sorted(set(t for t in targets if t not in (".PHONY",)))[:40]
     if "justfile" in top or "Justfile" in top:
         jf = top.get("justfile") or top.get("Justfile")
-        commands["just_recipes"] = sorted(set(re.findall(r"^([a-zA-Z][\w\-]*)\s*(?:[\w\s]*)?:", read_text(jf), re.M)))[:40]
+        commands["just_recipes"] = sorted(set(re.findall(r"^([a-zA-Z][\w\-]*)[^:\n]*:(?!=)", read_text(jf), re.M)))[:40]
     if "Taskfile.yml" in top:
         commands["taskfile"] = True
 
@@ -847,14 +890,15 @@ def guess_type(f: dict) -> str:
     if fw & {"PyTorch", "TensorFlow", "JAX", "Transformers", "scikit-learn", "Keras", "Lightning", "Diffusers"}:
         return "ml-project"
     cli_fw = {"Commander (CLI)", "yargs (CLI)", "oclif (CLI)", "Click (CLI)", "Typer (CLI)", "clap (CLI)", "Cobra (CLI)"}
-    server_fw = {"Express", "Fastify", "NestJS", "FastAPI", "Flask", "Gin", "Echo", "Fiber", "Axum", "Actix Web", "Spring Boot", "Hono", "Koa", "Phoenix"}
+    server_fw = {"Express", "Fastify", "NestJS", "FastAPI", "Flask", "Gin", "Echo", "Fiber", "Axum", "Actix Web", "Spring Boot", "Hono", "Koa", "Phoenix", "Vapor"}
     if fw & cli_fw or (f["bins"] and not fw & server_fw and not f["http_routes"]):
         return "cli"
     if fw & {"Next.js", "React", "Vue", "Nuxt", "Svelte", "SvelteKit", "Angular", "Astro", "Remix", "Ruby on Rails", "Laravel", "Django", "Streamlit", "Gradio", "Flutter", "React Native", "Expo", "Electron", "Tauri"}:
         return "webapp" if not fw & {"Flutter", "React Native", "Expo"} else "mobile"
     if f["http_routes"] or fw & server_fw:
         return "api"
-    if f["package"].get("publishable_npm") or f["package"].get("publishable_pypi") or "Cargo.toml" in f["manifests"] or "go.mod" in f["manifests"]:
+    if f["package"].get("publishable_npm") or f["package"].get("publishable_pypi") or any(
+            m in ("Cargo.toml", "go.mod", "Package.swift", "build.zig", "stack.yaml") or m.endswith(".cabal") for m in f["manifests"]):
         return "library"
     if f.get("deploy_hints") and any(h in ("terraform", "k8s", "helm") for h in f["deploy_hints"]):
         return "infra"

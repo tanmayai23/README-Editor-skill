@@ -1,0 +1,15 @@
+{
+  "name": "yarn-app",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "start": "node server.js",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "next": "14.2.0",
+    "react": "^18.3.1"
+  }
+}

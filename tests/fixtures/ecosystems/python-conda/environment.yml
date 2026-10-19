@@ -1,0 +1,4 @@
+name: research
+dependencies:
+  - python=3.11
+  - numpy

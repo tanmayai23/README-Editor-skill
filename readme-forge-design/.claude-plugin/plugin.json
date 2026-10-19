@@ -1,0 +1,10 @@
+{
+  "name": "readme-forge-design",
+  "version": "1.2.0",
+  "description": "Optional design layer for readme-forge: animated SVG banners (shader vortex, edge beam, voronoi shatter, RGB prism and 16 more), CTA buttons, footers, and GitHub profile READMEs from 19 archetypes",
+  "author": { "name": "tanmayai23" },
+  "homepage": "https://github.com/tanmayai23/README-Editor-skill",
+  "repository": "https://github.com/tanmayai23/README-Editor-skill",
+  "license": "MIT",
+  "keywords": ["readme", "banner", "svg", "github-profile", "design"]
+}

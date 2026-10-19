@@ -1,0 +1,26 @@
+{
+  "file": "demo/sample-app/README.before.md",
+  "mode": "project",
+  "score": 45,
+  "grade": "F",
+  "categories": {
+    "identity": {"score": 10, "max": 15},
+    "getting-started": {"score": 13, "max": 25},
+    "structure": {"score": 6, "max": 15},
+    "visuals": {"score": 4, "max": 10},
+    "community": {"score": 3, "max": 15},
+    "quality": {"score": 3.6, "max": 20},
+    "drift": {"score": 9.5, "max": 10}
+  },
+  "findings": [
+    {"level": "ERROR", "category": "getting-started", "message": "no copy-pasteable shell commands in code blocks", "line": null},
+    {"level": "ERROR", "category": "community", "message": "no License section", "line": null},
+    {"level": "ERROR", "category": "accessibility", "message": "image without alt text: screenshot.png", "line": 10},
+    {"level": "ERROR", "category": "links", "message": "relative link/image target not found: screenshot.png", "line": 10},
+    {"level": "WARN", "category": "identity", "message": "no Features/Overview section", "line": null},
+    {"level": "WARN", "category": "structure", "message": "fewer than 3 sections (H2); README may be too thin", "line": null},
+    {"level": "WARN", "category": "quality", "message": "filler/marketing phrase 'blazing fast' — replace with a concrete fact", "line": 3},
+    {"level": "WARN", "category": "quality", "message": "ping @octo-org/team | <b>html</b>", "line": 4},
+    {"level": "INFO", "category": "identity", "message": "no status badges (build, version, license)", "line": null}
+  ]
+}

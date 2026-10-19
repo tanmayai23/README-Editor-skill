@@ -1,0 +1,2 @@
+defmodule Shop do
+end

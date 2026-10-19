@@ -1,0 +1,14 @@
+{
+  "name": "bun-cli",
+  "version": "0.1.0",
+  "bin": {
+    "bun-cli": "./cli.ts"
+  },
+  "scripts": {
+    "dev": "bun --watch cli.ts",
+    "test": "bun test"
+  },
+  "dependencies": {
+    "commander": "^12.0.0"
+  }
+}

@@ -1,0 +1,1143 @@
+#!/usr/bin/env python3
+"""Generate self-contained, animated SVG headers, footers and dividers for READMEs.
+
+Stdlib only. No external services: the SVGs are committed to the repo, so they never
+rate-limit or go down. Every file ships a dark and a light variant and uses system
+font stacks (external fonts are blocked inside <img>). prefers-reduced-motion stops
+every CSS animation; orbit, terminal, bold, ribbon and the spotlight pill still use
+SMIL, which browsers keep playing (issue #32).
+
+Usage:
+  python make_banner.py --style aurora --title "orbit-api" --subtitle "Subscription billing for SaaS" --out assets/
+  python make_banner.py --kind footer --style wave --title "Built with care" --out assets/
+  python make_banner.py --kind divider --style aurora --out assets/
+  python make_banner.py --list                       # styles and palettes
+  python make_banner.py --gallery assets/gallery     # every style, dark + light, + gallery.md
+
+Options:
+  --kind header|footer|divider   (default header)
+  --style NAME                   see --list
+  --palette NAME                 see --list (default: the style's own)
+  --accent "#RRGGBB"             override the main accent colour
+  --title / --subtitle / --tag   text (tag = small caps line above the title)
+  --width 1280 --height 320      canvas (footer default 160, divider default 24)
+  --theme dark|light|both        (default both)
+  --static                       no animation
+  --out DIR                      output folder (default .)
+  --href URL                     make the image clickable (prints a GitHub-safe <a> wrapper)
+Prints the <picture> snippet to paste into the README. Paste it as printed: GitHub breaks
+dark mode and the link if <a> and <picture> share a line while the <source> is on the next.
+"""
+from __future__ import annotations
+
+import argparse
+import base64
+import os
+import html
+import math
+import random
+import sys
+from pathlib import Path
+
+SANS = "'Segoe UI', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Inter, Roboto, Arial, sans-serif"
+MONO = "ui-monospace, 'SF Mono', 'Cascadia Code', 'JetBrains Mono', Menlo, Consolas, monospace"
+
+# Each palette: dark + light. bg0/bg1 = background gradient, fg = title, muted = subtitle,
+# a1..a3 = accents. Contrast of fg/muted on bg checked ≥ 4.5:1.
+PALETTES = {
+    "ember":  {"dark": dict(bg0="#0B1020", bg1="#1B2550", fg="#F5F7FF", muted="#AAB3D1", a1="#FF8A3D", a2="#FF5D8F", a3="#7C5CFF"),
+               "light": dict(bg0="#FFF8F1", bg1="#FFE9D6", fg="#1A1530", muted="#5B5470", a1="#E5641A", a2="#D93A6E", a3="#6A4CF0")},
+    "ocean":  {"dark": dict(bg0="#04121F", bg1="#0A2A43", fg="#EAF6FF", muted="#9CC3DD", a1="#2EC5FF", a2="#3DDC97", a3="#4F7CFF"),
+               "light": dict(bg0="#F2FAFF", bg1="#DDF1FF", fg="#082036", muted="#3F607A", a1="#0089C7", a2="#119E68", a3="#2F5BE0")},
+    "violet": {"dark": dict(bg0="#0E0A1F", bg1="#24164A", fg="#F6F2FF", muted="#B9AEDB", a1="#A78BFA", a2="#F472B6", a3="#60A5FA"),
+               "light": dict(bg0="#FAF7FF", bg1="#EEE6FF", fg="#1E1238", muted="#5E5280", a1="#7C3AED", a2="#DB2777", a3="#2563EB")},
+    "mint":   {"dark": dict(bg0="#06140F", bg1="#0D2A20", fg="#ECFFF6", muted="#9FCDB8", a1="#3DDC97", a2="#2EC5FF", a3="#C6F432"),
+               "light": dict(bg0="#F3FFF9", bg1="#DDF7EA", fg="#0B2A1E", muted="#3E6656", a1="#0E9F6E", a2="#0284C7", a3="#65A30D")},
+    "sunset": {"dark": dict(bg0="#1A0B1E", bg1="#3B1238", fg="#FFF3EE", muted="#E3B5BE", a1="#FF7A59", a2="#FFC857", a3="#FF4F9A"),
+               "light": dict(bg0="#FFF6F2", bg1="#FFE3DA", fg="#2B0F1E", muted="#7A4A5A", a1="#E8552F", a2="#C98A00", a3="#D6336C")},
+    "mono":   {"dark": dict(bg0="#0A0A0A", bg1="#1C1C1C", fg="#FAFAFA", muted="#A3A3A3", a1="#FAFAFA", a2="#737373", a3="#D4D4D4"),
+               "light": dict(bg0="#FFFFFF", bg1="#F2F2F2", fg="#0A0A0A", muted="#525252", a1="#0A0A0A", a2="#A3A3A3", a3="#404040")},
+    "cyber":  {"dark": dict(bg0="#05010D", bg1="#140A2E", fg="#F8F5FF", muted="#B7A6E8", a1="#00F0FF", a2="#FF2BD6", a3="#FFE600"),
+               "light": dict(bg0="#F7F5FF", bg1="#E9E3FF", fg="#140A2E", muted="#4F4475", a1="#008C99", a2="#C2179F", a3="#9A8600")},
+}
+
+# Premium dark palettes (dark-design galleries: never pure black, layered surfaces, hairline borders,
+# one saturated accent). Each still ships a light variant.
+PALETTES.update({
+    "midnight": {"dark": dict(bg0="#08090A", bg1="#111216", fg="#F7F8F8", muted="#8A8F98", a1="#7C83FF", a2="#C084FC", a3="#38BDF8", surface="#141518", line="#FFFFFF"),
+                 "light": dict(bg0="#FBFBFC", bg1="#F1F2F4", fg="#0D0E10", muted="#5C616B", a1="#5E6AD2", a2="#9333EA", a3="#0284C7", surface="#FFFFFF", line="#0D0E10")},
+    "carbon":   {"dark": dict(bg0="#000000", bg1="#0A0A0A", fg="#EDEDED", muted="#A1A1A1", a1="#FFFFFF", a2="#3B82F6", a3="#A855F7", surface="#111111", line="#FFFFFF"),
+                 "light": dict(bg0="#FFFFFF", bg1="#FAFAFA", fg="#0A0A0A", muted="#525252", a1="#0A0A0A", a2="#2563EB", a3="#9333EA", surface="#FFFFFF", line="#0A0A0A")},
+    "ghost":    {"dark": dict(bg0="#070A12", bg1="#0E1424", fg="#F2F6FF", muted="#9AA7C2", a1="#19C3EC", a2="#8B4FD1", a3="#3D7FD8", surface="#101727", line="#FFFFFF"),
+                 "light": dict(bg0="#F8FAFE", bg1="#EEF2FB", fg="#0C131D", muted="#4A5568", a1="#0B7FAA", a2="#6E35A8", a3="#2F6CC0", surface="#FFFFFF", line="#0C131D")},
+    "obsidian": {"dark": dict(bg0="#0E1111", bg1="#161A1A", fg="#EDEFEF", muted="#8F9A99", a1="#3ECF8E", a2="#2DD4BF", a3="#A3E635", surface="#1A1F1F", line="#FFFFFF"),
+                 "light": dict(bg0="#F8FAF9", bg1="#EEF3F1", fg="#0E1111", muted="#4B5655", a1="#0F9F6A", a2="#0D9488", a3="#4D7C0F", surface="#FFFFFF", line="#0E1111")},
+})
+
+# ShaderGradient's own presets (ruucm/shadergradient presets.ts: c1/c2/c3), as banner palettes.
+# Dark variant = the preset on a deep base; light variant = same hues on a soft base with darker text.
+def _preset(c1, c2, c3, base_dark="#07070B", base_light="#FBF8F6"):
+    return {"dark": dict(bg0=base_dark, bg1="#12121A", fg="#FFFFFF", muted="#E4E2EE", a1=c1, a2=c2, a3=c3, surface="#15151D", line="#FFFFFF"),
+            "light": dict(bg0=base_light, bg1="#F1ECE8", fg="#14121A", muted="#4A4652", a1=c1, a2=c2, a3=c3, surface="#FFFFFF", line="#14121A")}
+
+
+PALETTES.update({
+    "halo":        _preset("#FF5005", "#DBBA95", "#D0BCE1"),
+    "pensive":     _preset("#809BD6", "#910AFF", "#AF38FF"),
+    "interstella": _preset("#73BFC4", "#FF810A", "#8DA0CE"),
+    "universe":    _preset("#5606FF", "#FE8989", "#2A1F5C"),
+    "mandarin":    _preset("#FF6A1A", "#C73C00", "#FD4912", base_dark="#0C0A09"),
+    "nighty":      _preset("#606080", "#8D7DCA", "#3A3A55"),
+})
+
+# WebGL-shader looks (no-code shader galleries built with Unicorn Studio: vortex, edge beam,
+# voronoi shatter, RGB blinds). "prism" holds the three channel colours; light mode switches
+# them to cyan/magenta/yellow and multiplies instead of screening.
+PALETTES.update({
+    "inferno": {"dark": dict(bg0="#0A0604", bg1="#150A06", fg="#F6E1CF", muted="#C2A493", a1="#FF3B1F", a2="#FF7A3D", a3="#9E1B0B", surface="#140B07", line="#FF3B1F"),
+                "light": dict(bg0="#FBF4EE", bg1="#F4E5D8", fg="#1A0D08", muted="#6B4A3C", a1="#D42A0E", a2="#DD5A17", a3="#8A1406", surface="#FFFFFF", line="#B8240C")},
+    "prism":   {"dark": dict(bg0="#050507", bg1="#0C0C12", fg="#F5F5FA", muted="#A9A9B8", a1="#FF2D55", a2="#2DFF9A", a3="#2D7BFF", surface="#101016", line="#FFFFFF"),
+                "light": dict(bg0="#FAFAFC", bg1="#F0F0F5", fg="#0B0B12", muted="#4E4E5C", a1="#00B8D9", a2="#E6007E", a3="#F2C200", surface="#FFFFFF", line="#0B0B12")},
+})
+
+STYLES = {
+    # name: (default palette, description)
+    "aurora":        ("violet", "drifting mesh-gradient light, modern SaaS"),
+    "synthwave":     ("sunset", "3D perspective grid floor + striped sun, retro-futurism"),
+    "isometric":     ("ocean",  "3D isometric cube stack that floats, infra/dev-tools"),
+    "orbit":         ("ember",  "3D tilted orbits with revolving planets, platforms/ecosystems"),
+    "glass":         ("violet", "frosted-glass card over moving colour blobs"),
+    "terminal":      ("mint",   "code window that types the title, CLIs and libraries"),
+    "neon":          ("cyber",  "glowing neon outline title, games/creative"),
+    "wave":          ("ocean",  "layered animated waves (also a footer)"),
+    "blueprint":     ("ocean",  "engineering grid with lines drawing themselves"),
+    "constellation": ("ember",  "twinkling particle network, AI/data"),
+    "minimal":       ("mono",   "clean type, one accent line drawing in"),
+    "bold":          ("ember",  "oversized type with a moving gradient fill"),
+    "shader":        ("halo", "grainy flowing 3D colour field (ShaderGradient look)"),
+    "spotlight":     ("midnight", "dark landing-page hero: masked grid, light beam, announcement pill, gradient title"),
+    "ribbon":        ("violet", "twisting silk ribbon of light strands, 3D depth"),
+    "pulse":         ("ocean",  "soft glowing rings expanding behind the title"),
+    "vortex":        ("inferno", "spinning blade vortex over liquid swirl contours, condensed serif title"),
+    "beam":          ("ghost",  "light beam racing around the edge over a nebula glow"),
+    "shatter":       ("ghost",  "voronoi glass shards with glowing cracks and a light sweep"),
+    "prism":         ("prism",  "RGB-split light blinds with a swipe reveal"),
+}
+# Styles whose own layout places the logo (everything else gets it on the left).
+LOGO_INSIDE = {"spotlight", "vortex"}
+
+
+def esc(s: str) -> str:
+    return html.escape(s or "", quote=True)
+
+
+def title_size(text: str, width: int, height: int, base: float, mono=False) -> int:
+    """Estimate a font size that fits ~80% of the width (no text measuring in SVG-as-image)."""
+    ch = max(len(text), 1)
+    per = 0.62 if mono else 0.56
+    fit = (width * 0.80) / (ch * per)
+    return int(max(18, min(base, fit, height * 0.32)))
+
+
+class Ctx:
+    def __init__(self, a, theme):
+        self.kind, self.style, self.theme = a.kind, a.style, theme
+        self.W, self.H = a.width, a.height
+        pal = PALETTES[a.palette or STYLES[a.style][0]][theme]
+        self.c = dict(pal)
+        if a.accent:
+            self.c["a1"] = a.accent
+        self.title, self.sub, self.tag = a.title or "", a.subtitle or "", a.tag or ""
+        self.logo = getattr(a, "logo_uri", None)
+        # With a side logo, keep centred text clear of it.
+        self.text_w = self.W - 2 * (self.H * 0.62 + self.H * 0.2) if self.logo and a.kind == "header" and a.style not in LOGO_INSIDE else self.W
+        self.animate = not a.static
+        self.rng = random.Random(f"{a.style}{a.title}{theme}")
+        self.defs, self.css, self.body = [], [], []
+
+
+# ---------------------------------------------------------------- shared pieces
+def bg_rect(x: Ctx, radius=0):
+    c = x.c
+    x.defs.append(f'<linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="{c["bg0"]}"/><stop offset="1" stop-color="{c["bg1"]}"/></linearGradient>')
+    x.body.append(f'<rect width="{x.W}" height="{x.H}" rx="{radius}" fill="url(#bg)"/>')
+
+
+def text_block(x: Ctx, cx=None, anchor="middle", y_center=None, mono=False, size=None, glow=False, fill=None):
+    """Tag + title + subtitle, vertically centred around y_center."""
+    W, H, c = x.W, x.H, x.c
+    cx = W / 2 if cx is None else cx
+    y_center = H / 2 if y_center is None else y_center
+    fam = MONO if mono else SANS
+    ts = size or title_size(x.title, x.text_w if anchor == "middle" else W * 0.62, H, 72 if x.kind == "header" else 40, mono)
+    ss = max(14, int(ts * 0.34))
+    tg = max(11, int(ts * 0.2))
+    lines_h = (tg * 1.9 if x.tag else 0) + ts + (ss * 1.7 if x.sub else 0)
+    y = y_center - lines_h / 2
+    out = []
+    if x.tag:
+        y += tg
+        out.append(f'<text class="tag fade d1" x="{cx}" y="{y:.1f}" text-anchor="{anchor}" font-family="{SANS}" font-size="{tg}" font-weight="700" letter-spacing="{tg * 0.32:.1f}" fill="{c["a1"]}">{esc(x.tag.upper())}</text>')
+        y += tg * 0.9
+    y += ts * 0.92
+    filt = ' filter="url(#glow)"' if glow else ""
+    out.append(f'<text class="title fade d2" x="{cx}" y="{y:.1f}" text-anchor="{anchor}" font-family="{fam}" font-size="{ts}" font-weight="800" letter-spacing="{-ts * 0.02:.1f}" fill="{fill or c["fg"]}"{filt}>{esc(x.title)}</text>')
+    if x.sub:
+        y += ss * 1.7
+        out.append(f'<text class="sub fade d3" x="{cx}" y="{y:.1f}" text-anchor="{anchor}" font-family="{SANS}" font-size="{ss}" font-weight="500" fill="{c["muted"]}">{esc(x.sub)}</text>')
+    x.bottom = y + ss * 0.35
+    x.body.extend(out)
+    # Text never animates in: the first frame must be complete (link previews, thumbnails, slow loads).
+    if glow:
+        x.defs.append('<filter id="glow" x="-20%" y="-50%" width="140%" height="200%"><feGaussianBlur stdDeviation="6" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>')
+    return ts
+
+
+def soft_blobs(x: Ctx, n=4, blur=60, opacity=0.55, speed=14):
+    W, H, c, r = x.W, x.H, x.c, x.rng
+    x.defs.append(f'<filter id="blur" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="{blur}"/></filter>')
+    cols = [c["a1"], c["a2"], c["a3"], c["a1"]]
+    g = [f'<g filter="url(#blur)" opacity="{opacity}">']
+    for i in range(n):
+        cx, cy = r.uniform(0.1, 0.9) * W, r.uniform(0.1, 0.9) * H
+        rad = r.uniform(0.18, 0.32) * W
+        dx, dy = r.uniform(-0.12, 0.12) * W, r.uniform(-0.25, 0.25) * H
+        g.append(f'<circle class="blob b{i}" cx="{cx:.0f}" cy="{cy:.0f}" r="{rad:.0f}" fill="{cols[i % 4]}"/>')
+        x.css.append(f"@keyframes drift{i}{{0%,100%{{transform:translate(0,0)}}50%{{transform:translate({dx:.0f}px,{dy:.0f}px)}}}}"
+                     f".b{i}{{animation:drift{i} {speed + i * 3}s ease-in-out infinite}}")
+    g.append("</g>")
+    x.body.extend(g)
+
+
+def logo_mark(x: Ctx, cx: float, cy: float, size: float):
+    """The user's logo with a soft accent glow behind it, so dark logos stay visible on dark banners."""
+    c, dark = x.c, x.theme == "dark"
+    x.defs.append(f'<radialGradient id="lglow"><stop offset="0" stop-color="{c["a1"]}" stop-opacity="{.55 if dark else .22}"/>'
+                  f'<stop offset=".55" stop-color="{c["a2"]}" stop-opacity="{.22 if dark else .08}"/><stop offset="1" stop-color="{c["a2"]}" stop-opacity="0"/></radialGradient>')
+    x.body.append(f'<circle class="lglow" cx="{cx:.0f}" cy="{cy:.0f}" r="{size * .72:.0f}" fill="url(#lglow)"/>')
+    x.css.append("@keyframes lpulse{0%,100%{opacity:1}50%{opacity:.7}}.lglow{animation:lpulse 6s ease-in-out infinite}")
+    x.body.append(f'<image href="{x.logo}" x="{cx - size / 2:.0f}" y="{cy - size / 2:.0f}" width="{size:.0f}" height="{size:.0f}" preserveAspectRatio="xMidYMid meet"/>')
+
+
+# ---------------------------------------------------------------- styles
+def scrim(x, rx=0.36, ry=0.40, strength=0.85):
+    """Soft radial wash of the background colour behind centred text (keeps 4.5:1 contrast over colour)."""
+    c = x.c
+    x.defs.append(f'<radialGradient id="scrim"><stop offset="0" stop-color="{c["bg0"]}" stop-opacity="{strength}"/><stop offset=".6" stop-color="{c["bg0"]}" stop-opacity="{strength * .55:.2f}"/><stop offset="1" stop-color="{c["bg0"]}" stop-opacity="0"/></radialGradient>')
+    x.body.append(f'<ellipse cx="{x.W / 2}" cy="{x.H / 2}" rx="{x.W * rx:.0f}" ry="{x.H * ry:.0f}" fill="url(#scrim)"/>')
+
+
+def s_aurora(x):
+    bg_rect(x)
+    soft_blobs(x, n=4, blur=x.H * 0.22, opacity=0.55)
+    scrim(x, strength=0.7 if x.theme == "dark" else 0.8)
+    # subtle grain-free noise substitute: thin horizon line
+    x.body.append(f'<rect x="0" y="{x.H - 1}" width="{x.W}" height="1" fill="{x.c["fg"]}" opacity=".08"/>')
+    text_block(x)
+
+
+def s_glass(x):
+    bg_rect(x)
+    soft_blobs(x, n=4, blur=x.H * 0.14, opacity=0.9, speed=10)
+    W, H, c = x.W, x.H, x.c
+    pw, ph = W * 0.62, H * 0.66
+    px, py = (W - pw) / 2, (H - ph) / 2
+    glass_fill = x.c["bg0"] if x.theme == "dark" else "#FFFFFF"
+    op = 0.62 if x.theme == "dark" else 0.66
+    x.defs.append(f'<linearGradient id="edge" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FFFFFF" stop-opacity=".55"/><stop offset=".5" stop-color="#FFFFFF" stop-opacity=".05"/><stop offset="1" stop-color="#FFFFFF" stop-opacity=".35"/></linearGradient>')
+    x.body.append(f'<rect x="{px:.0f}" y="{py:.0f}" width="{pw:.0f}" height="{ph:.0f}" rx="22" fill="{glass_fill}" fill-opacity="{op}" stroke="url(#edge)" stroke-width="1.5"/>')
+    # sheen sweep
+    x.defs.append(f'<clipPath id="card"><rect x="{px:.0f}" y="{py:.0f}" width="{pw:.0f}" height="{ph:.0f}" rx="22"/></clipPath>'
+                  '<linearGradient id="sheen" x1="0" x2="1"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset=".5" stop-color="#fff" stop-opacity=".22"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>')
+    x.body.append(f'<g clip-path="url(#card)"><rect class="sheen" x="{px - pw * 0.4:.0f}" y="{py:.0f}" width="{pw * 0.35:.0f}" height="{ph:.0f}" fill="url(#sheen)" transform="skewX(-20)"/></g>')
+    x.css.append(f"@keyframes sweep{{0%,60%{{transform:skewX(-20deg) translateX(0)}}100%{{transform:skewX(-20deg) translateX({pw * 1.9:.0f}px)}}}}.sheen{{animation:sweep 6s ease-in-out infinite}}")
+    text_block(x)
+
+
+def s_synthwave(x):
+    W, H, c = x.W, x.H, x.c
+    hz = H * 0.64  # horizon
+    x.defs.append(f'<linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="{c["bg0"]}"/><stop offset="1" stop-color="{c["bg1"]}"/></linearGradient>'
+                  f'<linearGradient id="sun" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="{c["a2"]}"/><stop offset="1" stop-color="{c["a3"]}"/></linearGradient>'
+                  f'<linearGradient id="floor" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="{c["bg1"]}"/><stop offset="1" stop-color="{c["bg0"]}"/></linearGradient>'
+                  f'<clipPath id="ground"><rect x="0" y="{hz:.1f}" width="{W}" height="{H - hz:.1f}"/></clipPath>')
+    x.body.append(f'<rect width="{W}" height="{H}" fill="url(#sky)"/>')
+    # striped sun behind the horizon
+    sr = H * 0.20
+    stripes = "".join(f'<rect x="{W / 2 - sr:.0f}" y="{hz - sr * k / 6:.1f}" width="{2 * sr:.0f}" height="{1.2 + k * 0.9:.1f}" fill="{c["bg1"]}"/>' for k in range(1, 6))
+    x.defs.append(f'<clipPath id="sunclip"><circle cx="{W / 2}" cy="{hz:.1f}" r="{sr:.1f}"/></clipPath>')
+    x.body.append(f'<g clip-path="url(#sunclip)" opacity=".95"><rect x="{W / 2 - sr:.0f}" y="{hz - sr:.0f}" width="{2 * sr:.0f}" height="{sr:.0f}" fill="url(#sun)"/>{stripes}</g>')
+    x.body.append(f'<rect x="0" y="{hz:.1f}" width="{W}" height="{H - hz:.1f}" fill="url(#floor)"/>')
+    # converging verticals (vanishing point at horizon centre)
+    vlines = []
+    for i in range(-14, 15):
+        xb = W / 2 + i * W / 14
+        vlines.append(f'<line x1="{W / 2 + i * 6:.1f}" y1="{hz:.1f}" x2="{xb:.1f}" y2="{H}" />')
+    x.body.append(f'<g clip-path="url(#ground)" stroke="{c["a1"]}" stroke-width="1.2" opacity=".55">{"".join(vlines)}</g>')
+    # horizontal lines rushing toward the viewer (ease-in = perspective)
+    n, T = 8, 4.0
+    h = [f'<g clip-path="url(#ground)" stroke="{c["a1"]}" stroke-width="1.4" opacity=".75">']
+    for i in range(n):
+        h.append(f'<line class="hl" style="animation-delay:{-i * T / n:.2f}s" x1="0" y1="{hz:.1f}" x2="{W}" y2="{hz:.1f}"/>')
+    h.append("</g>")
+    x.body.extend(h)
+    x.css.append(f"@keyframes rush{{from{{transform:translateY(0);opacity:.15}}to{{transform:translateY({H - hz:.0f}px);opacity:1}}}}"
+                 f".hl{{animation:rush {T}s cubic-bezier(.55,0,1,.45) infinite}}")
+    x.body.append(f'<rect x="0" y="{hz - 1:.1f}" width="{W}" height="2" fill="{c["a2"]}" opacity=".8"/>')
+    text_block(x, y_center=H * 0.25, glow=x.theme == "dark", size=title_size(x.title, W, H, int(H * 0.16)))
+
+
+def iso_cube(cx, cy, s, top, left, right, cls=""):
+    """Isometric cube centred on (cx,cy) top-vertex layout, edge s."""
+    dx, dy = s * math.cos(math.radians(30)), s * math.sin(math.radians(30))
+    t = f"{cx},{cy - dy} {cx + dx},{cy} {cx},{cy + dy} {cx - dx},{cy}"
+    l = f"{cx - dx},{cy} {cx},{cy + dy} {cx},{cy + dy + s} {cx - dx},{cy + s}"
+    r = f"{cx + dx},{cy} {cx},{cy + dy} {cx},{cy + dy + s} {cx + dx},{cy + s}"
+    return (f'<g class="{cls}"><polygon points="{l}" fill="{left}"/><polygon points="{r}" fill="{right}"/>'
+            f'<polygon points="{t}" fill="{top}"/></g>')
+
+
+def shade(hex_, f):
+    h = hex_.lstrip("#")
+    r, g, b = (int(h[i:i + 2], 16) for i in (0, 2, 4))
+    if f >= 0:
+        r, g, b = (int(v + (255 - v) * f) for v in (r, g, b))
+    else:
+        r, g, b = (int(v * (1 + f)) for v in (r, g, b))
+    return f"#{r:02X}{g:02X}{b:02X}"
+
+
+def s_isometric(x):
+    bg_rect(x)
+    W, H, c = x.W, x.H, x.c
+    # faint isometric grid
+    grid = []
+    step = 28
+    for k in range(-40, 60):
+        grid.append(f'<line x1="{k * step * 1.732:.0f}" y1="0" x2="{k * step * 1.732 + H * 1.732:.0f}" y2="{H}"/>')
+        grid.append(f'<line x1="{k * step * 1.732:.0f}" y1="0" x2="{k * step * 1.732 - H * 1.732:.0f}" y2="{H}"/>')
+    x.body.append(f'<g stroke="{c["fg"]}" stroke-width=".6" opacity=".06">{"".join(grid)}</g>')
+    s = H * 0.15
+    base_x, base_y = W * 0.78, H * 0.40
+    layout = [(0, 0, 0), (1, 0, 0), (0, 1, 0), (1, 1, 0), (0, 0, 1), (1, 0, 1), (0, 0, 2)]
+    cols = [c["a1"], c["a3"], c["a2"]]
+    dx, dy = s * math.cos(math.radians(30)), s * math.sin(math.radians(30))
+    cubes = []
+    for i, (gx, gy, gz) in enumerate(sorted(layout, key=lambda p: (p[2], p[0] + p[1]))):
+        cx = base_x + (gx - gy) * dx
+        cy = base_y + (gx + gy) * dy - gz * s
+        col = cols[(gx + gy + gz) % 3]
+        cubes.append(iso_cube(cx, cy, s, shade(col, .25), shade(col, -.15), shade(col, -.38), f"cube c{i}"))
+        x.css.append(f".c{i}{{animation:float 5s ease-in-out {-i * 0.45:.2f}s infinite}}")
+    x.css.append("@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}")
+    # contact shadow
+    x.body.append(f'<ellipse cx="{base_x:.0f}" cy="{base_y + 2.6 * s:.0f}" rx="{2.3 * s:.0f}" ry="{0.55 * s:.0f}" fill="#000" opacity="{.35 if x.theme == "dark" else .12}"/>')
+    x.body.extend(cubes)
+    text_block(x, cx=W * 0.07, anchor="start")
+
+
+def s_orbit(x):
+    bg_rect(x)
+    W, H, c = x.W, x.H, x.c
+    cx, cy = W * 0.80, H * 0.52
+    x.defs.append(f'<radialGradient id="core"><stop offset="0" stop-color="{shade(c["a1"], .45)}"/><stop offset="1" stop-color="{c["a1"]}"/></radialGradient>')
+    rings = [(H * 0.20, 0.30, -18, 7, c["a2"]), (H * 0.33, 0.30, -18, 11, c["a3"]), (H * 0.46, 0.30, -18, 16, c["a1"])]
+    back, front = [], []
+    for i, (rx, k, rot, dur, col) in enumerate(rings):
+        ry = rx * k
+        path = f"M {cx - rx:.1f} {cy:.1f} a {rx:.1f} {ry:.1f} 0 1 0 {2 * rx:.1f} 0 a {rx:.1f} {ry:.1f} 0 1 0 {-2 * rx:.1f} 0"
+        x.defs.append(f'<path id="o{i}" d="{path}"/>')
+        back.append(f'<use href="#o{i}" fill="none" stroke="{c["fg"]}" stroke-opacity=".18" stroke-width="1.2" transform="rotate({rot} {cx} {cy})"/>')
+        pr = 5 + i * 1.6
+        anim = (f'<animateMotion dur="{dur}s" repeatCount="indefinite" rotate="0"><mpath href="#o{i}"/></animateMotion>'
+                f'<animate attributeName="r" values="{pr * .7:.1f};{pr * 1.25:.1f};{pr * .7:.1f}" keyTimes="0;.5;1" dur="{dur}s" repeatCount="indefinite"/>') if x.animate else ""
+        start = "" if x.animate else f' cx="{cx - rx:.1f}" cy="{cy:.1f}"'
+        front.append(f'<g transform="rotate({rot} {cx} {cy})"><circle r="{pr:.1f}"{start} fill="{col}">{anim}</circle></g>')
+    x.body.extend(back)
+    x.body.append(f'<circle cx="{cx:.0f}" cy="{cy:.0f}" r="{H * 0.09:.0f}" fill="url(#core)"/>')
+    x.body.append(f'<circle class="pulse" cx="{cx:.0f}" cy="{cy:.0f}" r="{H * 0.09:.0f}" fill="none" stroke="{c["a1"]}" stroke-width="2"/>')
+    x.css.append("@keyframes pulse{from{transform:scale(1);opacity:.6}to{transform:scale(2.2);opacity:0}}"
+                 ".pulse{transform-box:fill-box;transform-origin:center;animation:pulse 3s ease-out infinite}")
+    x.body.extend(front)
+    text_block(x, cx=W * 0.07, anchor="start")
+
+
+def s_terminal(x):
+    bg_rect(x)
+    W, H, c = x.W, x.H, x.c
+    pw, ph = W * 0.70, H * 0.70
+    px, py = (W - pw) / 2, (H - ph) / 2 + 4
+    win = shade(c["bg0"], .06 if x.theme == "dark" else -.03)
+    x.body.append(f'<rect x="{px + 6:.0f}" y="{py + 10:.0f}" width="{pw:.0f}" height="{ph:.0f}" rx="14" fill="#000" opacity="{.35 if x.theme == "dark" else .10}"/>'
+                  f'<rect x="{px:.0f}" y="{py:.0f}" width="{pw:.0f}" height="{ph:.0f}" rx="14" fill="{win}" stroke="{c["fg"]}" stroke-opacity=".12"/>'
+                  f'<circle cx="{px + 22:.0f}" cy="{py + 20:.0f}" r="6" fill="#FF5F57"/><circle cx="{px + 42:.0f}" cy="{py + 20:.0f}" r="6" fill="#FEBC2E"/><circle cx="{px + 62:.0f}" cy="{py + 20:.0f}" r="6" fill="#28C840"/>')
+    ts = title_size("$ " + x.title, pw * 1.05, H, 54, mono=True)
+    ty = py + ph * 0.50
+    char_w = ts * 0.6
+    full = (len(x.title) + 2) * char_w
+    tx = px + 30
+    # frame 0 shows the whole command; every 7 s it is erased and typed again
+    x.defs.append(f'<clipPath id="type"><rect x="{tx:.0f}" y="{ty - ts:.0f}" width="{full:.0f}" height="{ts * 1.4:.0f}">'
+                  + (f'<animate attributeName="width" values="{full:.0f};{full:.0f};0;{full:.0f};{full:.0f}" keyTimes="0;.55;.6;.85;1" dur="7s" repeatCount="indefinite"/>' if x.animate else "")
+                  + "</rect></clipPath>")
+    x.body.append(f'<g clip-path="url(#type)"><text x="{tx:.0f}" y="{ty:.0f}" font-family="{MONO}" font-size="{ts}" font-weight="700" fill="{c["fg"]}"><tspan fill="{c["a1"]}">$ </tspan>{esc(x.title)}</text></g>')
+    x.body.append(f'<rect class="cursor" x="{tx + full + 4:.0f}" y="{ty - ts * 0.8:.0f}" width="{ts * 0.5:.0f}" height="{ts * 0.95:.0f}" fill="{c["a1"]}"/>')
+    x.css.append("@keyframes blink{50%{opacity:0}}.cursor{animation:blink 1s steps(1) infinite}")
+    if x.sub:
+        x.body.append(f'<text x="{tx:.0f}" y="{ty + ts * 1.15:.0f}" font-family="{MONO}" font-size="{max(14, int(ts * .36))}" fill="{c["muted"]}"><tspan fill="{c["a2"]}">→ </tspan>{esc(x.sub)}</text>')
+    if x.tag:
+        x.body.append(f'<text x="{px + pw / 2:.0f}" y="{py + 25:.0f}" text-anchor="middle" font-family="{MONO}" font-size="13" fill="{c["muted"]}">{esc(x.tag.lower())}</text>')
+
+
+def s_neon(x):
+    bg_rect(x)
+    W, H, c = x.W, x.H, x.c
+    x.body.append(f'<g stroke="{c["a2"]}" stroke-width="1" opacity=".18">' + "".join(
+        f'<line x1="0" y1="{y}" x2="{W}" y2="{y}"/>' for y in range(0, H, 6)) + "</g>")  # scanlines
+    ts = title_size(x.title, W, H, 84)
+    x.defs.append('<filter id="neon" x="-20%" y="-60%" width="140%" height="220%"><feGaussianBlur stdDeviation="2.5" result="b1"/><feGaussianBlur stdDeviation="9" result="b2"/>'
+                  '<feMerge><feMergeNode in="b2"/><feMergeNode in="b1"/><feMergeNode in="SourceGraphic"/></feMerge></filter>')
+    y = H * (0.52 if x.sub else 0.58)
+    x.body.append(f'<text class="flicker" x="{W / 2}" y="{y:.0f}" text-anchor="middle" font-family="{SANS}" font-size="{ts}" font-weight="800" fill="none" stroke="{c["a1"]}" stroke-width="2.4" filter="url(#neon)">{esc(x.title)}</text>')
+    if x.sub:
+        x.body.append(f'<text x="{W / 2}" y="{y + ts * 0.62:.0f}" text-anchor="middle" font-family="{SANS}" font-size="{max(14, int(ts * .3))}" font-weight="600" letter-spacing="2" fill="{c["a2"]}" filter="url(#neon)">{esc(x.sub)}</text>')
+    if x.tag:
+        x.body.append(f'<text x="{W / 2}" y="{y - ts * 0.95:.0f}" text-anchor="middle" font-family="{MONO}" font-size="14" letter-spacing="6" fill="{c["a3"]}">{esc(x.tag.upper())}</text>')
+    x.css.append("@keyframes flick{0%,19%,21%,23%,80%,100%{opacity:1}20%,22%{opacity:.35}81%{opacity:.6}}.flicker{animation:flick 5s linear infinite}")
+    if x.theme == "light":  # neon reads poorly on light: fill the title too
+        x.body[-1 if not x.sub else -2] = x.body[-1 if not x.sub else -2]
+
+
+def wave_path(W, H, amp, base, phase, k=2):
+    pts = []
+    for i in range(0, 41):
+        X = W * 2 * i / 40
+        Y = base + amp * math.sin(phase + k * 2 * math.pi * i / 40)
+        pts.append(f"{X:.1f},{Y:.1f}")
+    return f"M0,{H} L" + " L".join(pts) + f" L{W * 2},{H} Z"
+
+
+def s_wave(x, flip=False):
+    bg_rect(x)
+    W, H, c = x.W, x.H, x.c
+    layers = [(c["a3"], .35, H * .08, H * .70, 0, 16), (c["a2"], .45, H * .07, H * .78, 1.4, 11), (c["a1"], .85, H * .05, H * .87, 2.6, 8)]
+    if x.kind == "footer":
+        layers = [(col, op, amp * .7, H * (.22 + i * .10), ph, d) for i, (col, op, amp, _, ph, d) in enumerate(layers)]
+    g = [f'<g transform="{"translate(0," + str(H) + ") scale(1,-1)" if flip else ""}">']
+    for i, (col, op, amp, base, ph, dur) in enumerate(layers):
+        # 2 periods wide so a translateX of -W loops seamlessly
+        g.append(f'<path class="w{i}" d="{wave_path(W, H, amp, base, ph)}" fill="{col}" opacity="{op}"/>')
+        x.css.append(f"@keyframes slide{i}{{from{{transform:translateX(0)}}to{{transform:translateX(-{W}px)}}}}.w{i}{{animation:slide{i} {dur}s linear infinite}}")
+    g.append("</g>")
+    x.body.extend(g)
+    if x.kind == "footer":
+        if x.title:
+            ts = title_size(x.title, W, H, 26)
+            x.body.append(f'<text x="{W / 2}" y="{H * (0.84 if flip else 0.30):.0f}" text-anchor="middle" font-family="{SANS}" font-size="{ts}" font-weight="700" fill="{c["fg"]}">{esc(x.title)}</text>')
+    else:
+        text_block(x, y_center=H * 0.33)
+
+
+def s_blueprint(x):
+    W, H, c = x.W, x.H, x.c
+    bg = "#0B2A4A" if x.theme == "dark" else "#EEF6FF"
+    line = "#7FB8FF" if x.theme == "dark" else "#2F6FD6"
+    x.body.append(f'<rect width="{W}" height="{H}" fill="{bg}"/>')
+    grid = "".join(f'<line x1="{gx}" y1="0" x2="{gx}" y2="{H}"/>' for gx in range(0, W + 1, 24)) + "".join(f'<line x1="0" y1="{gy}" x2="{W}" y2="{gy}"/>' for gy in range(0, H + 1, 24))
+    x.body.append(f'<g stroke="{line}" stroke-width=".5" opacity=".22">{grid}</g>')
+    major = "".join(f'<line x1="{gx}" y1="0" x2="{gx}" y2="{H}"/>' for gx in range(0, W + 1, 120)) + "".join(f'<line x1="0" y1="{gy}" x2="{W}" y2="{gy}"/>' for gy in range(0, H + 1, 120))
+    x.body.append(f'<g stroke="{line}" stroke-width="1" opacity=".3">{major}</g>')
+    # technical drawing: circle + dimension lines that draw themselves
+    cx, cy, r = W * 0.83, H * 0.5, H * 0.26
+    shapes = [f'<circle cx="{cx:.0f}" cy="{cy:.0f}" r="{r:.0f}"/>', f'<circle cx="{cx:.0f}" cy="{cy:.0f}" r="{r * .45:.0f}"/>',
+              f'<line x1="{cx - r * 1.4:.0f}" y1="{cy:.0f}" x2="{cx + r * 1.4:.0f}" y2="{cy:.0f}"/>', f'<line x1="{cx:.0f}" y1="{cy - r * 1.4:.0f}" x2="{cx:.0f}" y2="{cy + r * 1.4:.0f}"/>',
+              f'<rect x="{cx - r * 2.6:.0f}" y="{cy - r * .5:.0f}" width="{r:.0f}" height="{r:.0f}"/>',
+              f'<path d="M{cx - r * 1.6:.0f} {cy:.0f} L{cx - r:.0f} {cy:.0f}"/>']
+    x.body.append(f'<g class="draw" fill="none" stroke="{line}" stroke-width="1.6">{"".join(shapes)}</g>')
+    x.css.append("@keyframes draw{0%,55%{stroke-dashoffset:0}75%{stroke-dashoffset:900}100%{stroke-dashoffset:0}}.draw *{stroke-dasharray:900;animation:draw 9s ease-in-out infinite}")
+    x.c["fg"] = "#FFFFFF" if x.theme == "dark" else "#0B2A4A"
+    x.c["muted"] = "#B8D6FF" if x.theme == "dark" else "#2F4E75"
+    x.c["a1"] = line
+    text_block(x, cx=W * 0.07, anchor="start", mono=True)
+    x.body.append(f'<text x="{W - 16}" y="{H - 12}" text-anchor="end" font-family="{MONO}" font-size="11" fill="{line}" opacity=".8">REV A · SCALE 1:1</text>')
+
+
+def s_constellation(x):
+    bg_rect(x)
+    W, H, c, r = x.W, x.H, x.c, x.rng
+    pts = [(r.uniform(0, W), r.uniform(0, H)) for _ in range(46)]
+    edges = []
+    for i, (ax, ay) in enumerate(pts):
+        for j in range(i + 1, len(pts)):
+            bx, by = pts[j]
+            d = math.hypot(ax - bx, ay - by)
+            if d < W * 0.11:
+                edges.append(f'<line x1="{ax:.0f}" y1="{ay:.0f}" x2="{bx:.0f}" y2="{by:.0f}" stroke-opacity="{max(.05, .35 - d / (W * .4)):.2f}"/>')
+    x.body.append(f'<g stroke="{c["a1"]}" stroke-width="1">{"".join(edges)}</g>')
+    dots = []
+    for i, (px, py) in enumerate(pts):
+        rr = r.uniform(1.2, 2.8)
+        dots.append(f'<circle class="tw t{i % 5}" cx="{px:.0f}" cy="{py:.0f}" r="{rr:.1f}" fill="{[c["a1"], c["a2"], c["a3"], c["fg"], c["a1"]][i % 5]}"/>')
+    x.body.append("".join(dots))
+    x.css.append("@keyframes tw{0%,100%{opacity:.25}50%{opacity:1}}" + "".join(f".t{k}{{animation:tw {2.2 + k * .7:.1f}s ease-in-out {k * .4:.1f}s infinite}}" for k in range(5)))
+    # readability scrim behind text
+    x.defs.append(f'<radialGradient id="scrim"><stop offset="0" stop-color="{c["bg0"]}" stop-opacity=".92"/><stop offset="1" stop-color="{c["bg0"]}" stop-opacity="0"/></radialGradient>')
+    x.body.append(f'<ellipse cx="{W / 2}" cy="{H / 2}" rx="{W * .38:.0f}" ry="{H * .42:.0f}" fill="url(#scrim)"/>')
+    text_block(x)
+
+
+
+def line_sweep(x, lx, ly, lw, lh, color, ident):
+    """Static accent line (always visible) with a soft highlight travelling along it."""
+    x.defs.append(f'<clipPath id="{ident}"><rect x="{lx:.0f}" y="{ly:.0f}" width="{lw:.0f}" height="{lh}" rx="{lh / 2}"/></clipPath>'
+                  f'<linearGradient id="{ident}g" x1="0" x2="1"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset=".5" stop-color="#fff" stop-opacity=".85"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>')
+    x.body.append(f'<rect x="{lx:.0f}" y="{ly:.0f}" width="{lw:.0f}" height="{lh}" rx="{lh / 2}" fill="{color}"/>'
+                  f'<g clip-path="url(#{ident})"><rect class="{ident}s" x="{lx - lw * .3:.0f}" y="{ly:.0f}" width="{lw * .3:.0f}" height="{lh}" fill="url(#{ident}g)" opacity=".6"/></g>')
+    x.css.append(f"@keyframes {ident}k{{0%{{transform:translateX(0)}}70%,100%{{transform:translateX({lw * 1.3:.0f}px)}}}}.{ident}s{{animation:{ident}k 4s ease-in-out infinite}}")
+
+def s_minimal(x):
+    W, H, c = x.W, x.H, x.c
+    x.body.append(f'<rect width="{W}" height="{H}" fill="{c["bg0"]}"/>')
+    ts = text_block(x, y_center=H * 0.45)
+    lw = min(W * 0.18, 220)
+    line_sweep(x, W / 2 - lw / 2, getattr(x, "bottom", H * 0.45 + ts) + 18, lw, 3, c["a1"] if c["a1"] != c["fg"] else c["a2"], "ml")
+
+
+def s_bold(x):
+    W, H, c = x.W, x.H, x.c
+    x.body.append(f'<rect width="{W}" height="{H}" fill="{c["bg0"]}"/>')
+    sweep = (f'<animateTransform attributeName="gradientTransform" type="translate" values="0 0;{W} 0;0 0" dur="12s" repeatCount="indefinite"/>'
+             if x.animate else "")
+    x.defs.append(f'<linearGradient id="ink" x1="0" y1="0" x2="{W}" y2="0" gradientUnits="userSpaceOnUse" spreadMethod="reflect">'
+                  f'<stop offset="0" stop-color="{c["a1"]}"/><stop offset=".5" stop-color="{c["a2"]}"/><stop offset="1" stop-color="{c["a3"]}"/>{sweep}</linearGradient>')
+    ts = int(min(title_size(x.title, W, H, 150) * 1.15, H * 0.42))
+    text_block(x, size=ts, fill="url(#ink)")
+
+
+def grain(x, strength=0.14, freq=0.85):
+    """Film grain overlay (feTurbulence). Static: cheap to render, gives gradients the 'shader' texture."""
+    x.defs.append(f'<filter id="grain" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency="{freq}" numOctaves="2" stitchTiles="stitch"/>'
+                  f'<feColorMatrix type="saturate" values="0"/><feComponentTransfer><feFuncA type="table" tableValues="0 {strength}"/></feComponentTransfer></filter>')
+    x.body.append(f'<rect width="{x.W}" height="{x.H}" filter="url(#grain)"/>')
+
+
+def s_shader(x):
+    """ShaderGradient look: large colour masses warped by low-frequency noise, heavy blur, film grain."""
+    W, H, c = x.W, x.H, x.c
+    dark = x.theme == "dark"
+    x.body.append(f'<rect width="{W}" height="{H}" fill="{c["bg0"]}"/>')
+    x.defs.append('<filter id="warp" x="-30%" y="-80%" width="160%" height="260%">'
+                  '<feTurbulence type="fractalNoise" baseFrequency="0.0028 0.0075" numOctaves="2" seed="11" result="n"/>'
+                  '<feDisplacementMap in="SourceGraphic" in2="n" scale="170" xChannelSelector="R" yChannelSelector="G" result="d"/>'
+                  f'<feGaussianBlur in="d" stdDeviation="{H * 0.11:.0f}"/></filter>')
+    # long diagonal "bands" read as a 3D surface once warped and blurred
+    bands = [(0.22, 0.78, 0.46, 0.34, -12, c["a1"], "sa"), (0.62, 0.30, 0.50, 0.36, -8, c["a3"], "sb"),
+             (0.88, 0.82, 0.30, 0.30, -16, c["a2"], "sa"), (0.42, 0.12, 0.26, 0.16, -6, shade(c["a2"], .45), "sb")]
+    g = ['<g filter="url(#warp)">']
+    for cx, cy, rx, ry, rot, col, cls in bands:
+        g.append(f'<ellipse class="{cls}" cx="{W * cx:.0f}" cy="{H * cy:.0f}" rx="{W * rx:.0f}" ry="{H * ry:.0f}" fill="{col}" transform="rotate({rot} {W * cx:.0f} {H * cy:.0f})"/>')
+    g.append("</g>")
+    x.body.extend(g)
+    x.css.append(f"@keyframes sa{{0%,100%{{transform:translate(0,0)}}50%{{transform:translate({W * .09:.0f}px,{-H * .10:.0f}px)}}}}"
+                 f"@keyframes sb{{0%,100%{{transform:translate(0,0)}}50%{{transform:translate({-W * .11:.0f}px,{H * .12:.0f}px)}}}}"
+                 ".sa{animation:sa 17s ease-in-out infinite}.sb{animation:sb 21s ease-in-out infinite}")
+    # vignette keeps the title area calm and readable
+    x.defs.append(f'<radialGradient id="vig" cx=".5" cy=".5" r=".75"><stop offset=".35" stop-color="{c["bg0"]}" stop-opacity="{.30 if dark else .10}"/><stop offset="1" stop-color="{c["bg0"]}" stop-opacity="{.75 if dark else .45}"/></radialGradient>')
+    x.body.append(f'<rect width="{W}" height="{H}" fill="url(#vig)"/>')
+    scrim(x, rx=0.30, ry=0.34, strength=0.55 if dark else 0.75)
+    grain(x, 0.16 if dark else 0.10)
+    if dark:
+        x.c = dict(c, fg="#FFFFFF", muted="#E6E6EE")
+    text_block(x)
+
+
+def s_spotlight(x):
+    """Landing-page hero (supahero-style): grid fading out radially, light beam from the top,
+    announcement pill above a gradient title."""
+    W, H, c = x.W, x.H, x.c
+    dark = x.theme == "dark"
+    line = c.get("line", c["fg"])
+    x.body.append(f'<rect width="{W}" height="{H}" fill="{c["bg0"]}"/>')
+    cell = 40
+    x.defs.append(f'<pattern id="grid" width="{cell}" height="{cell}" patternUnits="userSpaceOnUse"><path d="M {cell} 0 L 0 0 0 {cell}" fill="none" stroke="{line}" stroke-opacity="{.09 if dark else .08}" stroke-width="1"/></pattern>'
+                  f'<radialGradient id="fade" cx=".5" cy=".35" r=".62"><stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient>'
+                  f'<mask id="gm"><rect width="{W}" height="{H}" fill="url(#fade)"/></mask>')
+    x.body.append(f'<rect width="{W}" height="{H}" fill="url(#grid)" mask="url(#gm)"/>')
+    # beam: soft accent glow + thin cone of light from the top centre
+    x.defs.append(f'<radialGradient id="glow" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="{c["a1"]}" stop-opacity="{.55 if dark else .30}"/><stop offset=".55" stop-color="{c["a2"]}" stop-opacity="{.14 if dark else .08}"/><stop offset="1" stop-color="{c["a1"]}" stop-opacity="0"/></radialGradient>'
+                  f'<linearGradient id="cone" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="{c["fg"]}" stop-opacity="{.20 if dark else .10}"/><stop offset="1" stop-color="{c["fg"]}" stop-opacity="0"/></linearGradient>'
+                  f'<filter id="soft"><feGaussianBlur stdDeviation="14"/></filter>')
+    x.body.append(f'<ellipse class="beam" cx="{W / 2}" cy="0" rx="{W * .42:.0f}" ry="{H * .95:.0f}" fill="url(#glow)"/>')
+    x.body.append(f'<polygon points="{W / 2 - 40},0 {W / 2 + 40},0 {W / 2 + W * .20:.0f},{H} {W / 2 - W * .20:.0f},{H}" fill="url(#cone)" filter="url(#soft)"/>')
+    x.body.append(f'<rect x="{W * .2:.0f}" y="0" width="{W * .6:.0f}" height="1" fill="{c["a1"]}" opacity=".7"/>')
+    x.css.append("@keyframes breathe{0%,100%{opacity:1}50%{opacity:.72}}.beam{animation:breathe 7s ease-in-out infinite}")
+    # announcement pill (the tag) with a light sweeping across its border
+    ts = title_size(x.title, W, H, 72)
+    ss = max(17, int(ts * .32))
+    lsize = H * .40 if x.logo else 0
+    top = (lsize + 14) if x.logo else (40 + 20 if x.tag else 0)
+    block = top + ts + (ss * 1.8 if x.sub else 0)
+    y = H / 2 - block / 2 + 6
+    if x.logo:
+        logo_mark(x, W / 2, y + lsize / 2, lsize)
+        y += lsize + 14
+    elif x.tag:
+        label = x.tag
+        pw = len(label) * 9.6 + 66
+        px = W / 2 - pw / 2
+        surf = c.get("surface", c["bg1"])
+        x.defs.append(f'<linearGradient id="pillb" x1="0" x2="1"><stop offset="0" stop-color="{line}" stop-opacity=".14"/><stop offset=".5" stop-color="{c["a1"]}" stop-opacity=".9"/><stop offset="1" stop-color="{line}" stop-opacity=".14"/>'
+                      + (f'<animateTransform attributeName="gradientTransform" type="translate" values="-1 0;1 0" dur="4s" repeatCount="indefinite"/>' if x.animate else "")
+                      + "</linearGradient>")
+        x.body.append(f'<rect x="{px:.0f}" y="{y:.0f}" width="{pw:.0f}" height="40" rx="20" fill="{surf}" fill-opacity="{.85 if dark else .95}" stroke="url(#pillb)" stroke-width="1"/>'
+                      f'<circle cx="{px + 21:.0f}" cy="{y + 20:.0f}" r="4.5" fill="{c["a1"]}"/>'
+                      f'<text x="{px + 34:.0f}" y="{y + 26:.0f}" font-family="{SANS}" font-size="16.5" font-weight="600" fill="{c["fg"]}">{esc(label)}</text>'
+                      f'<text x="{px + pw - 26:.0f}" y="{y + 26:.0f}" font-family="{SANS}" font-size="16.5" fill="{c["muted"]}">→</text>')
+        y += 40 + 20
+    x.defs.append(f'<linearGradient id="tgrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="{c["fg"]}"/><stop offset="1" stop-color="{c["fg"]}" stop-opacity="{.80 if dark else .82}"/></linearGradient>')
+    y += ts * 0.86
+    x.body.append(f'<text x="{W / 2}" y="{y:.0f}" text-anchor="middle" font-family="{SANS}" font-size="{ts}" font-weight="700" letter-spacing="{-ts * .035:.1f}" fill="url(#tgrad)">{esc(x.title)}</text>')
+    if x.sub:
+        y += ss * 1.8
+        x.body.append(f'<text x="{W / 2}" y="{y:.0f}" text-anchor="middle" font-family="{SANS}" font-size="{ss}" fill="{c["muted"]}">{esc(x.sub)}</text>')
+    x.body.append(f'<rect x="0" y="{H - 1}" width="{W}" height="1" fill="{line}" opacity="{.08 if dark else .10}"/>')
+
+
+def s_ribbon(x):
+    """Silk ribbon: many strands following a twisting sine band; per-strand phase gives 3D depth.
+    SMIL morphs each strand between two phases so the ribbon flows."""
+    W, H, c = x.W, x.H, x.c
+    bg_rect(x)
+    n = 20
+    x.defs.append(f'<linearGradient id="silk" x1="0" x2="1"><stop offset="0" stop-color="{c["a3"]}" stop-opacity="0"/><stop offset=".25" stop-color="{c["a3"]}"/>'
+                  f'<stop offset=".6" stop-color="{c["a1"]}"/><stop offset="1" stop-color="{c["a2"]}" stop-opacity=".2"/></linearGradient>')
+
+    def strand(i, phase):
+        t = i / (n - 1)
+        pts = []
+        for k in range(0, 19):
+            u = k / 18
+            X = -40 + (W + 80) * u
+            twist = math.cos(math.pi * (u * 1.6 + phase))           # ribbon edge-on where cos≈0
+            Y = H * (0.60 + 0.20 * math.sin(2 * math.pi * (u * .9 + phase * .5))) + (t - .5) * H * .42 * twist
+            pts.append((X, Y))
+        d = f"M{pts[0][0]:.0f},{pts[0][1]:.0f}"
+        for k in range(1, len(pts)):
+            mx = (pts[k - 1][0] + pts[k][0]) / 2
+            my = (pts[k - 1][1] + pts[k][1]) / 2
+            d += f" Q{pts[k - 1][0]:.0f},{pts[k - 1][1]:.0f} {mx:.0f},{my:.0f}"
+        d += f" T{pts[-1][0]:.0f},{pts[-1][1]:.0f}"
+        return d
+
+    g = ['<g fill="none" stroke="url(#silk)" stroke-linecap="round">']
+    for i in range(n):
+        d0, d1 = strand(i, 0.0), strand(i, 0.55)
+        op = 0.25 + 0.75 * math.sin(math.pi * i / (n - 1))          # centre strands brightest
+        anim = f'<animate attributeName="d" values="{d0};{d1};{d0}" dur="14s" repeatCount="indefinite" calcMode="spline" keySplines=".45 0 .55 1;.45 0 .55 1"/>' if x.animate else ""
+        g.append(f'<path d="{d0}" stroke-width="{1.1 + op * .6:.2f}" stroke-opacity="{op:.2f}">{anim}</path>')
+    g.append("</g>")
+    x.body.extend(g)
+    scrim(x, rx=0.34, ry=0.30, strength=0.8 if x.theme == "dark" else 0.85)
+    text_block(x, y_center=H * 0.42)
+
+
+def s_pulse(x):
+    """Pulse: soft concentric rings breathing outward from behind the title."""
+    W, H, c = x.W, x.H, x.c
+    bg_rect(x)
+    cx, cy = W / 2, H / 2
+    x.defs.append(f'<radialGradient id="pulseGlow"><stop offset="0" stop-color="{c["a1"]}" stop-opacity=".35"/>'
+                  f'<stop offset="1" stop-color="{c["a1"]}" stop-opacity="0"/></radialGradient>')
+    x.body.append(f'<circle cx="{cx:.0f}" cy="{cy:.0f}" r="{H * .48:.0f}" fill="url(#pulseGlow)"/>')
+    for i in range(4):
+        r = H * (.12 + i * .12)
+        x.body.append(f'<circle class="ring{i}" cx="{cx:.0f}" cy="{cy:.0f}" r="{r:.1f}" fill="none" stroke="{c["a1"]}" stroke-width="1.5" '
+                      f'stroke-opacity="{.45 - i * .08:.2f}" vector-effect="non-scaling-stroke"/>')
+        x.css.append(f"@keyframes ring{i}{{50%{{transform:scale({(r + H * .10) / r:.3f})}}}}"
+                     f".ring{i}{{transform-origin:{cx:.0f}px {cy:.0f}px;animation:ring{i} {5 + i}s ease-in-out infinite}}")
+    scrim(x, rx=0.34, ry=0.30, strength=0.8)
+    text_block(x)
+
+
+# ---------------------------------------------------------------- WebGL-shader looks, rebuilt in SVG
+# GitHub shows SVGs through <img>, so there is no WebGL or script. These four styles rebuild the
+# look of no-code shader scenes (vortex, edge beam, voronoi shatter, RGB blinds) with gradients,
+# filters and CSS animation only. CSS (not SMIL) means prefers-reduced-motion really stops them.
+SERIF = "'Bodoni 72', Didot, 'Bodoni MT', 'Playfair Display', Georgia, 'Times New Roman', serif"
+
+
+def left_x(x):
+    """Left edge for start-anchored text, clear of a side logo."""
+    return x.H * 1.0 + 16 if x.logo and x.style not in LOGO_INSIDE else x.W * 0.07
+
+
+def spin_css(name, cx, cy, dur, reverse=False):
+    to = -360 if reverse else 360
+    return (f"@keyframes {name}k{{to{{transform:rotate({to}deg)}}}}"
+            f".{name}{{transform-origin:{cx:.0f}px {cy:.0f}px;animation:{name}k {dur}s linear infinite}}")
+
+
+def blade(cx, cy, r0, r1, a0, sweep, width, steps=28):
+    """One curved vortex blade: a crescent along a spiral, sharp at both ends."""
+    outer, inner = [], []
+    for i in range(steps + 1):
+        t = i / steps
+        ang = a0 + sweep * t
+        r = r0 + (r1 - r0) * t ** 0.9
+        w = width * math.sin(math.pi * t) ** 0.75 * (1 - 0.45 * t)
+        outer.append((cx + (r + w) * math.cos(ang), cy + (r + w) * math.sin(ang)))
+        inner.append((cx + (r - w * 0.35) * math.cos(ang + 0.05), cy + (r - w * 0.35) * math.sin(ang + 0.05)))
+    pts = outer + inner[::-1]
+    return "M" + " L".join(f"{px:.1f},{py:.1f}" for px, py in pts) + " Z"
+
+
+def s_vortex(x):
+    """Spinning blade vortex (the 'eye'), long spikes, and liquid contour lines of a larger swirl
+    that turn slowly the other way. Condensed serif caps, like a shader-gallery landing page."""
+    W, H, c = x.W, x.H, x.c
+    dark = x.theme == "dark"
+    x.body.append(f'<rect width="{W}" height="{H}" fill="{c["bg0"]}"/>')
+    cx, cy = W * 0.78, H * 0.5
+    R = H * 0.40
+    # liquify: low-frequency displacement makes the contour swirl wobble like ink
+    x.defs.append('<filter id="liquify" x="-20%" y="-20%" width="140%" height="140%"><feTurbulence type="fractalNoise" baseFrequency="0.006" numOctaves="2" seed="7" result="n"/>'
+                  '<feDisplacementMap in="SourceGraphic" in2="n" scale="38" xChannelSelector="R" yChannelSelector="G"/></filter>'
+                  '<filter id="vglow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="10"/></filter>')
+    contours = []
+    for k in range(7):
+        a0 = k * 2 * math.pi / 7
+        contours.append(f'<path d="{blade(cx, cy, R * 0.9, W * 0.62, a0, 2.4, H * 0.30)}"/>')
+    x.body.append(f'<g filter="url(#liquify)"><g class="vcont" fill="none" stroke="{c["a1"]}" stroke-width="1" stroke-opacity="{.42 if dark else .38}">{"".join(contours)}</g></g>')
+    x.css.append(spin_css("vcont", cx, cy, 90, reverse=True))
+    # warm glow in the eye
+    x.defs.append(f'<radialGradient id="eye"><stop offset="0" stop-color="{c["a2"]}" stop-opacity="{.55 if dark else .35}"/><stop offset="1" stop-color="{c["a1"]}" stop-opacity="0"/></radialGradient>'
+                  f'<linearGradient id="bl" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="{c["a3"]}"/><stop offset=".55" stop-color="{c["a1"]}"/><stop offset="1" stop-color="{c["a2"]}"/></linearGradient>')
+    x.body.append(f'<circle class="vbreath" cx="{cx:.0f}" cy="{cy:.0f}" r="{R * 1.25:.0f}" fill="url(#eye)"/>')
+    blades, spikes = [], []
+    for k in range(4):
+        a0 = k * math.pi / 2
+        blades.append(f'<path d="{blade(cx, cy, R * 0.16, R * 0.86, a0, 2.1, R * 0.20)}"/>')
+        blades.append(f'<path d="{blade(cx, cy, R * 0.30, R * 0.62, a0 + 0.8, 1.5, R * 0.10)}" opacity=".75"/>')
+        # a long, thin spike flung out tangentially (the loader's needles)
+        sa = a0 + 0.55
+        bx, by = cx + R * 0.55 * math.cos(sa), cy + R * 0.55 * math.sin(sa)
+        tx, ty = cx + R * 1.18 * math.cos(sa - 0.45), cy + R * 1.18 * math.sin(sa - 0.45)
+        nx, ny = -math.sin(sa) * R * 0.035, math.cos(sa) * R * 0.035
+        spikes.append(f'<path d="M{bx + nx:.1f},{by + ny:.1f} L{tx:.1f},{ty:.1f} L{bx - nx:.1f},{by - ny:.1f} Z"/>')
+    x.body.append(f'<g class="vspin" fill="url(#bl)"><g filter="url(#vglow)" opacity="{.55 if dark else .30}">{"".join(blades)}</g>{"".join(blades)}{"".join(spikes)}</g>')
+    x.css.append(spin_css("vspin", cx, cy, 16)
+                 + f"@keyframes vbr{{0%,100%{{opacity:1}}50%{{opacity:.55}}}}.vbreath{{animation:vbr 5s ease-in-out infinite}}")
+    if x.logo:
+        size = R * 0.95
+        x.defs.append(f'<radialGradient id="hole"><stop offset=".55" stop-color="{c["bg0"]}"/><stop offset="1" stop-color="{c["bg0"]}" stop-opacity="0"/></radialGradient>')
+        x.body.append(f'<circle cx="{cx:.0f}" cy="{cy:.0f}" r="{size * .62:.0f}" fill="url(#hole)"/>')
+        x.body.append(f'<image href="{x.logo}" x="{cx - size / 2:.0f}" y="{cy - size / 2:.0f}" width="{size:.0f}" height="{size:.0f}" preserveAspectRatio="xMidYMid meet"/>')
+    # counter ticks around the eye, as on a shader preloader
+    for dx, dy in ((0, -1), (1, 0), (0, 1), (-1, 0)):
+        x.body.append(f'<text x="{cx + dx * R * 1.32:.0f}" y="{cy + dy * R * 1.12 + 4:.0f}" text-anchor="middle" font-family="{MONO}" font-size="11" fill="{c["muted"]}" opacity=".7">00</text>')
+    # text: scrim on the left, condensed serif caps
+    x.defs.append(f'<linearGradient id="lscrim" x1="0" x2="1"><stop offset="0" stop-color="{c["bg0"]}" stop-opacity=".92"/><stop offset=".5" stop-color="{c["bg0"]}" stop-opacity=".7"/><stop offset="1" stop-color="{c["bg0"]}" stop-opacity="0"/></linearGradient>')
+    x.body.append(f'<rect width="{W * 0.66:.0f}" height="{H}" fill="url(#lscrim)"/>')
+    serif_title(x, left_x(x), W * 0.56)
+
+
+def serif_title(x, lx, max_w):
+    """Tag, condensed serif caps title and subtitle, left-aligned; the first frame is complete."""
+    H, c = x.H, x.c
+    title = x.title.upper()
+    squeeze = 0.80
+    per = 0.70 * squeeze + 0.06  # cap width after condensing, plus tracking
+    ts = int(max(20, min(H * 0.30, max_w / (max(len(title), 1) * per))))
+    ss = max(15, int(min(ts * 0.36, 24)))
+    tg = 12
+    block = (tg * 2.2 if x.tag else 0) + ts * 0.82 + (ss * 2.0 if x.sub else 0)
+    y = H / 2 - block / 2
+    if x.tag:
+        y += tg
+        x.body.append(f'<text x="{lx:.0f}" y="{y:.0f}" font-family="{SANS}" font-size="{tg}" font-weight="600" letter-spacing="2.4" fill="{c["a1"]}">{esc(x.tag.upper())}</text>')
+        x.body.append(f'<rect x="{lx:.0f}" y="{y + 9:.0f}" width="28" height="1.5" fill="{c["a1"]}"/>')
+        y += tg * 1.2
+    y += ts * 0.82
+    x.body.append(f'<text transform="translate({lx:.1f} {y:.1f}) scale({squeeze} 1)" font-family="{SERIF}" font-size="{ts}" font-weight="400" letter-spacing="{ts * 0.06:.1f}" fill="{c["fg"]}">{esc(title)}</text>')
+    if x.sub:
+        y += ss * 2.0
+        x.body.append(f'<text x="{lx:.0f}" y="{y:.0f}" font-family="{SANS}" font-size="{ss}" font-weight="500" fill="{c["muted"]}">{esc(x.sub)}</text>')
+
+
+def nebula(x, opacity=0.8):
+    """Volumetric-looking glow: warped, blurred colour clouds plus fine grain."""
+    W, H, c = x.W, x.H, x.c
+    x.defs.append('<filter id="neb" x="-30%" y="-60%" width="160%" height="220%"><feTurbulence type="fractalNoise" baseFrequency="0.004 0.012" numOctaves="3" seed="4" result="n"/>'
+                  '<feDisplacementMap in="SourceGraphic" in2="n" scale="140" xChannelSelector="R" yChannelSelector="B" result="d"/>'
+                  f'<feGaussianBlur in="d" stdDeviation="{H * 0.09:.0f}"/></filter>')
+    clouds = [(0.18, 0.30, 0.22, 0.34, c["a3"], "na"), (0.50, 0.85, 0.26, 0.30, c["a2"], "nb"), (0.84, 0.25, 0.20, 0.36, c["a1"], "na")]
+    g = [f'<g filter="url(#neb)" opacity="{opacity}">']
+    for px, py, rx, ry, col, cls in clouds:
+        g.append(f'<ellipse class="{cls}" cx="{W * px:.0f}" cy="{H * py:.0f}" rx="{W * rx:.0f}" ry="{H * ry:.0f}" fill="{col}"/>')
+    g.append("</g>")
+    x.body.extend(g)
+    x.css.append(f"@keyframes na{{0%,100%{{transform:translate(0,0)}}50%{{transform:translate({W * .05:.0f}px,{H * .08:.0f}px)}}}}"
+                 f"@keyframes nb{{0%,100%{{transform:translate(0,0)}}50%{{transform:translate({-W * .06:.0f}px,{-H * .06:.0f}px)}}}}"
+                 ".na{animation:na 19s ease-in-out infinite}.nb{animation:nb 23s ease-in-out infinite}")
+
+
+def s_beam(x):
+    """A comet of light races around the banner's edge (with a faint RGB split) over a nebula glow."""
+    W, H, c = x.W, x.H, x.c
+    dark = x.theme == "dark"
+    x.body.append(f'<rect width="{W}" height="{H}" fill="{c["bg0"]}"/>')
+    nebula(x, 0.75 if dark else 0.45)
+    scrim(x, rx=0.36, ry=0.42, strength=0.75 if dark else 0.85)
+    grain(x, 0.12 if dark else 0.07)
+    inset, rad = 6, 18
+    per = 2 * (W - 2 * inset - 2 * rad) + 2 * (H - 2 * inset - 2 * rad) + 2 * math.pi * rad
+    seg = per * 0.22
+    frame = f'x="{inset}" y="{inset}" width="{W - 2 * inset}" height="{H - 2 * inset}" rx="{rad}"'
+    x.body.append(f'<rect {frame} fill="none" stroke="{c.get("line", c["fg"])}" stroke-opacity="{.10 if dark else .14}"/>')
+    x.defs.append('<filter id="bglow" x="-10%" y="-30%" width="120%" height="160%"><feGaussianBlur stdDeviation="7"/></filter>')
+    dash = f'stroke-dasharray="{seg:.0f} {per - seg:.0f}" pathLength="{per:.0f}"'
+    layers = [(c["a1"], 14, .9, "url(#bglow)", 0), (c["a3"], 3, 1, None, -1.2), (c["a2"], 3, 1, None, 1.2), (c["fg"] if dark else c["a1"], 2, 1, None, 0)]
+    for i, (col, sw, op, filt, shift) in enumerate(layers):
+        f = f' filter="{filt}"' if filt else ""
+        x.body.append(f'<rect class="beam{i}" {frame} fill="none" stroke="{col}" stroke-width="{sw}" stroke-opacity="{op}" stroke-linecap="round" {dash}{f} transform="translate({shift} {-shift})"/>')
+        x.css.append(f"@keyframes bm{i}{{from{{stroke-dashoffset:{per:.0f}}}to{{stroke-dashoffset:0}}}}.beam{i}{{animation:bm{i} 7s linear {-i * 0.04:.2f}s infinite}}")
+    text_block(x)
+
+
+def voronoi_cells(W, H, sites):
+    """Voronoi cells by clipping the canvas against each perpendicular bisector (n is small)."""
+    cells = []
+    for i, (sx, sy) in enumerate(sites):
+        poly = [(0, 0), (W, 0), (W, H), (0, H)]
+        for j, (tx, ty) in enumerate(sites):
+            if i == j:
+                continue
+            nx, ny = tx - sx, ty - sy  # keep points closer to s than to t
+            mx, my = (sx + tx) / 2, (sy + ty) / 2
+            out = []
+            for k in range(len(poly)):
+                p, q = poly[k], poly[(k + 1) % len(poly)]
+                dp = (p[0] - mx) * nx + (p[1] - my) * ny
+                dq = (q[0] - mx) * nx + (q[1] - my) * ny
+                if dp <= 0:
+                    out.append(p)
+                if dp * dq < 0:
+                    t = dp / (dp - dq)
+                    out.append((p[0] + t * (q[0] - p[0]), p[1] + t * (q[1] - p[1])))
+            poly = out
+            if not poly:
+                break
+        cells.append(poly)
+    return cells
+
+
+def mix(h1, h2, t):
+    a = [int(h1.lstrip("#")[i:i + 2], 16) for i in (0, 2, 4)]
+    b = [int(h2.lstrip("#")[i:i + 2], 16) for i in (0, 2, 4)]
+    return "#" + "".join(f"{int(u + (v - u) * t):02X}" for u, v in zip(a, b))
+
+
+def s_shatter(x):
+    """Voronoi glass: shards tinted along the palette, glowing cracks, shimmer and a light sweep."""
+    W, H, c, r = x.W, x.H, x.c, x.rng
+    dark = x.theme == "dark"
+    x.body.append(f'<rect width="{W}" height="{H}" fill="{c["bg0"]}"/>')
+    sites = [(r.uniform(0.30, 1.02) * W, r.uniform(-0.05, 1.05) * H) for _ in range(34)]
+    cells = voronoi_cells(W, H, sites)
+    x.defs.append(f'<linearGradient id="fadeL" x1="0" x2="1"><stop offset=".40" stop-color="#fff" stop-opacity="0"/><stop offset=".78" stop-color="#fff"/></linearGradient>'
+                  f'<mask id="shm"><rect width="{W}" height="{H}" fill="url(#fadeL)"/></mask>'
+                  '<filter id="crack" x="-5%" y="-5%" width="110%" height="110%"><feGaussianBlur stdDeviation="2.2"/></filter>')
+    shards, edges = [], []
+    for i, poly in enumerate(cells):
+        if len(poly) < 3:
+            continue
+        mxp = sum(p[0] for p in poly) / len(poly) / W
+        myp = sum(p[1] for p in poly) / len(poly) / H
+        base = mix(c["a3"], c["a1"], min(1, max(0, mxp * 1.1 - 0.15))) if myp < 0.5 else mix(c["a1"], c["a2"], min(1, max(0, myp - 0.3)))
+        op = r.uniform(.22, .70) if dark else r.uniform(.14, .42)
+        d = "M" + " L".join(f"{p[0]:.1f},{p[1]:.1f}" for p in poly) + " Z"
+        shards.append(f'<path class="sh s{i % 6}" d="{d}" fill="{base}" fill-opacity="{op:.2f}"/>')
+        edges.append(f'<path d="{d}"/>')
+    x.body.append(f'<g mask="url(#shm)">{"".join(shards)}'
+                  f'<g fill="none" stroke="{c["a1"]}" stroke-width="2.5" opacity="{.55 if dark else .35}" filter="url(#crack)">{"".join(edges)}</g>'
+                  f'<g fill="none" stroke="{c["fg"] if dark else c["bg0"]}" stroke-width="1" stroke-opacity="{.35 if dark else .9}">{"".join(edges)}</g></g>')
+    x.css.append("@keyframes shim{0%,100%{opacity:1}50%{opacity:.45}}"
+                 + "".join(f".s{k}{{animation:shim {5 + k * 1.3:.1f}s ease-in-out {-k * .9:.1f}s infinite}}" for k in range(6)))
+    # a band of light swept diagonally across the glass
+    x.defs.append('<linearGradient id="sweep" x1="0" x2="1"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset=".5" stop-color="#fff" stop-opacity=".22"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>')
+    x.body.append(f'<g mask="url(#shm)"><rect class="swp" x="{-W * .2:.0f}" y="{-H * .5:.0f}" width="{W * .14:.0f}" height="{H * 2:.0f}" fill="url(#sweep)" transform="rotate(18 0 0)"/></g>')
+    x.css.append(f"@keyframes swp{{0%,35%{{transform:translateX(0) rotate(18deg)}}100%{{transform:translateX({W * 1.4:.0f}px) rotate(18deg)}}}}.swp{{animation:swp 8s ease-in-out infinite}}")
+    text_block(x, cx=left_x(x), anchor="start")
+
+
+def s_prism(x):
+    """RGB blinds: three channel-coloured slat patterns drift at different speeds, so the slats
+    split into colour fringes; a bright swipe crosses the banner every few seconds."""
+    W, H, c = x.W, x.H, x.c
+    dark = x.theme == "dark"
+    x.body.append(f'<rect width="{W}" height="{H}" fill="{c["bg0"]}"/>')
+    slat = 46
+    blend = "screen" if dark else "multiply"
+    x.defs.append(f'<radialGradient id="pfade" cx=".5" cy=".5" r=".6"><stop offset="0" stop-color="#fff"/><stop offset=".55" stop-color="#fff" stop-opacity=".7"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient>'
+                  f'<mask id="pm"><rect width="{W}" height="{H}" fill="url(#pfade)"/></mask>')
+    layers = []
+    for i, col in enumerate((c["a1"], c["a2"], c["a3"])):
+        x.defs.append(f'<linearGradient id="sl{i}" x1="0" x2="1"><stop offset=".34" stop-color="{col}" stop-opacity="0"/><stop offset=".5" stop-color="{col}" stop-opacity="{1 if dark else .7}"/><stop offset=".6" stop-color="{col}" stop-opacity="0"/></linearGradient>'
+                      f'<pattern id="pt{i}" width="{slat}" height="{H}" patternUnits="userSpaceOnUse"><rect width="{slat}" height="{H}" fill="url(#sl{i})"/></pattern>')
+        layers.append(f'<rect class="pr{i}" x="{-slat * 2 + (i - 1) * slat * 0.22:.1f}" y="0" width="{W + slat * 4}" height="{H}" fill="url(#pt{i})" style="mix-blend-mode:{blend}"/>')
+        x.css.append(f"@keyframes pr{i}{{from{{transform:translateX(0)}}to{{transform:translateX({slat * (1 if i != 1 else -1)}px)}}}}"
+                     f".pr{i}{{animation:pr{i} {3.2 + i * 0.9:.1f}s linear infinite}}")
+    x.body.append(f'<g mask="url(#pm)" style="isolation:isolate">{"".join(layers)}</g>')
+    # swipe reveal: a hot vertical seam of light
+    x.defs.append(f'<linearGradient id="seam" x1="0" x2="1"><stop offset="0" stop-color="{c["fg"]}" stop-opacity="0"/><stop offset=".5" stop-color="{c["fg"]}" stop-opacity="{.55 if dark else .35}"/><stop offset="1" stop-color="{c["fg"]}" stop-opacity="0"/></linearGradient>')
+    x.body.append(f'<rect class="seam" x="{-W * .12:.0f}" y="0" width="{W * .08:.0f}" height="{H}" fill="url(#seam)"/>')
+    x.css.append(f"@keyframes seam{{0%,45%{{transform:translateX(0)}}100%{{transform:translateX({W * 1.25:.0f}px)}}}}.seam{{animation:seam 6s cubic-bezier(.7,0,.3,1) infinite}}")
+    scrim(x, rx=0.40, ry=0.46, strength=0.97)
+    text_block(x)
+
+
+# ---------------------------------------------------------------- CTA buttons (Call-to-Inspiration patterns)
+def button_svg(a, theme) -> str:
+    """Pill CTA button. Each button is its own image wrapped in <a> in the README, so it is genuinely clickable."""
+    pal = PALETTES[a.palette or "midnight"][theme]
+    c = dict(pal)
+    if a.accent:
+        c["a1"] = a.accent
+    label = a.title or "Get started"
+    arrow = " →" if a.variant == "primary" else ""
+    fs = 15
+    w = int(len(label + arrow) * fs * 0.58 + 44)
+    h = 44
+    dark = theme == "dark"
+    if a.variant == "primary":
+        bg, fg, stroke = c["a1"], ("#0B0B0F" if _lum(c["a1"]) > 0.45 else "#FFFFFF"), "none"
+    else:
+        bg, fg, stroke = c.get("surface", c["bg1"]), c["fg"], c.get("line", c["fg"])
+    sheen = ""
+    css = ""
+    if a.variant == "primary" and not a.static:
+        sheen = (f'<clipPath id="bc"><rect x="1" y="1" width="{w - 2}" height="{h - 2}" rx="{(h - 2) / 2}"/></clipPath>'
+                 f'<linearGradient id="bs" x1="0" x2="1"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset=".5" stop-color="#fff" stop-opacity=".35"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>')
+        css = (f"@keyframes bsw{{0%,70%{{transform:translateX(0)}}100%{{transform:translateX({w * 1.6:.0f}px)}}}}.bsw{{animation:bsw 5s ease-in-out infinite}}"
+               "@media (prefers-reduced-motion: reduce){*{animation:none!important}}")
+    body = (f'<rect x="1" y="1" width="{w - 2}" height="{h - 2}" rx="{(h - 2) / 2}" fill="{bg}"'
+            + (f' stroke="{stroke}" stroke-opacity="{.22 if dark else .18}"' if stroke != "none" else "") + "/>")
+    if sheen:
+        body += f'<g clip-path="url(#bc)"><rect class="bsw" x="{-w * .5:.0f}" y="0" width="{w * .4:.0f}" height="{h}" fill="url(#bs)" transform="skewX(-20)"/></g>'
+    body += (f'<text x="{w / 2}" y="{h / 2 + fs * .36:.1f}" text-anchor="middle" font-family="{SANS}" font-size="{fs}" font-weight="600" fill="{fg}">'
+             f'{esc(label)}' + (f'<tspan dx="4">→</tspan>' if arrow else "") + "</text>")
+    return (f'<svg xmlns="http://www.w3.org/2000/svg" width="{w}" height="{h}" viewBox="0 0 {w} {h}" role="img" aria-label="{esc(label)}">'
+            f'<style>{css}</style><defs>{sheen}</defs>{body}</svg>\n')
+
+
+def _lum(hex_):
+    h = hex_.lstrip("#")
+    r, g, b = (int(h[i:i + 2], 16) / 255 for i in (0, 2, 4))
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b
+
+
+DRAW = {"aurora": s_aurora, "glass": s_glass, "synthwave": s_synthwave, "isometric": s_isometric, "orbit": s_orbit,
+        "terminal": s_terminal, "neon": s_neon, "wave": s_wave, "blueprint": s_blueprint, "constellation": s_constellation,
+        "minimal": s_minimal, "bold": s_bold,
+        "shader": s_shader, "spotlight": s_spotlight, "ribbon": s_ribbon, "pulse": s_pulse,
+        "vortex": s_vortex, "beam": s_beam, "shatter": s_shatter, "prism": s_prism}
+
+
+# ---------------------------------------------------------------- footer + divider
+def footer(x):
+    W, H, c = x.W, x.H, x.c
+    if x.style == "wave":
+        return s_wave(x, flip=True)
+    if x.style == "vortex":
+        return vortex_footer(x)
+    x.body.append(f'<rect width="{W}" height="{H}" fill="{c["bg0"]}"/>')
+    x.defs.append(f'<linearGradient id="rule" x1="0" x2="1"><stop offset="0" stop-color="{c["a1"]}" stop-opacity="0"/><stop offset=".5" stop-color="{c["a1"]}"/><stop offset="1" stop-color="{c["a2"]}" stop-opacity="0"/></linearGradient>')
+    line_sweep(x, W * .1, H * .32, W * .8, 2, "url(#rule)", "fl")
+    if x.title:
+        x.body.append(f'<text x="{W / 2}" y="{H * .62:.0f}" text-anchor="middle" font-family="{SANS}" font-size="{title_size(x.title, W, H, 24)}" font-weight="700" fill="{c["fg"]}">{esc(x.title)}</text>')
+    if x.sub:
+        x.body.append(f'<text x="{W / 2}" y="{H * .82:.0f}" text-anchor="middle" font-family="{SANS}" font-size="14" fill="{c["muted"]}">{esc(x.sub)}</text>')
+
+
+def vortex_footer(x):
+    """Small spinning vortex beside a centred serif credit line, over faint swirl contours."""
+    W, H, c = x.W, x.H, x.c
+    x.body.append(f'<rect width="{W}" height="{H}" fill="{c["bg0"]}"/>')
+    cx, cy, R = W / 2, H / 2, H * 0.30
+    x.body.append(f'<g class="fcont" fill="none" stroke="{c["a1"]}" stroke-opacity=".28" stroke-width="1">'
+                  + "".join(f'<path d="{blade(cx, cy, H * .5, W * .55, k * 2 * math.pi / 6, 2.2, H * .35)}"/>' for k in range(6)) + "</g>")
+    x.css.append(spin_css("fcont", cx, cy, 120, reverse=True))
+    x.defs.append(f'<linearGradient id="fscr" x1="0" x2="1"><stop offset="0" stop-color="{c["bg0"]}" stop-opacity="0"/><stop offset=".5" stop-color="{c["bg0"]}" stop-opacity=".85"/><stop offset="1" stop-color="{c["bg0"]}" stop-opacity="0"/></linearGradient>')
+    x.body.append(f'<rect x="{W * .2:.0f}" width="{W * .6:.0f}" height="{H}" fill="url(#fscr)"/>')
+    vx = W / 2 - min(W * .34, len(x.title) * 10.5 + 70)
+    x.body.append(f'<g class="fspin" fill="{c["a1"]}">' + "".join(
+        f'<path d="{blade(vx, cy, R * .15, R, k * math.pi / 2, 2.0, R * .22)}"/>' for k in range(4)) + "</g>")
+    x.css.append(spin_css("fspin", vx, cy, 10))
+    if x.title:
+        ts = title_size(x.title, W * .55, H, 26)
+        x.body.append(f'<text x="{W / 2}" y="{H * (.52 if x.sub else .58):.0f}" text-anchor="middle" font-family="{SERIF}" font-size="{ts}" letter-spacing="{ts * .08:.1f}" fill="{c["fg"]}">{esc(x.title.upper())}</text>')
+    if x.sub:
+        x.body.append(f'<text x="{W / 2}" y="{H * .76:.0f}" text-anchor="middle" font-family="{SANS}" font-size="13" fill="{c["muted"]}">{esc(x.sub)}</text>')
+
+
+def divider(x):
+    W, H, c = x.W, x.H, x.c
+    if x.style == "beam":  # a comet of light running along a faint rule
+        x.body.append(f'<rect x="0" y="{H / 2 - .5}" width="{W}" height="1" fill="{c["a1"]}" opacity=".25"/>')
+        x.defs.append(f'<linearGradient id="comet" x1="0" x2="1"><stop offset="0" stop-color="{c["a1"]}" stop-opacity="0"/><stop offset=".8" stop-color="{c["a2"]}"/><stop offset="1" stop-color="{c["fg"]}"/></linearGradient>'
+                      '<filter id="cg" x="-20%" y="-300%" width="140%" height="700%"><feGaussianBlur stdDeviation="3"/></filter>')
+        x.body.append(f'<g class="comet"><rect x="{-W * .22:.0f}" y="{H / 2 - 3}" width="{W * .2:.0f}" height="6" rx="3" fill="url(#comet)" filter="url(#cg)"/>'
+                      f'<rect x="{-W * .22:.0f}" y="{H / 2 - 1}" width="{W * .2:.0f}" height="2" rx="1" fill="url(#comet)"/></g>')
+        x.css.append(f"@keyframes comet{{from{{transform:translateX(0)}}to{{transform:translateX({W * 1.25:.0f}px)}}}}.comet{{animation:comet 5s cubic-bezier(.6,0,.4,1) infinite}}")
+        return
+    x.defs.append(f'<linearGradient id="d" x1="0" x2="1"><stop offset="0" stop-color="{c["a1"]}" stop-opacity="0"/><stop offset=".3" stop-color="{c["a1"]}"/><stop offset=".7" stop-color="{c["a2"]}"/><stop offset="1" stop-color="{c["a3"]}" stop-opacity="0"/></linearGradient>')
+    x.body.append(f'<rect x="0" y="{H / 2 - 1}" width="{W}" height="2" rx="1" fill="url(#d)"/>')
+    x.body.append(f'<circle class="dot" cx="0" cy="{H / 2}" r="3.5" fill="{c["a1"]}"/>')
+    x.css.append(f"@keyframes run{{from{{transform:translateX(0)}}to{{transform:translateX({W}px)}}}}.dot{{animation:run 6s cubic-bezier(.5,0,.5,1) infinite alternate}}")
+
+
+# ---------------------------------------------------------------- assemble
+def render(a, theme) -> str:
+    x = Ctx(a, theme)
+    if a.kind == "header":
+        DRAW[a.style](x)
+        if x.logo and a.style not in LOGO_INSIDE:
+            size = x.H * .62
+            logo_mark(x, x.H * .2 + size / 2, x.H / 2, size)
+    elif a.kind == "footer":
+        footer(x)
+    else:
+        divider(x)
+    css = "" if not x.animate else "".join(x.css)
+    reduce = "@media (prefers-reduced-motion: reduce){*{animation:none!important}}"
+    label = " — ".join(t for t in (x.title, x.sub) if t) or f"{a.style} {a.kind}"
+    return (f'<svg xmlns="http://www.w3.org/2000/svg" width="{x.W}" height="{x.H}" viewBox="0 0 {x.W} {x.H}" role="img" aria-labelledby="t">'
+            f'<title id="t">{esc(label)}</title>'
+            f'<style>{css}{reduce}</style>'
+            f'<defs>{"".join(x.defs)}</defs>{"".join(x.body)}</svg>\n')
+
+
+def snippet(base: str, alt: str, width_attr="100%", href=None) -> str:
+    """<picture> markup for the README. With href, <a> and </a> each go on their own line:
+    GitHub empties a <picture> that opens on the same line as <a> and closes on a later one,
+    so the dark variant never shows and the image links to its own file instead of href."""
+    size = ' height="44"' if width_attr == "auto" else f' width="{width_attr}"'
+    pic = ("<picture>\n"
+           f'  <source media="(prefers-color-scheme: dark)" srcset="{base}-dark.svg">\n'
+           f'  <img alt="{esc(alt)}" src="{base}-light.svg"{size}>\n'
+           "</picture>")
+    if not href:
+        return pic
+    return f'<a href="{esc(href)}">\n' + "\n".join("  " + ln for ln in pic.splitlines()) + "\n</a>"
+
+
+def readme_path(target: Path) -> str:
+    """Path for the README snippet: relative to the repo root (nearest .git), else to the cwd.
+    README image paths must be relative; an absolute C:/... or /home/... path breaks on GitHub."""
+    full = target.resolve()
+    root = next((d for d in [full.parent, *full.parent.parents] if (d / ".git").exists()), Path.cwd().resolve())
+    try:
+        return os.path.relpath(full, root).replace(os.sep, "/")
+    except ValueError:  # different drive on Windows
+        print("warning: output is outside the repository; move the SVGs into it and fix the paths below", file=sys.stderr)
+        return target.as_posix()
+
+
+def write(a, out: Path, stem: str):
+    out.mkdir(parents=True, exist_ok=True)
+    themes = ["dark", "light"] if a.theme == "both" else [a.theme]
+    for t in themes:
+        svg = button_svg(a, t) if a.kind == "button" else render(a, t)
+        (out / f"{stem}-{t}.svg").write_text(svg, encoding="utf-8")
+    return themes
+
+
+def main(argv=None):
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8")
+    p = argparse.ArgumentParser(description="Animated SVG headers/footers/dividers for READMEs")
+    p.add_argument("--kind", choices=["header", "footer", "divider", "button"], default="header")
+    p.add_argument("--variant", choices=["primary", "secondary"], default="primary", help="button style")
+    p.add_argument("--href", help="link target; the printed snippet wraps the image in a GitHub-safe <a> (buttons default to #)")
+    p.add_argument("--style", default="aurora", choices=sorted(STYLES))
+    p.add_argument("--palette", choices=sorted(PALETTES))
+    p.add_argument("--accent")
+    p.add_argument("--logo", metavar="FILE", help="PNG/SVG/WebP/JPG logo embedded in a header (transparent background works best)")
+    p.add_argument("--title", default="")
+    p.add_argument("--subtitle", default="")
+    p.add_argument("--tag", default="")
+    p.add_argument("--width", type=int, default=1280)
+    p.add_argument("--height", type=int)
+    p.add_argument("--theme", choices=["dark", "light", "both"], default="both")
+    p.add_argument("--static", action="store_true")
+    p.add_argument("--out", default=".")
+    p.add_argument("--name", help="file stem (default: <kind>)")
+    p.add_argument("--list", action="store_true")
+    p.add_argument("--gallery", metavar="DIR")
+    a = p.parse_args(argv)
+
+    if a.list:
+        print("Styles:")
+        for k, (pal, d) in STYLES.items():
+            print(f"  {k:<14} {d}  (palette: {pal})")
+        print("Palettes:", ", ".join(PALETTES))
+        return 0
+
+    if a.gallery:
+        out = Path(a.gallery)
+        rows = ["# Banner gallery\n", "Generated by `scripts/make_banner.py`. Each style has dark + light variants; switch your GitHub theme to see both.\n"]
+        for style, (pal, desc) in STYLES.items():
+            a2 = argparse.Namespace(**{**vars(a), "kind": "header", "style": style, "palette": None, "height": 320,
+                                       "title": a.title or "readme-forge", "subtitle": a.subtitle or "READMEs that look as good as your code",
+                                       "tag": a.tag or "Claude skill"})
+            write(a2, out, f"{style}")
+            rows.append(f"## {style}\n\n_{desc}_ · `--style {style}`\n\n" + snippet(style, f"{style} banner: readme-forge") + "\n")
+        extras = (("footer", "wave", 160, "Thanks for reading", None), ("footer", "minimal", 120, "Made with readme-forge", "ember"),
+                  ("footer", "vortex", 140, "Made with readme-forge", "inferno"), ("divider", "aurora", 24, "", "ember"), ("divider", "beam", 24, "", "ghost"))
+        for kind, style, h, t, pal in extras:
+            a3 = argparse.Namespace(**{**vars(a), "kind": kind, "style": style, "palette": pal, "height": h, "title": t, "subtitle": "", "tag": ""})
+            write(a3, out, f"{kind}-{style}")
+            rows.append(f"## {kind}: {style}\n\n" + snippet(f"{kind}-{style}", f"{kind} ({style})") + "\n")
+        for variant, label in (("primary", "Get started"), ("secondary", "Read the docs")):
+            a4 = argparse.Namespace(**{**vars(a), "kind": "button", "variant": variant, "palette": "midnight", "title": label})
+            write(a4, out, f"button-{variant}")
+            rows.append(f"## button: {variant}\n\n" + snippet(f"button-{variant}", label, width_attr="auto") + "\n")
+        (out / "gallery.md").write_text("\n".join(rows), encoding="utf-8")
+        print(f"wrote {len(STYLES)} headers + 3 footers + 2 dividers + 2 buttons (dark+light) to {out}")
+        return 0
+
+    a.logo_uri = None
+    if a.logo:
+        lp = Path(a.logo)
+        if not lp.is_file():
+            p.error(f"--logo: {lp} not found")
+        mime = {".png": "image/png", ".svg": "image/svg+xml", ".webp": "image/webp", ".jpg": "image/jpeg",
+                ".jpeg": "image/jpeg", ".gif": "image/gif"}.get(lp.suffix.lower())
+        if not mime:
+            p.error("--logo must be .png, .svg, .webp, .jpg or .gif")
+        data = lp.read_bytes()
+        if len(data) > 200_000:
+            print(f"warning: logo is {len(data) // 1024} KB; resize it to ~320 px so the README loads fast", file=sys.stderr)
+        a.logo_uri = f"data:{mime};base64," + base64.b64encode(data).decode("ascii")
+    if a.height is None:
+        a.height = {"header": 320, "footer": 160, "divider": 24, "button": 44}[a.kind]
+    if a.kind == "header" and not a.title:
+        p.error("--title is required for headers")
+    stem = a.name or a.kind
+    themes = write(a, Path(a.out), stem)
+    alt = " — ".join(t for t in (a.title, a.subtitle) if t) or f"{a.kind}"
+    rel = readme_path(Path(a.out) / stem)
+    print(f"wrote {', '.join(f'{stem}-{t}.svg' for t in themes)} in {a.out}\n")
+    if a.kind == "button":
+        print(snippet(rel, a.title or "Get started", width_attr="auto", href=a.href or "#"))
+        return 0
+    if a.theme == "both":
+        print(snippet(rel, alt, href=a.href))
+    else:
+        img = f'<img alt="{esc(alt)}" src="{rel}-{themes[0]}.svg" width="100%">'
+        print(f'<a href="{esc(a.href)}">\n  {img}\n</a>' if a.href else img)
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

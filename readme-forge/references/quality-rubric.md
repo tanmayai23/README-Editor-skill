@@ -31,7 +31,7 @@ Frontmatter 40 (license valid, task/library/base_model for models; task_categori
 | ERROR | image without alt text | describe the content: "Dashboard showing weekly active users" |
 | ERROR | relative link/image target missing | fix the path, or use an absolute URL |
 | ERROR | unfilled placeholder (`{{X}}`, `your_username`, `YOUR_API_KEY`, lorem ipsum) | fill it in, or delete the line |
-| ERROR | dead widget host (`*.herokuapp.com`) | replace using widgets.md |
+| ERROR | dead widget host (`*.herokuapp.com`) | replace using widgets.md (readme-forge-design) |
 | ERROR | README uses a package manager/script/make target that doesn't exist | use the analyzer's commands |
 | WARN | multiple H1 · heading level skip · emoji-only heading | fix the hierarchy |
 | WARN | non-descriptive alt ("image", "logo") or link text ("here", "click here") | make it descriptive |

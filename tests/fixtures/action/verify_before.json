@@ -1,0 +1,11 @@
+{
+  "readme": "demo/sample-app/README.before.md",
+  "repo": "demo/sample-app",
+  "summary": {"verified": 1, "not_found": 1, "unverifiable": 0, "generic": 1, "checked": 2, "accuracy": 0.5},
+  "by_kind": {"script": {"verified": 0, "not_found": 1}, "package_manager": {"verified": 1, "not_found": 0}},
+  "claims": [
+    {"kind": "package_manager", "text": "npm install", "line": 7, "status": "verified", "evidence": "package.json present"},
+    {"kind": "script", "text": "npm run serve", "line": 8, "status": "not_found", "evidence": "package.json scripts: dev, build, start, test"},
+    {"kind": "command", "text": "cd orbit-api", "line": 6, "status": "generic", "evidence": "shell builtin"}
+  ]
+}
