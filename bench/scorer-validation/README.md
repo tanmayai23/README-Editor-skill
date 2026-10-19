@@ -40,7 +40,8 @@ so two runs were made:
   working relative link becomes an ERROR, so this run is biased against well-illustrated READMEs. It is
   shown to make that bias visible.
 
-No input crashed the scorer: all 50 files scored in both runs.
+No input crashed the scorer: all 50 files scored in both runs. The scores were produced with `score_readme.py` as of commit `aff57cf` and reproduced unchanged
+(identical CSVs) with the version in `e44fd31`.
 
 ## Results
 

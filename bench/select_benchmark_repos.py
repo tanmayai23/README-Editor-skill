@@ -13,6 +13,7 @@ Procedure (fixed before looking at any candidate):
 
 Usage: python bench/select_benchmark_repos.py [--out bench/repos.json]   (needs an authenticated gh)
 """
+import base64
 import json
 import re
 import subprocess
@@ -105,7 +106,7 @@ def main(argv):
                 if not meta or "/" in meta.get("path", "/"):
                     log.append(f"{label}: skip {full}: no root README")
                     continue
-                text = gh([f"repos/{full}/readme", "-H", "Accept: application/vnd.github.raw"], raw=True) or ""
+                text = base64.b64decode(meta.get("content") or "").decode("utf-8", errors="replace")
                 nonblank = [l for l in text.splitlines() if l.strip()]
                 if len(nonblank) > 15 or WEAK_WORDS.search(text):
                     log.append(f"{label}: skip {full}: README not weak ({len(nonblank)} non-blank lines)")
@@ -145,8 +146,10 @@ def main(argv):
                 taken.add(full.lower())
                 got += 1
                 log.append(f"{label}: TAKE {full}")
+                print(f"{label}: TAKE {full}", flush=True)
         if got < count:
             log.append(f"{label}: WARNING only {got}/{count} found")
+            print(f"{label}: WARNING only {got}/{count} found", flush=True)
     doc = {
         "selected_utc": time.strftime("%Y-%m-%dT%H:%MZ", time.gmtime()),
         "procedure": __doc__.split("Usage:")[0].strip(),
