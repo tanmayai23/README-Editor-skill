@@ -2,14 +2,17 @@
 """Reproducible selection of the 20-repo README-generation benchmark (writes bench/repos.json).
 
 Procedure (fixed before looking at any candidate):
-  For each slot below, run ONE GitHub repository search (query in SLOTS, sort=stars desc, 100/page,
-  up to 3 pages) and walk the results in order. Take the first N repos that pass ALL filters:
+  For each slot below, run GitHub repository searches (sort=stars desc, 100/page, up to 3 pages), one
+  per license in SEARCH_LICENSES order (mit, then apache-2.0, then bsd-3-clause), and walk the results in order. Take the first N repos that pass ALL filters:
     1. not owned by tanmayai23, not a fork, not archived, license spdx in PERMISSIVE
     2. root README exists and is weak: <= 15 non-blank lines and no word install/usage/getting started/quickstart
     3. the tree at HEAD is complete (not truncated), has < 2000 files, repo size < 30 MB
     4. the slot's package manifest exists (root, except C# where any *.csproj/*.sln counts)
     5. real code: >= 5 source files with the slot's extensions
   No candidate is skipped for any other reason, so the README generator's likely performance plays no part.
+  Revision note: a first run (same filters, one query per slot without a license qualifier) filled only 16 of
+  20 slots, because most top results had no or a non-permissive license. The per-license queries replaced it
+  before any repo was cloned or any README was generated.
 
 Usage: python bench/select_benchmark_repos.py [--out bench/repos.json]   (needs an authenticated gh)
 """
@@ -45,6 +48,7 @@ SLOTS = [
     ("cpp", '"C++"', 1, CC, [".cpp", ".cc", ".cxx", ".hpp", ".h"], None),
     ("c", "C", 1, CC, [".c", ".h"], None),
 ]
+SEARCH_LICENSES = ["mit", "apache-2.0", "bsd-3-clause"]
 WEAK_WORDS = re.compile(r"\b(install\w*|usage|getting started|quick ?start)\b", re.I)
 
 
@@ -79,9 +83,8 @@ def main(argv):
     out = Path(argv[argv.index("--out") + 1]) if "--out" in argv else HERE / "repos.json"
     chosen, log, taken = [], [], set()
     for label, lang, count, manifests, exts, extra in SLOTS:
-        q = f"language:{lang} {BASE}"
         got = 0
-        for page in (1, 2, 3):
+        for page, q in [(pg, f"language:{lang} license:{lc} {BASE}") for lc in SEARCH_LICENSES for pg in (1, 2, 3)]:
             if got >= count:
                 break
             res = gh(["-X", "GET", "search/repositories", "-f", f"q={q}", "-f", "sort=stars", "-f", "order=desc",
@@ -153,7 +156,8 @@ def main(argv):
     doc = {
         "selected_utc": time.strftime("%Y-%m-%dT%H:%MZ", time.gmtime()),
         "procedure": __doc__.split("Usage:")[0].strip(),
-        "search_sort": "stars desc, per_page=100, pages 1-3",
+        "search_sort": "stars desc, per_page=100, pages 1-3 per license query",
+        "search_licenses": SEARCH_LICENSES,
         "repos": chosen,
     }
     out.write_text(json.dumps(doc, indent=2) + "\n", encoding="utf-8")
