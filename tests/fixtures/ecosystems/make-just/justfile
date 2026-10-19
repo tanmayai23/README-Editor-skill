@@ -1,0 +1,14 @@
+set shell := ["bash", "-c"]
+version := "1.0"
+
+default:
+    just --list
+
+build:
+    make build
+
+serve port="8080":
+    ./app --port {{port}}
+
+test *args: build
+    make test

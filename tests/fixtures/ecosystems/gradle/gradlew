@@ -1,0 +1,3 @@
+#!/bin/sh
+# Gradle wrapper placeholder
+exec gradle "$@"

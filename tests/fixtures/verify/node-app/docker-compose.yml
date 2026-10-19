@@ -1,0 +1,7 @@
+services:
+  api:
+    build: .
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+  db:
+    image: postgres:16

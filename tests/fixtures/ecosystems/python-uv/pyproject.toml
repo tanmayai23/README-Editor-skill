@@ -1,0 +1,12 @@
+[project]
+name = "uvtool"
+version = "0.2.0"
+description = "A uv-managed CLI"
+requires-python = ">=3.9"
+dependencies = ["click>=8.1"]
+
+[project.scripts]
+uvtool = "uvtool.cli:main"
+
+[tool.ruff]
+line-length = 100

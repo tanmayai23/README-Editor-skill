@@ -34,7 +34,7 @@ PY_IMPORT = re.compile(r"^\s*(?:from\s+(\.*[\w.]*)\s+import\s+([\w*, ()]+)|impor
 JS_IMPORT = re.compile(r"""(?:import\s+(?:[^'"]*?\s+from\s+)?|export\s+[^'"]*?\s+from\s+|require\(\s*|import\(\s*)['"]([^'"]+)['"]""")
 GO_IMPORT_BLOCK = re.compile(r"import\s*\(([^)]*)\)", re.S)
 GO_IMPORT_ONE = re.compile(r'import\s+(?:\w+\s+)?"([^"]+)"')
-RS_USE = re.compile(r"^\s*(?:pub\s+)?(?:use|mod)\s+(crate::)?([\w:]+)", re.M)
+RS_USE = re.compile(r"^\s*(?:pub(?:\([^)]*\))?\s+)?(use|mod)\s+(crate::)?([\w:]+)", re.M)
 
 EXTERNAL_HINTS = {
     # import name fragment -> (node id, label, shape)
@@ -139,13 +139,38 @@ def resolve_py(mod: str, src: str, files: set, pkg_roots: list):
     return None
 
 
+def resolve_rs(kind: str, path: str, src: str, files: set):
+    """`mod x;` resolves next to the declaring file; `use [crate::]a::b` from the crate's src/ dir."""
+    if path.split("::")[0] in ("self", "super", "std", "core", "alloc"):
+        return None
+    if kind == "mod":
+        here = Path(src)
+        d = here.parent if here.name in ("main.rs", "lib.rs", "mod.rs") else here.parent / here.stem
+        cands = [f"{d.as_posix()}/{path}.rs", f"{d.as_posix()}/{path}/mod.rs"]
+    else:
+        s = "/" + src
+        i = s.rfind("/src/")
+        crate_dir = s[1:i + 4] if i >= 0 else "src"
+        segs = path.split("::")
+        cands = []
+        for n in range(len(segs), 0, -1):  # longest module path first: crate::net::client → src/net/client.rs
+            p = crate_dir + "/" + "/".join(segs[:n])
+            cands += [p + ".rs", p + "/mod.rs"]
+    for c in cands:
+        c = c[2:] if c.startswith("./") else c
+        if c in files:
+            return c
+    return None
+
+
 def tsconfig_aliases(root: Path) -> dict:
     aliases = {}
     for name in ("tsconfig.json", "jsconfig.json"):
         p = root / name
         if not p.exists():
             continue
-        txt = re.sub(r"//.*|/\*.*?\*/", "", read(p), flags=re.S)
+        # strip // and /* */ comments but leave strings alone ("@lib/*", "https://...")
+        txt = re.sub(r'("(?:\\.|[^"\\])*")|//[^\n]*|/\*.*?\*/', lambda m: m.group(1) or "", read(p), flags=re.S)
         txt = re.sub(r",(\s*[}\]])", r"\1", txt)
         try:
             data = json.loads(txt)
@@ -179,11 +204,14 @@ def build(root: Path, depth: int):
             if sub.is_dir() and (sub / js).exists() and sub.name not in IGNORE_DIRS:
                 for a, t in tsconfig_aliases(sub).items():
                     aliases.setdefault(a, f"{sub.relative_to(root).as_posix()}/{t}")
-    go_mod = ""
-    gm = root / "go.mod"
-    if gm.exists():
-        m = re.search(r"^module\s+(\S+)", read(gm), re.M)
-        go_mod = m.group(1) if m else ""
+    go_mods = []  # (module path, dir holding go.mod relative to root); go.mod may sit in a subfolder
+    for gm in [root / "go.mod"] + sorted(root.glob("*/go.mod")) + sorted(root.glob("*/*/go.mod")):
+        if gm.exists() and not any(part in IGNORE_DIRS for part in gm.relative_to(root).parts[:-1]):
+            m = re.search(r"^module\s+(\S+)", read(gm), re.M)
+            if m:
+                d = gm.parent.relative_to(root).as_posix()
+                go_mods.append((m.group(1), "" if d == "." else d))
+    go_mods.sort(key=lambda x: -len(x[0]))
     sroot = source_root(root)
     prefix = sroot.relative_to(root).as_posix() if sroot != root else ""
     if not prefix and len(pkg_roots) > 4 and depth == 2:
@@ -202,7 +230,22 @@ def build(root: Path, depth: int):
         externals_seen = []
         if p.suffix == ".py":
             for frm, names_, imp in PY_IMPORT.findall(txt):
-                mods = [frm] if frm else [m.strip().split(" as ")[0] for m in imp.split(",")]
+                if frm:
+                    # `from pkg import mod` / `from . import mod`: link to the submodule when the name is one
+                    base_t = resolve_py(frm, r, fileset, pkg_roots)
+                    subs = []
+                    for n in names_.replace("(", " ").replace(")", " ").split(","):
+                        n = n.strip().split(" as ")[0].strip()
+                        if n and n != "*":
+                            sub = resolve_py(frm + n if frm.endswith(".") else f"{frm}.{n}", r, fileset, pkg_roots)
+                            if sub and sub != base_t:
+                                subs.append(sub)
+                    if subs or base_t:
+                        targets += subs or [base_t]
+                    elif not frm.startswith("."):
+                        externals_seen.append(frm.split(".")[0])
+                    continue
+                mods = [m.strip().split(" as ")[0] for m in imp.split(",")]
                 for m in mods:
                     if not m:
                         continue
@@ -223,20 +266,21 @@ def build(root: Path, depth: int):
             for block in GO_IMPORT_BLOCK.findall(txt):
                 specs += re.findall(r'"([^"]+)"', block)
             for s in specs:
-                if go_mod and s.startswith(go_mod + "/"):
-                    d = s[len(go_mod) + 1:]
-                    cands = [f for f in fileset if f.startswith(d + "/") and f.count("/") == d.count("/") + 1]
+                mod_dir = next(((mp, md) for mp, md in go_mods if s == mp or s.startswith(mp + "/")), None)
+                if mod_dir:
+                    mp, md = mod_dir
+                    d = "/".join(x for x in (md, s[len(mp) + 1:]) if x)
+                    cands = [f for f in fileset if f.endswith(".go") and (f.startswith(d + "/") if d else True)
+                             and f.count("/") == (d.count("/") + 1 if d else 0)]
                     if cands:
                         targets.append(sorted(cands)[0])
                 else:
                     externals_seen.append(s)
         elif p.suffix == ".rs":
-            for crate, path in RS_USE.findall(txt):
-                first = path.split("::")[0]
-                for c in (f"src/{first}.rs", f"src/{first}/mod.rs"):
-                    if c in fileset:
-                        targets.append(c)
-                        break
+            for kind, _crate, path in RS_USE.findall(txt):
+                t = resolve_rs(kind, path, r, fileset)
+                if t:
+                    targets.append(t)
         for t in targets:
             g_dst = group_of(t, depth, prefix)
             if g_dst != g_src:

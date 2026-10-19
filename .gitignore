@@ -18,6 +18,7 @@ Thumbs.db
 
 # Build output: the skill zip is attached to every GitHub release
 readme-forge.zip
+readme-forge-design.zip
 
 # Video production workspace (kept locally, not published)
 demo/build/
@@ -27,3 +28,10 @@ demo/*.log
 demo/STORYBOARD.md
 demo/PROMPTS.md
 demo/sample-app/README.live.md
+
+# IDEs (e.g. the Java extension) build the test fixtures in place; keep that output out
+tests/fixtures/**/build/
+tests/fixtures/**/bin/
+tests/fixtures/**/obj/
+tests/fixtures/**/.gradle/
+tests/fixtures/**/target/

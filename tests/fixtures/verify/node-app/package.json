@@ -1,0 +1,12 @@
+{
+  "name": "node-app",
+  "version": "1.0.0",
+  "private": true,
+  "main": "src/index.js",
+  "scripts": {
+    "dev": "node --watch src/index.js",
+    "test": "node --test test/"
+  },
+  "dependencies": { "express": "^4.21.0" },
+  "devDependencies": { "eslint": "^9.0.0" }
+}
