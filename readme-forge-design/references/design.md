@@ -18,7 +18,7 @@ Generate every visual asset locally with `scripts/make_banner.py` and commit it,
 1. Use system font stacks only, unless the user provides a font to embed. `make_banner.py` uses `Segoe UI, -apple-system, Helvetica Neue, Inter, Roboto, Arial` and a matching mono stack.
 2. **Ship dark and light variants** and switch them with `<picture>`. Never rely on in-SVG theme media queries.
 3. **The first frame must be complete.** Animate decoration, never the text's existence. Thumbnails, link previews, slow loads and rasterisers show frame 0.
-4. Ambient loops are slow (≥ 4 s). There are no strobes, and `prefers-reduced-motion` stops everything (a progressive enhancement).
+4. Ambient loops are slow (≥ 4 s). There are no strobes. `prefers-reduced-motion` stops CSS animation but **not SMIL** (`<animate>`), so new styles use CSS only: `vortex`, `beam`, `shatter`, `prism`, `aurora`, `glass`, `synthwave`, `isometric`, `wave`, `blueprint`, `constellation`, `minimal`, `shader`, `neon` and `pulse` stop fully; `orbit`, `terminal`, `bold`, `ribbon` and the spotlight pill still use SMIL (issue #32).
 5. Keep header SVGs under 20 KB (100 KB at most). Always set `viewBox`, and use `width="100%"` on the `<img>`.
 6. Text that must be searchable or translatable (the pitch) also goes in Markdown, below the banner. The banner's `alt` repeats the title and tagline.
 7. **Linking a `<picture>`: `<a href>`, `<picture>` and `</a>` each go on their own line** (pattern A below), or the whole element goes on one line (the CTA buttons). The tempting middle form, `<a href="…"><picture>` with `<source>` on the next line, renders on GitHub as an empty `<picture>` plus a bare light `<img>`: dark mode never switches and the click opens the SVG instead of your URL. `make_banner.py --href URL` prints the safe form, and `score_readme.py` reports the broken one as an error.
@@ -66,9 +66,10 @@ A banner with the name as the title and the role as the subtitle, then 3–5 "ab
 | **Quiet** (projects, default) | libraries, tools, companies | `---` → License line → "Made by …" / sponsor logos → back-to-top link |
 | **Rule** | polished projects | `make_banner.py --kind footer --style minimal --title "Made with care by NAME"` + back-to-top |
 | **Wave** | profiles, playful projects | `--kind footer --style wave --title "Thanks for visiting"`, reusing the header's palette |
+| **Vortex** | pairs with a `vortex` header | `--kind footer --style vortex --title "Made with care"`: a small spinning vortex beside a serif credit line |
 
 Back-to-top: put `<a id="top"></a>` before the header, then `<p align="right"><a href="#top">Back to top ↑</a></p>` in the footer.
-Section dividers (optional, for long profiles only): `--kind divider`, at most 2–3 per page.
+Section dividers (optional): `--kind divider` (a dot gliding along a gradient rule) or `--kind divider --style beam` (a comet of light), at most 2–3 per page.
 
 ## 4. Choosing a banner style
 
@@ -83,11 +84,13 @@ Section dividers (optional, for long profiles only): `--kind divider`, at most 2
 | Retro / hobby / fun profile | `synthwave`, `neon` | sunset, cyber |
 | Corporate / enterprise / docs | `minimal`, `wave` | mono, ocean |
 | Personal profile, general | `wave`, `aurora`, `terminal`, `constellation` | any; match the person's accent colour |
-| Announcement, big launch | `bold` | ember, sunset |
+| Announcement, big launch | `bold`, `beam` | ember, sunset, ghost |
+| Creative tools, shader/3D/graphics, bold brands | `vortex`, `prism`, `shatter` | inferno, prism, ghost |
+| Security, crypto, "breaks things" tools | `shatter` | ghost, midnight |
 
 If the project has a brand colour, use `--accent "#HEX"` with the closest palette. Show the user 2–3 options (generate them, then render previews) when the choice isn't obvious.
 
-**Logos.** Pass `--logo FILE` to embed the project logo in the header. Spotlight centres it above the title (use `--height 400` so it has room); other styles put it on the left. The logo is base64-embedded, so keep it small: a transparent PNG about 320 px wide (≈ 20–80 KB) or an SVG. If the logo sits on a white box, remove the background first, because it looks broken on dark banners. Match the palette to the logo's colours, and reuse that accent for the badges, buttons and footer.
+**Logos.** Pass `--logo FILE` to embed the project logo in the header. Spotlight centres it above the title (use `--height 400` so it has room), vortex puts it in the eye of the vortex, and other styles put it on the left. The logo is base64-embedded, so keep it small: a transparent PNG about 320 px wide (≈ 20–80 KB) or an SVG. If the logo sits on a white box, remove the background first, because it looks broken on dark banners. Match the palette to the logo's colours, and reuse that accent for the badges, buttons and footer.
 
 ## 5. Colour system
 - **One accent, one neutral pair.** Badges, banner accent, links you style, and footer accent all use the same accent family. Mixed palettes look amateur.
@@ -143,6 +146,7 @@ Web design galleries use WebGL, JS and hover states. A README can't. This is how
 | **Call to Inspiration** (CTA gallery) | Verb-first labels, one bright primary + one ghost secondary, trailing →, a friction reducer underneath, the CTA repeated at the end | `--kind button --variant primary|secondary` (clickable: each button is its own image inside `<a>`) + `templates/design/cta-section.md` |
 | **Dark design galleries** | Never pure black (#08090A–#121212). Elevation through lighter surfaces (+3–6%) and white 5–10% borders. Text at 100/62/40%. One desaturated accent, glow on a single focal element | Palettes `midnight` (Linear-like), `carbon` (Vercel-like), `obsidian` (Supabase-like). All have light variants too |
 | **Dribbble 2025–26 trends** | Bento grids, soft layered gradients, flowing lines, restrained glass, dark mode | `--style ribbon` (silk strands), `glass`, `aurora`, plus bento layout recipe (§7, a 2–3 column table of short cards) |
+| **No-code shader galleries** (WebGL scenes built in Unicorn Studio: stacked gradient → nebula → voronoi shatter → edge beam → lens distort; liquify and RGB blinds) | Warm near-black canvas, one hot accent, a single moving focal element, thin contour lines, condensed serif caps with wide tracking, tiny mono meta text | `--style vortex` (blades + spikes + liquified contours, `inferno` palette), `beam` (edge beam over nebula), `shatter` (voronoi glass + light sweep), `prism` (RGB blinds + swipe reveal). Rebuilt from scratch in SVG: no shader code is copied, and nothing needs WebGL |
 | **Figma** | Where designers tweak visuals | Drag any generated SVG into Figma to edit colours and layout. Figma drops SMIL/CSS animation and noise filters, so use `--static` for the Figma copy, edit it, export as SVG, then regenerate the animated version with the same palette (`--accent`). For hand-made Figma banners: frame 1280 wide, outline text, export SVG, and keep them under 100 KB. |
 
 ### Landing-page hero recipe (supahero pattern)

@@ -1,6 +1,6 @@
 # Widget catalog (profile & project READMEs)
 
-Replace `USER` / `OWNER/REPO`. Every widget below is an `<img>`: **always** give alt text, and prefer `<picture>` for dark/light. Keep ≤ 4 dynamic cards per profile. Check with `scripts/check_links.py --images-only` when network is allowed.
+Replace `USER` / `OWNER/REPO`. Every widget below is an `<img>`: **always** give alt text, and prefer `<picture>` for dark/light. Keep ≤ 4 dynamic cards per profile. Check with readme-forge's `scripts/check_links.py --images-only` when network is allowed.
 
 ## Reliability tiers
 
@@ -10,7 +10,7 @@ Replace `USER` / `OWNER/REPO`. Every widget below is an `<img>`: **always** give
 | **B — shared public instance** | readme-stats, streak, trophy, activity-graph (Vercel/demolab hosted) | OK, but add the fallback comment; they rate-limit popular accounts |
 | **C — dead** | anything on `*.herokuapp.com` (Heroku free tier removed Nov 2022); public `github-profile-trophy.vercel.app` and `github-readme-activity-graph.vercel.app` (HTTP 402, Oct 2026) | never use the public URL; replace or self-host |
 
-Hosted services change. When network is allowed, **always run `check_links.py`** on the result. It catches 402/404s and widgets that return an error card instead of a chart.
+Hosted services change. When network is allowed, **always run `check_links.py`** (from the core readme-forge skill) on the result. It catches 402/404s and widgets that return an error card instead of a chart.
 
 Fallback comment to put above any Tier-B card:
 ```html

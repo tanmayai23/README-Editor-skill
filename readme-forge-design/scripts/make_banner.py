@@ -2,9 +2,10 @@
 """Generate self-contained, animated SVG headers, footers and dividers for READMEs.
 
 Stdlib only. No external services: the SVGs are committed to the repo, so they never
-rate-limit or go down. Every file ships a dark and a light variant, honours
-prefers-reduced-motion, and uses system font stacks (external fonts are blocked
-inside <img>).
+rate-limit or go down. Every file ships a dark and a light variant and uses system
+font stacks (external fonts are blocked inside <img>). prefers-reduced-motion stops
+every CSS animation; orbit, terminal, bold, ribbon and the spotlight pill still use
+SMIL, which browsers keep playing (issue #32).
 
 Usage:
   python make_banner.py --style aurora --title "orbit-api" --subtitle "Subscription billing for SaaS" --out assets/
@@ -16,7 +17,7 @@ Usage:
 Options:
   --kind header|footer|divider   (default header)
   --style NAME                   see --list
-  --palette NAME                 ember | ocean | violet | mint | sunset | mono | cyber (default: style's own)
+  --palette NAME                 see --list (default: the style's own)
   --accent "#RRGGBB"             override the main accent colour
   --title / --subtitle / --tag   text (tag = small caps line above the title)
   --width 1280 --height 320      canvas (footer default 160, divider default 24)
@@ -89,6 +90,16 @@ PALETTES.update({
     "nighty":      _preset("#606080", "#8D7DCA", "#3A3A55"),
 })
 
+# WebGL-shader looks (no-code shader galleries built with Unicorn Studio: vortex, edge beam,
+# voronoi shatter, RGB blinds). "prism" holds the three channel colours; light mode switches
+# them to cyan/magenta/yellow and multiplies instead of screening.
+PALETTES.update({
+    "inferno": {"dark": dict(bg0="#0A0604", bg1="#150A06", fg="#F6E1CF", muted="#C2A493", a1="#FF3B1F", a2="#FF7A3D", a3="#9E1B0B", surface="#140B07", line="#FF3B1F"),
+                "light": dict(bg0="#FBF4EE", bg1="#F4E5D8", fg="#1A0D08", muted="#6B4A3C", a1="#D42A0E", a2="#DD5A17", a3="#8A1406", surface="#FFFFFF", line="#B8240C")},
+    "prism":   {"dark": dict(bg0="#050507", bg1="#0C0C12", fg="#F5F5FA", muted="#A9A9B8", a1="#FF2D55", a2="#2DFF9A", a3="#2D7BFF", surface="#101016", line="#FFFFFF"),
+                "light": dict(bg0="#FAFAFC", bg1="#F0F0F5", fg="#0B0B12", muted="#4E4E5C", a1="#00B8D9", a2="#E6007E", a3="#F2C200", surface="#FFFFFF", line="#0B0B12")},
+})
+
 STYLES = {
     # name: (default palette, description)
     "aurora":        ("violet", "drifting mesh-gradient light, modern SaaS"),
@@ -107,7 +118,13 @@ STYLES = {
     "spotlight":     ("midnight", "dark landing-page hero: masked grid, light beam, announcement pill, gradient title"),
     "ribbon":        ("violet", "twisting silk ribbon of light strands, 3D depth"),
     "pulse":         ("ocean",  "soft glowing rings expanding behind the title"),
+    "vortex":        ("inferno", "spinning blade vortex over liquid swirl contours, condensed serif title"),
+    "beam":          ("ghost",  "light beam racing around the edge over a nebula glow"),
+    "shatter":       ("ghost",  "voronoi glass shards with glowing cracks and a light sweep"),
+    "prism":         ("prism",  "RGB-split light blinds with a swipe reveal"),
 }
+# Styles whose own layout places the logo (everything else gets it on the left).
+LOGO_INSIDE = {"spotlight", "vortex"}
 
 
 def esc(s: str) -> str:
@@ -133,7 +150,7 @@ class Ctx:
         self.title, self.sub, self.tag = a.title or "", a.subtitle or "", a.tag or ""
         self.logo = getattr(a, "logo_uri", None)
         # With a side logo, keep centred text clear of it.
-        self.text_w = self.W - 2 * (self.H * 0.62 + self.H * 0.2) if self.logo and a.kind == "header" and a.style != "spotlight" else self.W
+        self.text_w = self.W - 2 * (self.H * 0.62 + self.H * 0.2) if self.logo and a.kind == "header" and a.style not in LOGO_INSIDE else self.W
         self.animate = not a.static
         self.rng = random.Random(f"{a.style}{a.title}{theme}")
         self.defs, self.css, self.body = [], [], []
@@ -634,11 +651,248 @@ def s_pulse(x):
     x.body.append(f'<circle cx="{cx:.0f}" cy="{cy:.0f}" r="{H * .48:.0f}" fill="url(#pulseGlow)"/>')
     for i in range(4):
         r = H * (.12 + i * .12)
-        anim = (f'<animate attributeName="r" values="{r:.1f};{r + H * .10:.1f};{r:.1f}" dur="{5 + i}s" repeatCount="indefinite"/>'
-                if x.animate else "")
-        x.body.append(f'<circle cx="{cx:.0f}" cy="{cy:.0f}" r="{r:.1f}" fill="none" stroke="{c["a1"]}" stroke-width="1.5" '
-                      f'stroke-opacity="{.45 - i * .08:.2f}">{anim}</circle>')
+        x.body.append(f'<circle class="ring{i}" cx="{cx:.0f}" cy="{cy:.0f}" r="{r:.1f}" fill="none" stroke="{c["a1"]}" stroke-width="1.5" '
+                      f'stroke-opacity="{.45 - i * .08:.2f}" vector-effect="non-scaling-stroke"/>')
+        x.css.append(f"@keyframes ring{i}{{50%{{transform:scale({(r + H * .10) / r:.3f})}}}}"
+                     f".ring{i}{{transform-origin:{cx:.0f}px {cy:.0f}px;animation:ring{i} {5 + i}s ease-in-out infinite}}")
     scrim(x, rx=0.34, ry=0.30, strength=0.8)
+    text_block(x)
+
+
+# ---------------------------------------------------------------- WebGL-shader looks, rebuilt in SVG
+# GitHub shows SVGs through <img>, so there is no WebGL or script. These four styles rebuild the
+# look of no-code shader scenes (vortex, edge beam, voronoi shatter, RGB blinds) with gradients,
+# filters and CSS animation only. CSS (not SMIL) means prefers-reduced-motion really stops them.
+SERIF = "'Bodoni 72', Didot, 'Bodoni MT', 'Playfair Display', Georgia, 'Times New Roman', serif"
+
+
+def left_x(x):
+    """Left edge for start-anchored text, clear of a side logo."""
+    return x.H * 1.0 + 16 if x.logo and x.style not in LOGO_INSIDE else x.W * 0.07
+
+
+def spin_css(name, cx, cy, dur, reverse=False):
+    to = -360 if reverse else 360
+    return (f"@keyframes {name}k{{to{{transform:rotate({to}deg)}}}}"
+            f".{name}{{transform-origin:{cx:.0f}px {cy:.0f}px;animation:{name}k {dur}s linear infinite}}")
+
+
+def blade(cx, cy, r0, r1, a0, sweep, width, steps=28):
+    """One curved vortex blade: a crescent along a spiral, sharp at both ends."""
+    outer, inner = [], []
+    for i in range(steps + 1):
+        t = i / steps
+        ang = a0 + sweep * t
+        r = r0 + (r1 - r0) * t ** 0.9
+        w = width * math.sin(math.pi * t) ** 0.75 * (1 - 0.45 * t)
+        outer.append((cx + (r + w) * math.cos(ang), cy + (r + w) * math.sin(ang)))
+        inner.append((cx + (r - w * 0.35) * math.cos(ang + 0.05), cy + (r - w * 0.35) * math.sin(ang + 0.05)))
+    pts = outer + inner[::-1]
+    return "M" + " L".join(f"{px:.1f},{py:.1f}" for px, py in pts) + " Z"
+
+
+def s_vortex(x):
+    """Spinning blade vortex (the 'eye'), long spikes, and liquid contour lines of a larger swirl
+    that turn slowly the other way. Condensed serif caps, like a shader-gallery landing page."""
+    W, H, c = x.W, x.H, x.c
+    dark = x.theme == "dark"
+    x.body.append(f'<rect width="{W}" height="{H}" fill="{c["bg0"]}"/>')
+    cx, cy = W * 0.78, H * 0.5
+    R = H * 0.40
+    # liquify: low-frequency displacement makes the contour swirl wobble like ink
+    x.defs.append('<filter id="liquify" x="-20%" y="-20%" width="140%" height="140%"><feTurbulence type="fractalNoise" baseFrequency="0.006" numOctaves="2" seed="7" result="n"/>'
+                  '<feDisplacementMap in="SourceGraphic" in2="n" scale="38" xChannelSelector="R" yChannelSelector="G"/></filter>'
+                  '<filter id="vglow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="10"/></filter>')
+    contours = []
+    for k in range(7):
+        a0 = k * 2 * math.pi / 7
+        contours.append(f'<path d="{blade(cx, cy, R * 0.9, W * 0.62, a0, 2.4, H * 0.30)}"/>')
+    x.body.append(f'<g filter="url(#liquify)"><g class="vcont" fill="none" stroke="{c["a1"]}" stroke-width="1" stroke-opacity="{.42 if dark else .38}">{"".join(contours)}</g></g>')
+    x.css.append(spin_css("vcont", cx, cy, 90, reverse=True))
+    # warm glow in the eye
+    x.defs.append(f'<radialGradient id="eye"><stop offset="0" stop-color="{c["a2"]}" stop-opacity="{.55 if dark else .35}"/><stop offset="1" stop-color="{c["a1"]}" stop-opacity="0"/></radialGradient>'
+                  f'<linearGradient id="bl" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="{c["a3"]}"/><stop offset=".55" stop-color="{c["a1"]}"/><stop offset="1" stop-color="{c["a2"]}"/></linearGradient>')
+    x.body.append(f'<circle class="vbreath" cx="{cx:.0f}" cy="{cy:.0f}" r="{R * 1.25:.0f}" fill="url(#eye)"/>')
+    blades, spikes = [], []
+    for k in range(4):
+        a0 = k * math.pi / 2
+        blades.append(f'<path d="{blade(cx, cy, R * 0.16, R * 0.86, a0, 2.1, R * 0.20)}"/>')
+        blades.append(f'<path d="{blade(cx, cy, R * 0.30, R * 0.62, a0 + 0.8, 1.5, R * 0.10)}" opacity=".75"/>')
+        # a long, thin spike flung out tangentially (the loader's needles)
+        sa = a0 + 0.55
+        bx, by = cx + R * 0.55 * math.cos(sa), cy + R * 0.55 * math.sin(sa)
+        tx, ty = cx + R * 1.18 * math.cos(sa - 0.45), cy + R * 1.18 * math.sin(sa - 0.45)
+        nx, ny = -math.sin(sa) * R * 0.035, math.cos(sa) * R * 0.035
+        spikes.append(f'<path d="M{bx + nx:.1f},{by + ny:.1f} L{tx:.1f},{ty:.1f} L{bx - nx:.1f},{by - ny:.1f} Z"/>')
+    x.body.append(f'<g class="vspin" fill="url(#bl)"><g filter="url(#vglow)" opacity="{.55 if dark else .30}">{"".join(blades)}</g>{"".join(blades)}{"".join(spikes)}</g>')
+    x.css.append(spin_css("vspin", cx, cy, 16)
+                 + f"@keyframes vbr{{0%,100%{{opacity:1}}50%{{opacity:.55}}}}.vbreath{{animation:vbr 5s ease-in-out infinite}}")
+    if x.logo:
+        size = R * 0.95
+        x.defs.append(f'<radialGradient id="hole"><stop offset=".55" stop-color="{c["bg0"]}"/><stop offset="1" stop-color="{c["bg0"]}" stop-opacity="0"/></radialGradient>')
+        x.body.append(f'<circle cx="{cx:.0f}" cy="{cy:.0f}" r="{size * .62:.0f}" fill="url(#hole)"/>')
+        x.body.append(f'<image href="{x.logo}" x="{cx - size / 2:.0f}" y="{cy - size / 2:.0f}" width="{size:.0f}" height="{size:.0f}" preserveAspectRatio="xMidYMid meet"/>')
+    # counter ticks around the eye, as on a shader preloader
+    for dx, dy in ((0, -1), (1, 0), (0, 1), (-1, 0)):
+        x.body.append(f'<text x="{cx + dx * R * 1.32:.0f}" y="{cy + dy * R * 1.12 + 4:.0f}" text-anchor="middle" font-family="{MONO}" font-size="11" fill="{c["muted"]}" opacity=".7">00</text>')
+    # text: scrim on the left, condensed serif caps
+    x.defs.append(f'<linearGradient id="lscrim" x1="0" x2="1"><stop offset="0" stop-color="{c["bg0"]}" stop-opacity=".92"/><stop offset=".5" stop-color="{c["bg0"]}" stop-opacity=".7"/><stop offset="1" stop-color="{c["bg0"]}" stop-opacity="0"/></linearGradient>')
+    x.body.append(f'<rect width="{W * 0.66:.0f}" height="{H}" fill="url(#lscrim)"/>')
+    serif_title(x, left_x(x), W * 0.56)
+
+
+def serif_title(x, lx, max_w):
+    """Tag, condensed serif caps title and subtitle, left-aligned; the first frame is complete."""
+    H, c = x.H, x.c
+    title = x.title.upper()
+    squeeze = 0.80
+    per = 0.70 * squeeze + 0.06  # cap width after condensing, plus tracking
+    ts = int(max(20, min(H * 0.30, max_w / (max(len(title), 1) * per))))
+    ss = max(15, int(min(ts * 0.36, 24)))
+    tg = 12
+    block = (tg * 2.2 if x.tag else 0) + ts * 0.82 + (ss * 2.0 if x.sub else 0)
+    y = H / 2 - block / 2
+    if x.tag:
+        y += tg
+        x.body.append(f'<text x="{lx:.0f}" y="{y:.0f}" font-family="{SANS}" font-size="{tg}" font-weight="600" letter-spacing="2.4" fill="{c["a1"]}">{esc(x.tag.upper())}</text>')
+        x.body.append(f'<rect x="{lx:.0f}" y="{y + 9:.0f}" width="28" height="1.5" fill="{c["a1"]}"/>')
+        y += tg * 1.2
+    y += ts * 0.82
+    x.body.append(f'<text transform="translate({lx:.1f} {y:.1f}) scale({squeeze} 1)" font-family="{SERIF}" font-size="{ts}" font-weight="400" letter-spacing="{ts * 0.06:.1f}" fill="{c["fg"]}">{esc(title)}</text>')
+    if x.sub:
+        y += ss * 2.0
+        x.body.append(f'<text x="{lx:.0f}" y="{y:.0f}" font-family="{SANS}" font-size="{ss}" font-weight="500" fill="{c["muted"]}">{esc(x.sub)}</text>')
+
+
+def nebula(x, opacity=0.8):
+    """Volumetric-looking glow: warped, blurred colour clouds plus fine grain."""
+    W, H, c = x.W, x.H, x.c
+    x.defs.append('<filter id="neb" x="-30%" y="-60%" width="160%" height="220%"><feTurbulence type="fractalNoise" baseFrequency="0.004 0.012" numOctaves="3" seed="4" result="n"/>'
+                  '<feDisplacementMap in="SourceGraphic" in2="n" scale="140" xChannelSelector="R" yChannelSelector="B" result="d"/>'
+                  f'<feGaussianBlur in="d" stdDeviation="{H * 0.09:.0f}"/></filter>')
+    clouds = [(0.18, 0.30, 0.22, 0.34, c["a3"], "na"), (0.50, 0.85, 0.26, 0.30, c["a2"], "nb"), (0.84, 0.25, 0.20, 0.36, c["a1"], "na")]
+    g = [f'<g filter="url(#neb)" opacity="{opacity}">']
+    for px, py, rx, ry, col, cls in clouds:
+        g.append(f'<ellipse class="{cls}" cx="{W * px:.0f}" cy="{H * py:.0f}" rx="{W * rx:.0f}" ry="{H * ry:.0f}" fill="{col}"/>')
+    g.append("</g>")
+    x.body.extend(g)
+    x.css.append(f"@keyframes na{{0%,100%{{transform:translate(0,0)}}50%{{transform:translate({W * .05:.0f}px,{H * .08:.0f}px)}}}}"
+                 f"@keyframes nb{{0%,100%{{transform:translate(0,0)}}50%{{transform:translate({-W * .06:.0f}px,{-H * .06:.0f}px)}}}}"
+                 ".na{animation:na 19s ease-in-out infinite}.nb{animation:nb 23s ease-in-out infinite}")
+
+
+def s_beam(x):
+    """A comet of light races around the banner's edge (with a faint RGB split) over a nebula glow."""
+    W, H, c = x.W, x.H, x.c
+    dark = x.theme == "dark"
+    x.body.append(f'<rect width="{W}" height="{H}" fill="{c["bg0"]}"/>')
+    nebula(x, 0.75 if dark else 0.45)
+    scrim(x, rx=0.36, ry=0.42, strength=0.75 if dark else 0.85)
+    grain(x, 0.12 if dark else 0.07)
+    inset, rad = 6, 18
+    per = 2 * (W - 2 * inset - 2 * rad) + 2 * (H - 2 * inset - 2 * rad) + 2 * math.pi * rad
+    seg = per * 0.22
+    frame = f'x="{inset}" y="{inset}" width="{W - 2 * inset}" height="{H - 2 * inset}" rx="{rad}"'
+    x.body.append(f'<rect {frame} fill="none" stroke="{c.get("line", c["fg"])}" stroke-opacity="{.10 if dark else .14}"/>')
+    x.defs.append('<filter id="bglow" x="-10%" y="-30%" width="120%" height="160%"><feGaussianBlur stdDeviation="7"/></filter>')
+    dash = f'stroke-dasharray="{seg:.0f} {per - seg:.0f}" pathLength="{per:.0f}"'
+    layers = [(c["a1"], 14, .9, "url(#bglow)", 0), (c["a3"], 3, 1, None, -1.2), (c["a2"], 3, 1, None, 1.2), (c["fg"] if dark else c["a1"], 2, 1, None, 0)]
+    for i, (col, sw, op, filt, shift) in enumerate(layers):
+        f = f' filter="{filt}"' if filt else ""
+        x.body.append(f'<rect class="beam{i}" {frame} fill="none" stroke="{col}" stroke-width="{sw}" stroke-opacity="{op}" stroke-linecap="round" {dash}{f} transform="translate({shift} {-shift})"/>')
+        x.css.append(f"@keyframes bm{i}{{from{{stroke-dashoffset:{per:.0f}}}to{{stroke-dashoffset:0}}}}.beam{i}{{animation:bm{i} 7s linear {-i * 0.04:.2f}s infinite}}")
+    text_block(x)
+
+
+def voronoi_cells(W, H, sites):
+    """Voronoi cells by clipping the canvas against each perpendicular bisector (n is small)."""
+    cells = []
+    for i, (sx, sy) in enumerate(sites):
+        poly = [(0, 0), (W, 0), (W, H), (0, H)]
+        for j, (tx, ty) in enumerate(sites):
+            if i == j:
+                continue
+            nx, ny = tx - sx, ty - sy  # keep points closer to s than to t
+            mx, my = (sx + tx) / 2, (sy + ty) / 2
+            out = []
+            for k in range(len(poly)):
+                p, q = poly[k], poly[(k + 1) % len(poly)]
+                dp = (p[0] - mx) * nx + (p[1] - my) * ny
+                dq = (q[0] - mx) * nx + (q[1] - my) * ny
+                if dp <= 0:
+                    out.append(p)
+                if dp * dq < 0:
+                    t = dp / (dp - dq)
+                    out.append((p[0] + t * (q[0] - p[0]), p[1] + t * (q[1] - p[1])))
+            poly = out
+            if not poly:
+                break
+        cells.append(poly)
+    return cells
+
+
+def mix(h1, h2, t):
+    a = [int(h1.lstrip("#")[i:i + 2], 16) for i in (0, 2, 4)]
+    b = [int(h2.lstrip("#")[i:i + 2], 16) for i in (0, 2, 4)]
+    return "#" + "".join(f"{int(u + (v - u) * t):02X}" for u, v in zip(a, b))
+
+
+def s_shatter(x):
+    """Voronoi glass: shards tinted along the palette, glowing cracks, shimmer and a light sweep."""
+    W, H, c, r = x.W, x.H, x.c, x.rng
+    dark = x.theme == "dark"
+    x.body.append(f'<rect width="{W}" height="{H}" fill="{c["bg0"]}"/>')
+    sites = [(r.uniform(0.30, 1.02) * W, r.uniform(-0.05, 1.05) * H) for _ in range(34)]
+    cells = voronoi_cells(W, H, sites)
+    x.defs.append(f'<linearGradient id="fadeL" x1="0" x2="1"><stop offset=".40" stop-color="#fff" stop-opacity="0"/><stop offset=".78" stop-color="#fff"/></linearGradient>'
+                  f'<mask id="shm"><rect width="{W}" height="{H}" fill="url(#fadeL)"/></mask>'
+                  '<filter id="crack" x="-5%" y="-5%" width="110%" height="110%"><feGaussianBlur stdDeviation="2.2"/></filter>')
+    shards, edges = [], []
+    for i, poly in enumerate(cells):
+        if len(poly) < 3:
+            continue
+        mxp = sum(p[0] for p in poly) / len(poly) / W
+        myp = sum(p[1] for p in poly) / len(poly) / H
+        base = mix(c["a3"], c["a1"], min(1, max(0, mxp * 1.1 - 0.15))) if myp < 0.5 else mix(c["a1"], c["a2"], min(1, max(0, myp - 0.3)))
+        op = r.uniform(.22, .70) if dark else r.uniform(.14, .42)
+        d = "M" + " L".join(f"{p[0]:.1f},{p[1]:.1f}" for p in poly) + " Z"
+        shards.append(f'<path class="sh s{i % 6}" d="{d}" fill="{base}" fill-opacity="{op:.2f}"/>')
+        edges.append(f'<path d="{d}"/>')
+    x.body.append(f'<g mask="url(#shm)">{"".join(shards)}'
+                  f'<g fill="none" stroke="{c["a1"]}" stroke-width="2.5" opacity="{.55 if dark else .35}" filter="url(#crack)">{"".join(edges)}</g>'
+                  f'<g fill="none" stroke="{c["fg"] if dark else c["bg0"]}" stroke-width="1" stroke-opacity="{.35 if dark else .9}">{"".join(edges)}</g></g>')
+    x.css.append("@keyframes shim{0%,100%{opacity:1}50%{opacity:.45}}"
+                 + "".join(f".s{k}{{animation:shim {5 + k * 1.3:.1f}s ease-in-out {-k * .9:.1f}s infinite}}" for k in range(6)))
+    # a band of light swept diagonally across the glass
+    x.defs.append('<linearGradient id="sweep" x1="0" x2="1"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset=".5" stop-color="#fff" stop-opacity=".22"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>')
+    x.body.append(f'<g mask="url(#shm)"><rect class="swp" x="{-W * .2:.0f}" y="{-H * .5:.0f}" width="{W * .14:.0f}" height="{H * 2:.0f}" fill="url(#sweep)" transform="rotate(18 0 0)"/></g>')
+    x.css.append(f"@keyframes swp{{0%,35%{{transform:translateX(0) rotate(18deg)}}100%{{transform:translateX({W * 1.4:.0f}px) rotate(18deg)}}}}.swp{{animation:swp 8s ease-in-out infinite}}")
+    text_block(x, cx=left_x(x), anchor="start")
+
+
+def s_prism(x):
+    """RGB blinds: three channel-coloured slat patterns drift at different speeds, so the slats
+    split into colour fringes; a bright swipe crosses the banner every few seconds."""
+    W, H, c = x.W, x.H, x.c
+    dark = x.theme == "dark"
+    x.body.append(f'<rect width="{W}" height="{H}" fill="{c["bg0"]}"/>')
+    slat = 46
+    blend = "screen" if dark else "multiply"
+    x.defs.append(f'<radialGradient id="pfade" cx=".5" cy=".5" r=".6"><stop offset="0" stop-color="#fff"/><stop offset=".55" stop-color="#fff" stop-opacity=".7"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient>'
+                  f'<mask id="pm"><rect width="{W}" height="{H}" fill="url(#pfade)"/></mask>')
+    layers = []
+    for i, col in enumerate((c["a1"], c["a2"], c["a3"])):
+        x.defs.append(f'<linearGradient id="sl{i}" x1="0" x2="1"><stop offset=".34" stop-color="{col}" stop-opacity="0"/><stop offset=".5" stop-color="{col}" stop-opacity="{1 if dark else .7}"/><stop offset=".6" stop-color="{col}" stop-opacity="0"/></linearGradient>'
+                      f'<pattern id="pt{i}" width="{slat}" height="{H}" patternUnits="userSpaceOnUse"><rect width="{slat}" height="{H}" fill="url(#sl{i})"/></pattern>')
+        layers.append(f'<rect class="pr{i}" x="{-slat * 2 + (i - 1) * slat * 0.22:.1f}" y="0" width="{W + slat * 4}" height="{H}" fill="url(#pt{i})" style="mix-blend-mode:{blend}"/>')
+        x.css.append(f"@keyframes pr{i}{{from{{transform:translateX(0)}}to{{transform:translateX({slat * (1 if i != 1 else -1)}px)}}}}"
+                     f".pr{i}{{animation:pr{i} {3.2 + i * 0.9:.1f}s linear infinite}}")
+    x.body.append(f'<g mask="url(#pm)" style="isolation:isolate">{"".join(layers)}</g>')
+    # swipe reveal: a hot vertical seam of light
+    x.defs.append(f'<linearGradient id="seam" x1="0" x2="1"><stop offset="0" stop-color="{c["fg"]}" stop-opacity="0"/><stop offset=".5" stop-color="{c["fg"]}" stop-opacity="{.55 if dark else .35}"/><stop offset="1" stop-color="{c["fg"]}" stop-opacity="0"/></linearGradient>')
+    x.body.append(f'<rect class="seam" x="{-W * .12:.0f}" y="0" width="{W * .08:.0f}" height="{H}" fill="url(#seam)"/>')
+    x.css.append(f"@keyframes seam{{0%,45%{{transform:translateX(0)}}100%{{transform:translateX({W * 1.25:.0f}px)}}}}.seam{{animation:seam 6s cubic-bezier(.7,0,.3,1) infinite}}")
+    scrim(x, rx=0.40, ry=0.46, strength=0.97)
     text_block(x)
 
 
@@ -685,7 +939,8 @@ def _lum(hex_):
 DRAW = {"aurora": s_aurora, "glass": s_glass, "synthwave": s_synthwave, "isometric": s_isometric, "orbit": s_orbit,
         "terminal": s_terminal, "neon": s_neon, "wave": s_wave, "blueprint": s_blueprint, "constellation": s_constellation,
         "minimal": s_minimal, "bold": s_bold,
-        "shader": s_shader, "spotlight": s_spotlight, "ribbon": s_ribbon, "pulse": s_pulse}
+        "shader": s_shader, "spotlight": s_spotlight, "ribbon": s_ribbon, "pulse": s_pulse,
+        "vortex": s_vortex, "beam": s_beam, "shatter": s_shatter, "prism": s_prism}
 
 
 # ---------------------------------------------------------------- footer + divider
@@ -693,6 +948,8 @@ def footer(x):
     W, H, c = x.W, x.H, x.c
     if x.style == "wave":
         return s_wave(x, flip=True)
+    if x.style == "vortex":
+        return vortex_footer(x)
     x.body.append(f'<rect width="{W}" height="{H}" fill="{c["bg0"]}"/>')
     x.defs.append(f'<linearGradient id="rule" x1="0" x2="1"><stop offset="0" stop-color="{c["a1"]}" stop-opacity="0"/><stop offset=".5" stop-color="{c["a1"]}"/><stop offset="1" stop-color="{c["a2"]}" stop-opacity="0"/></linearGradient>')
     line_sweep(x, W * .1, H * .32, W * .8, 2, "url(#rule)", "fl")
@@ -702,8 +959,37 @@ def footer(x):
         x.body.append(f'<text x="{W / 2}" y="{H * .82:.0f}" text-anchor="middle" font-family="{SANS}" font-size="14" fill="{c["muted"]}">{esc(x.sub)}</text>')
 
 
+def vortex_footer(x):
+    """Small spinning vortex beside a centred serif credit line, over faint swirl contours."""
+    W, H, c = x.W, x.H, x.c
+    x.body.append(f'<rect width="{W}" height="{H}" fill="{c["bg0"]}"/>')
+    cx, cy, R = W / 2, H / 2, H * 0.30
+    x.body.append(f'<g class="fcont" fill="none" stroke="{c["a1"]}" stroke-opacity=".28" stroke-width="1">'
+                  + "".join(f'<path d="{blade(cx, cy, H * .5, W * .55, k * 2 * math.pi / 6, 2.2, H * .35)}"/>' for k in range(6)) + "</g>")
+    x.css.append(spin_css("fcont", cx, cy, 120, reverse=True))
+    x.defs.append(f'<linearGradient id="fscr" x1="0" x2="1"><stop offset="0" stop-color="{c["bg0"]}" stop-opacity="0"/><stop offset=".5" stop-color="{c["bg0"]}" stop-opacity=".85"/><stop offset="1" stop-color="{c["bg0"]}" stop-opacity="0"/></linearGradient>')
+    x.body.append(f'<rect x="{W * .2:.0f}" width="{W * .6:.0f}" height="{H}" fill="url(#fscr)"/>')
+    vx = W / 2 - min(W * .34, len(x.title) * 10.5 + 70)
+    x.body.append(f'<g class="fspin" fill="{c["a1"]}">' + "".join(
+        f'<path d="{blade(vx, cy, R * .15, R, k * math.pi / 2, 2.0, R * .22)}"/>' for k in range(4)) + "</g>")
+    x.css.append(spin_css("fspin", vx, cy, 10))
+    if x.title:
+        ts = title_size(x.title, W * .55, H, 26)
+        x.body.append(f'<text x="{W / 2}" y="{H * (.52 if x.sub else .58):.0f}" text-anchor="middle" font-family="{SERIF}" font-size="{ts}" letter-spacing="{ts * .08:.1f}" fill="{c["fg"]}">{esc(x.title.upper())}</text>')
+    if x.sub:
+        x.body.append(f'<text x="{W / 2}" y="{H * .76:.0f}" text-anchor="middle" font-family="{SANS}" font-size="13" fill="{c["muted"]}">{esc(x.sub)}</text>')
+
+
 def divider(x):
     W, H, c = x.W, x.H, x.c
+    if x.style == "beam":  # a comet of light running along a faint rule
+        x.body.append(f'<rect x="0" y="{H / 2 - .5}" width="{W}" height="1" fill="{c["a1"]}" opacity=".25"/>')
+        x.defs.append(f'<linearGradient id="comet" x1="0" x2="1"><stop offset="0" stop-color="{c["a1"]}" stop-opacity="0"/><stop offset=".8" stop-color="{c["a2"]}"/><stop offset="1" stop-color="{c["fg"]}"/></linearGradient>'
+                      '<filter id="cg" x="-20%" y="-300%" width="140%" height="700%"><feGaussianBlur stdDeviation="3"/></filter>')
+        x.body.append(f'<g class="comet"><rect x="{-W * .22:.0f}" y="{H / 2 - 3}" width="{W * .2:.0f}" height="6" rx="3" fill="url(#comet)" filter="url(#cg)"/>'
+                      f'<rect x="{-W * .22:.0f}" y="{H / 2 - 1}" width="{W * .2:.0f}" height="2" rx="1" fill="url(#comet)"/></g>')
+        x.css.append(f"@keyframes comet{{from{{transform:translateX(0)}}to{{transform:translateX({W * 1.25:.0f}px)}}}}.comet{{animation:comet 5s cubic-bezier(.6,0,.4,1) infinite}}")
+        return
     x.defs.append(f'<linearGradient id="d" x1="0" x2="1"><stop offset="0" stop-color="{c["a1"]}" stop-opacity="0"/><stop offset=".3" stop-color="{c["a1"]}"/><stop offset=".7" stop-color="{c["a2"]}"/><stop offset="1" stop-color="{c["a3"]}" stop-opacity="0"/></linearGradient>')
     x.body.append(f'<rect x="0" y="{H / 2 - 1}" width="{W}" height="2" rx="1" fill="url(#d)"/>')
     x.body.append(f'<circle class="dot" cx="0" cy="{H / 2}" r="3.5" fill="{c["a1"]}"/>')
@@ -715,7 +1001,7 @@ def render(a, theme) -> str:
     x = Ctx(a, theme)
     if a.kind == "header":
         DRAW[a.style](x)
-        if x.logo and a.style != "spotlight":
+        if x.logo and a.style not in LOGO_INSIDE:
             size = x.H * .62
             logo_mark(x, x.H * .2 + size / 2, x.H / 2, size)
     elif a.kind == "footer":
@@ -806,8 +1092,10 @@ def main(argv=None):
                                        "tag": a.tag or "Claude skill"})
             write(a2, out, f"{style}")
             rows.append(f"## {style}\n\n_{desc}_ · `--style {style}`\n\n" + snippet(style, f"{style} banner: readme-forge") + "\n")
-        for kind, style, h, t in (("footer", "wave", 160, "Thanks for reading"), ("footer", "minimal", 120, "Made with readme-forge"), ("divider", "aurora", 24, "")):
-            a3 = argparse.Namespace(**{**vars(a), "kind": kind, "style": style, "palette": "ember" if style != "wave" else None, "height": h, "title": t, "subtitle": "", "tag": ""})
+        extras = (("footer", "wave", 160, "Thanks for reading", None), ("footer", "minimal", 120, "Made with readme-forge", "ember"),
+                  ("footer", "vortex", 140, "Made with readme-forge", "inferno"), ("divider", "aurora", 24, "", "ember"), ("divider", "beam", 24, "", "ghost"))
+        for kind, style, h, t, pal in extras:
+            a3 = argparse.Namespace(**{**vars(a), "kind": kind, "style": style, "palette": pal, "height": h, "title": t, "subtitle": "", "tag": ""})
             write(a3, out, f"{kind}-{style}")
             rows.append(f"## {kind}: {style}\n\n" + snippet(f"{kind}-{style}", f"{kind} ({style})") + "\n")
         for variant, label in (("primary", "Get started"), ("secondary", "Read the docs")):
@@ -815,7 +1103,7 @@ def main(argv=None):
             write(a4, out, f"button-{variant}")
             rows.append(f"## button: {variant}\n\n" + snippet(f"button-{variant}", label, width_attr="auto") + "\n")
         (out / "gallery.md").write_text("\n".join(rows), encoding="utf-8")
-        print(f"wrote {len(STYLES)} headers + 2 footers + 1 divider + 2 buttons (dark+light) to {out}")
+        print(f"wrote {len(STYLES)} headers + 3 footers + 2 dividers + 2 buttons (dark+light) to {out}")
         return 0
 
     a.logo_uri = None

@@ -146,6 +146,42 @@ _soft glowing rings expanding behind the title_ · `--style pulse`
   <img alt="pulse banner: readme-forge" src="pulse-light.svg" width="100%">
 </picture>
 
+## vortex
+
+_spinning blade vortex over liquid swirl contours, condensed serif title_ · `--style vortex`
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="vortex-dark.svg">
+  <img alt="vortex banner: readme-forge" src="vortex-light.svg" width="100%">
+</picture>
+
+## beam
+
+_light beam racing around the edge over a nebula glow_ · `--style beam`
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="beam-dark.svg">
+  <img alt="beam banner: readme-forge" src="beam-light.svg" width="100%">
+</picture>
+
+## shatter
+
+_voronoi glass shards with glowing cracks and a light sweep_ · `--style shatter`
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="shatter-dark.svg">
+  <img alt="shatter banner: readme-forge" src="shatter-light.svg" width="100%">
+</picture>
+
+## prism
+
+_RGB-split light blinds with a swipe reveal_ · `--style prism`
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="prism-dark.svg">
+  <img alt="prism banner: readme-forge" src="prism-light.svg" width="100%">
+</picture>
+
 ## footer: wave
 
 <picture>
@@ -160,11 +196,25 @@ _soft glowing rings expanding behind the title_ · `--style pulse`
   <img alt="footer (minimal)" src="footer-minimal-light.svg" width="100%">
 </picture>
 
+## footer: vortex
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="footer-vortex-dark.svg">
+  <img alt="footer (vortex)" src="footer-vortex-light.svg" width="100%">
+</picture>
+
 ## divider: aurora
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="divider-aurora-dark.svg">
   <img alt="divider (aurora)" src="divider-aurora-light.svg" width="100%">
+</picture>
+
+## divider: beam
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="divider-beam-dark.svg">
+  <img alt="divider (beam)" src="divider-beam-light.svg" width="100%">
 </picture>
 
 ## button: primary

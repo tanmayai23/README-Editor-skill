@@ -90,5 +90,5 @@ Mission in one line, products/projects table, getting involved (good first issue
 - [ ] Theme: `<picture>` or transparent params, and the cards match each other.
 - [ ] Alt text on every image. The typing SVG alt contains all its lines.
 - [ ] ≤ 4 dynamic cards, ≤ 2 animations, ≤ 15 skill icons.
-- [ ] `score_readme.py --profile` ≥ 85; `check_links.py` clean (if network is allowed).
+- [ ] `score_readme.py --profile` ≥ 85 and `check_links.py` clean (both ship with the core readme-forge skill) (if network is allowed).
 - [ ] Tell the user: the repo must be named exactly the username, be public, and have README.md at the root. Workflows need Actions read/write permission plus any listed secrets.
