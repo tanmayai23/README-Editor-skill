@@ -1,6 +1,6 @@
 ---
 name: readme-forge-design
-description: Optional design layer for readme-forge. Generates self-contained animated SVG banners (20 styles, including WebGL-shader looks rebuilt in SVG — spinning vortex, edge light beam, voronoi shatter, RGB prism blinds — plus ShaderGradient grain, landing-page spotlight, synthwave, isometric, orbit, ribbon), footers, dividers and clickable CTA buttons in dark and light variants, and builds GitHub personal and organization profile READMEs from 19 archetypes with tested widgets and profile Actions. Use when the user asks for a README banner/header/footer, "make my README look amazing", a redesign, CTA buttons, or a GitHub profile README. For the README's facts, commands and accuracy, use the core readme-forge skill.
+description: Optional design layer for readme-forge. Designs whole READMEs as a set of SVG cards from one JSON spec (page kit — terminal-window hero, contact dock, numbered section headers, about card, tech-stack grid with brand icons, project and achievement cards, themed stats, footer; keynote style, light + dark), and generates self-contained animated SVG banners (20 styles, including WebGL-shader looks rebuilt in SVG — spinning vortex, edge light beam, voronoi shatter, RGB prism blinds — plus ShaderGradient grain, landing-page spotlight, synthwave, isometric, orbit, ribbon), footers, dividers and clickable CTA buttons in dark and light variants, and builds GitHub personal and organization profile READMEs from 19 archetypes with tested widgets and profile Actions. Use when the user asks for a README banner/header/footer, "make my README look amazing / professional", a full README redesign, a card-style or keynote-style README, CTA buttons, or a GitHub profile README. For the README's facts, commands and accuracy, use the core readme-forge skill.
 ---
 
 # readme-forge-design
@@ -13,8 +13,18 @@ Skill directory: `SKILL_DIR` = the folder containing this file. Scripts are stdl
 
 | User wants | Mode | Read first |
 |---|---|---|
-| Banner / header / footer / CTA buttons / "make it look amazing" | **G. Design** | `references/design.md` |
-| Personal GitHub profile (`username/username` repo) or org profile (`.github/profile/README.md`) | **B. Profile** | `references/profile-readme.md`, `references/widgets.md` |
+| The whole README designed: every section as a card, "professional", "like this one" (a card/keynote-style example) | **K. Page kit** | `references/page-kit.md` |
+| Banner / header / footer / CTA buttons only | **G. Design** | `references/design.md` |
+| Personal GitHub profile (`username/username` repo) or org profile (`.github/profile/README.md`) | **B. Profile** (offer K for a fully designed one) | `references/profile-readme.md`, `references/widgets.md` |
+
+## Mode K — Page kit (whole README as cards)
+
+Read `references/page-kit.md` first.
+1. Gather real content. Profile: the batched interview from `references/profile-readme.md`. Project: run the core skill's fact-gathering; commands and install steps stay in `markdown` blocks so `verify_readme.py` can check them.
+2. `python SKILL_DIR/scripts/make_page.py --init profile|project > page.json`. Fill every `{{…}}` from that content and delete fields or blocks with no data (the script refuses to run with placeholders left). Never invent metrics, awards or descriptions. Choose the theme from the brand (page-kit.md rule 4), or pass `accents` to match a logo.
+3. `python SKILL_DIR/scripts/make_page.py --spec page.json --preview preview.html` writes every card (light + dark) and the README. Open the preview, check both themes for clipped text, shorten copy that the script had to shrink a lot, and re-run.
+4. Score with the core skill (`score_readme.py`, `--profile` for profiles) and `check_links.py` when network is allowed. Don't commit `preview.html`.
+5. Tell the user what was written, where it goes, and any setup (the snake workflow; stats cards are a shared public instance).
 
 ## Mode G — Design (header, footer, banners)
 

@@ -18,13 +18,13 @@
     {
       "name": "readme-forge-design",
       "source": "./readme-forge-design",
-      "description": "Optional design layer for readme-forge: animated SVG banners, CTA buttons, footers, and GitHub profile READMEs from 19 archetypes",
+      "description": "Optional design layer for readme-forge: a page kit that designs whole READMEs as light/dark SVG cards, animated SVG banners, CTA buttons, footers, and GitHub profile READMEs from 19 archetypes",
       "version": "1.2.0",
       "author": { "name": "tanmayai23" },
       "homepage": "https://github.com/tanmayai23/README-Editor-skill",
       "repository": "https://github.com/tanmayai23/README-Editor-skill",
       "license": "MIT",
-      "keywords": ["readme", "banner", "svg", "github-profile", "design"],
+      "keywords": ["readme", "banner", "svg", "github-profile", "design", "page-kit"],
       "category": "documentation"
     }
   ]

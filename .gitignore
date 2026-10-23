@@ -35,3 +35,6 @@ tests/fixtures/**/bin/
 tests/fixtures/**/obj/
 tests/fixtures/**/.gradle/
 tests/fixtures/**/target/
+
+# Page kit previews (make_page.py --preview): local check only
+preview.html

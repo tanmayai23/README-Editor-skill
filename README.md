@@ -246,13 +246,17 @@ The same report lists where the rubric falls short. It rewards having the expect
 
 ## Optional: design and profiles
 
-Banners, CTA buttons and GitHub profile READMEs live in a separate plugin, so the core skill stays about accuracy:
+Whole-page design, banners, CTA buttons and GitHub profile READMEs live in a separate plugin, so the core skill stays about accuracy:
 
 ```bash
 claude plugin install readme-forge-design --marketplace tanmayai23/README-Editor-skill
 ```
 
-It generates self-contained animated SVG headers in 20 styles. The newest four rebuild the look of WebGL shader scenes in plain SVG and CSS, so GitHub can render them: a spinning vortex, a light beam racing around the edge, voronoi glass and RGB-split blinds. The header above is `--style vortex` with the logo in its eye, and the buttons under it are `--kind button`.
+Its page kit designs the whole README, not just the ends. You write one JSON spec, and `make_page.py` turns it into a set of matching cards in light and dark: a terminal-window hero, a contact dock, numbered section headers, an about card, a tech-stack grid with real brand icons, project and achievement cards, themed stats and a footer. [This profile](readme-forge-design/examples/keynote-profile/README.md) is built entirely from one spec.
+
+<a href="readme-forge-design/examples/keynote-profile/README.md"><picture><source media="(prefers-color-scheme: dark)" srcset="readme-forge-design/examples/keynote-profile/assets/hello/project-tidewatch-dark.svg"><img alt="Page kit example: a feature project card with a tag pill, bold title, serif subtitle, three metrics and an animated network visual" src="readme-forge-design/examples/keynote-profile/assets/hello/project-tidewatch-light.svg" width="100%"></picture></a>
+
+It also generates self-contained animated SVG headers in 20 styles. The newest four rebuild the look of WebGL shader scenes in plain SVG and CSS, so GitHub can render them: a spinning vortex, a light beam racing around the edge, voronoi glass and RGB-split blinds. The header above is `--style vortex` with the logo in its eye, and the buttons under it are `--kind button`.
 
 <table>
 <tr>
@@ -300,12 +304,19 @@ It works offline, so it can't tell whether `pip install NAME` resolves on PyPI o
 It leaves a `TODO` in the README and lists every TODO back to you.
 </details>
 
+<details>
+<summary><b>Can it design the whole README, not just a banner?</b></summary>
+
+Yes, with the optional design plugin. Its page kit turns one JSON spec into a full set of matching light and dark cards: hero, contact dock, section headers, about, tech stack, projects, achievements, stats and footer. Install steps and code stay as real Markdown, so they remain copyable and checkable. See the [fictional demo profile](readme-forge-design/examples/keynote-profile/README.md). If you share your own README as a style sample, the skill copies its layout, not your personal details.
+</details>
+
 ## Roadmap
 
 - [x] Project and Hugging Face READMEs grounded in code, with tests for 15 ecosystems
 - [x] Claim-by-claim verification of commands, flags, env vars and paths
 - [x] GitHub Action that comments the score and claim check on pull requests ([#1](https://github.com/tanmayai23/README-Editor-skill/issues/1))
 - [x] Scorer validated against 50 pinned READMEs, with its weak spots written down ([bench/scorer-validation](bench/scorer-validation/README.md))
+- [x] Page kit: the whole README designed as light and dark SVG cards from one spec ([readme-forge-design](readme-forge-design/README.md#page-kit))
 - [ ] Published benchmark against Claude without the skill on 20 pinned third-party repos ([#12](https://github.com/tanmayai23/README-Editor-skill/issues/12))
 - [ ] Architecture diagrams for Java/Kotlin ([#3](https://github.com/tanmayai23/README-Editor-skill/issues/3)), C# ([#4](https://github.com/tanmayai23/README-Editor-skill/issues/4)), PHP and Ruby ([#5](https://github.com/tanmayai23/README-Editor-skill/issues/5))
 - [ ] Check documented API routes against the code ([#6](https://github.com/tanmayai23/README-Editor-skill/issues/6))
