@@ -1,0 +1,112 @@
+{
+  "_comment": "Fictional demo persona. Every name, project, award and link here is made up; links point to example.com and stats use GitHub's public octocat account.",
+  "theme": "keynote",
+  "motion": "ambient",
+  "github": "octocat",
+  "readme": "README.md",
+  "assets": "assets/hello",
+  "blocks": [
+    {
+      "type": "hero",
+      "window": "mira — zsh — hello-world",
+      "prompt": "~ $ echo \"$GREETING\"",
+      "greeting": "Hello World,",
+      "title": "I'm Mira",
+      "meta": ["ML Engineer", "Founder, **Lumen Labs**", "Demo persona"],
+      "status": "Open to collaborations",
+      "href": "https://example.com/"
+    },
+    {
+      "type": "dock",
+      "items": [
+        {"label": "LinkedIn", "handle": "in/mira-demo", "icon": "linkedin", "href": "https://example.com/linkedin"},
+        {"label": "X", "handle": "@mira_demo", "icon": "x", "href": "https://example.com/x"},
+        {"label": "Email", "handle": "say hello", "icon": "mail", "href": "mailto:hello@example.com"},
+        {"label": "Portfolio", "handle": "example.com", "icon": "globe", "href": "https://example.com/"},
+        {"label": "GitHub", "handle": "@octocat", "icon": "github", "href": "https://github.com/octocat"}
+      ]
+    },
+    {"type": "section", "title": "About", "subtitle": "the short version"},
+    {
+      "type": "about",
+      "headline": "I turn prototypes into *things people use.*",
+      "body": "Models, data and APIs shaped into small, reliable tools — shipped, measured and improved after launch.",
+      "quote": "“Make it work, make it clear, then make it fast.”",
+      "items": [
+        {"label": "Building", "text": "LLM workflows and voice interfaces"},
+        {"label": "Exploring", "text": "Retrieval, evaluation and fine-tuning"},
+        {"label": "Leading", "text": "Lumen Labs — a fictional studio for this demo"},
+        {"label": "Open to", "text": "Open-source collaborations and mentoring"}
+      ]
+    },
+    {"type": "section", "title": "Tech stack", "subtitle": "what I reach for"},
+    {
+      "type": "stack",
+      "groups": [
+        {"label": "Languages", "items": ["python", "typescript", "go"]},
+        {"label": "AI · ML", "items": ["pytorch", "scikitlearn", {"name": "Transformers", "icon": "huggingface"}, "opencv", "jupyter"]},
+        {"label": "Web · Backend", "items": ["react", "nextdotjs", "fastapi", "postgresql", "redis"]},
+        {"label": "Cloud · Tools", "items": ["docker", "kubernetes", "googlecloud", "vercel", "git", "github"]}
+      ]
+    },
+    {"type": "section", "title": "Projects", "subtitle": "shipped, not just started"},
+    {
+      "type": "projects",
+      "items": [
+        {
+          "size": "feature", "tag": "Flagship · Demo", "title": "Tidewatch", "subtitle": "flood-risk forecasting",
+          "description": "Forecasts river levels across a city grid and alerts crews hours before streets flood.",
+          "metrics": [{"value": "6 h", "label": "earlier warnings"}, {"value": "−40%", "label": "false alarms"}, {"value": "120", "label": "sensors simulated"}],
+          "tech": ["Python", "Forecasting", "Next.js", "Maps"], "visual": "network", "href": "https://example.com/tidewatch"
+        },
+        {
+          "size": "card", "tag": "Voice AI", "title": "Echo", "subtitle": "voice-first notes",
+          "description": "Speak a thought, get a tidy note with tags and reminders.",
+          "highlight": "<300 ms wake word", "tech": ["Python", "Whisper", "SQLite"], "visual": "wave",
+          "href": "https://example.com/echo"
+        },
+        {
+          "size": "card", "tag": "Agents", "title": "Ledgerly", "subtitle": "bookkeeping agent",
+          "description": "Reads receipts and drafts the monthly books for review.",
+          "highlight": "300+ tests", "tech": ["TypeScript", "LLM"], "visual": "chat",
+          "href": "https://example.com/ledgerly"
+        },
+        {
+          "size": "card", "tag": "Vision", "title": "LeafScan", "subtitle": "plant-disease classifier",
+          "description": "A small CNN that spots leaf disease from a phone photo.",
+          "highlight": "94% accuracy", "tech": ["PyTorch", "CNN"], "visual": "grid",
+          "href": "https://example.com/leafscan"
+        },
+        {
+          "size": "card", "tag": "Travel", "title": "Wander", "subtitle": "AI trip planner",
+          "description": "Turns one sentence into a day-by-day route.",
+          "highlight": "Live demo", "tech": ["Next.js", "Vercel"], "visual": "orbit",
+          "href": "https://example.com/wander"
+        },
+        {"size": "link", "title": "Transcribe", "subtitle": "live demo", "href": "https://example.com/transcribe"},
+        {"size": "link", "title": "Moodboard", "subtitle": "live demo", "href": "https://example.com/moodboard"},
+        {"size": "link", "title": "All repositories", "subtitle": "on GitHub", "icon": "github", "href": "https://github.com/octocat?tab=repositories"}
+      ]
+    },
+    {"type": "section", "title": "Achievements", "subtitle": "a few milestones"},
+    {
+      "type": "achievements",
+      "items": [
+        {"eyebrow": "Fellowship", "title": "Research", "subtitle": "Fellow, 2026", "description": "Selected for a year-long applied ML research fellowship.", "chip": "Applied ML"},
+        {"eyebrow": "Hackathon", "title": "City Hack", "subtitle": "Track winner", "description": "Won the climate track with an early Tidewatch prototype.", "chip": "Climate track"},
+        {"eyebrow": "Open source", "title": "Core", "subtitle": "Contributor", "description": "Maintainer of a popular evaluation toolkit.", "chip": "Maintainer"},
+        {"eyebrow": "Community", "title": "Meetup", "subtitle": "Speaker", "description": "Talks on shipping small, useful AI tools.", "chip": "4 talks"}
+      ]
+    },
+    {"type": "section", "title": "Commit graph", "subtitle": "the daily habit"},
+    {"type": "stats", "user": "octocat", "snake": false},
+    {
+      "type": "footer",
+      "window": "mira — zsh — lets-connect",
+      "greeting": "Have an idea?",
+      "title": "Let's connect.",
+      "meta": ["hello@example.com", "in/mira-demo", "@mira_demo"],
+      "href": "mailto:hello@example.com"
+    }
+  ]
+}

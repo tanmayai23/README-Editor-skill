@@ -19,6 +19,7 @@ Rubric details live in references/quality-rubric.md.
 """
 from __future__ import annotations
 
+import html
 import json
 import os
 import re
@@ -609,6 +610,9 @@ def score_profile(text, path: Path) -> Report:
     common_lints(r, text, nocode, hs, imgs, lks, blocks, path, None)
     design_lints(r, text, imgs, path)
     low = nocode.lower()
+    # Page-kit READMEs (make_page.py) draw section headings as cards whose alt reads "02 — Tech stack".
+    hs = hs + [(2, m.group(1), im["line"]) for im in imgs
+               if im["alt"] and (m := re.match(r"^\d{1,2} — (.+)", html.unescape(im["alt"])))]
 
     s = 0  # intro (20)
     head = "\n".join(nocode.splitlines()[:25]).lower()

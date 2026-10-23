@@ -6,7 +6,7 @@
 ![Python 3.8+, standard library only](https://img.shields.io/badge/python-3.8%2B%20stdlib-19C3EC?logo=python&logoColor=white)
 ![License: MIT](https://img.shields.io/badge/license-MIT-19C3EC)
 
-**Contents:** [Install](#install) · [Usage](#usage) · [Shader styles](#shader-styles) · [All styles](#all-styles) · [Profile READMEs](#profile-readmes) · [Limitations](#limitations)
+**Contents:** [Install](#install) · [Usage](#usage) · [Page kit](#page-kit) · [Shader styles](#shader-styles) · [All styles](#all-styles) · [Profile READMEs](#profile-readmes) · [Limitations](#limitations)
 
 This is the optional design layer. The core `readme-forge` skill writes the README from your code and checks every claim in it; this skill makes it look designed. Every asset is a self-contained SVG you commit, so nothing rate-limits or breaks. Each one has a dark and a light variant and a complete first frame.
 
@@ -186,6 +186,24 @@ Palettes: `ember` · `ocean` · `violet` · `mint` · `sunset` · `mono` · `cyb
 
 Footers (`--kind footer --style wave|minimal|vortex`), dividers (`--kind divider`, `--style beam` for a comet of light) and clickable CTA buttons (`--kind button --variant primary|secondary`) are in [the full gallery](assets/banners/gallery.md).
 
+## Page kit
+
+The page kit designs the whole README, not just the header and footer. You describe the page in one JSON spec, and `make_page.py` writes every block as an SVG card, in light and dark, plus the finished README:
+
+```bash
+python scripts/make_page.py --init profile > page.json     # or --init project
+python scripts/make_page.py --spec page.json --preview preview.html
+```
+
+Blocks: `hero` (terminal window with a dripping edge) · `dock` (contact tiles) · `section` (numbered headers) · `about` · `stack` (103 brand icons) · `projects` (feature, card and link sizes) · `achievements` (photo or emblem) · `stats` (themed to match) · `markdown` · `footer`. Themes: `keynote`, `aurora`, `sunset`, `ocean`, `forest`, `mono`, or your own `accents`. Spec reference: [references/page-kit.md](references/page-kit.md).
+
+<a href="examples/keynote-profile/README.md"><picture><source media="(prefers-color-scheme: dark)" srcset="examples/keynote-profile/assets/hello/hero-dark.svg"><img alt="Page kit hero card: a terminal window with traffic lights, a prompt tile, 'Hello World, I'm Mira' in serif and bold, a status pill and a melting bottom edge" src="examples/keynote-profile/assets/hello/hero-light.svg" width="100%"></picture></a>
+
+<picture><source media="(prefers-color-scheme: dark)" srcset="examples/keynote-profile/assets/hello/section-02-dark.svg"><img alt="Page kit section header: 02 — Tech stack, what I reach for" src="examples/keynote-profile/assets/hello/section-02-light.svg" width="100%"></picture>
+<picture><source media="(prefers-color-scheme: dark)" srcset="examples/keynote-profile/assets/hello/stack-dark.svg"><img alt="Page kit stack card: brand icons grouped into Languages, AI · ML, Web · Backend and Cloud · Tools" src="examples/keynote-profile/assets/hello/stack-light.svg" width="100%"></picture>
+
+Two complete examples are in the repo: a [personal profile](examples/keynote-profile/README.md) and a [project README](examples/keynote-project/README.md). The project example keeps the pitch and install commands as real Markdown, so they stay searchable and the core skill can verify them.
+
 ## Profile READMEs
 
 [`templates/profile/`](templates/profile/) has 19 archetypes covering every category of the awesome-github-profile gallery: `minimal` · `creative` · `stats-dashboard` · `code-mode` · `badges-wall` · `retro` · `student` · `data-scientist` · `oss-maintainer` · `actions-dynamic` · `org-profile` · `game-mode` · `typing` · `anime-art` · `fancy-fonts` · `descriptive` · `simple-innovative` · `icons` · `just-image`.
@@ -198,18 +216,22 @@ Footers (`--kind footer --style wave|minimal|vortex`), dividers (`--kind divider
 
 ```text
 readme-forge-design/
-├── SKILL.md            # design and profile modes
-├── references/         # design.md (patterns, style picker, SVG facts), profile-readme.md, widgets.md
+├── SKILL.md            # page kit, design and profile modes
+├── references/         # page-kit.md, design.md (patterns, style picker, SVG facts), profile-readme.md, widgets.md
 ├── templates/
+│   ├── page/           # starter specs for make_page.py: profile.json, project.json
 │   ├── design/         # centered header, profile header, landing-page hero, CTA section, footers
 │   └── profile/        # 19 archetypes, workflows/, game/
+├── examples/           # keynote-profile/ and keynote-project/: spec + generated cards + README
 ├── assets/banners/     # every style, dark + light, and gallery.md
-└── scripts/            # make_banner.py, fancy_text.py
+├── assets/icons.json   # 103 brand icons from Simple Icons (CC0)
+└── scripts/            # make_page.py, make_banner.py, fancy_text.py
 ```
 
 ## Limitations
 
 - `orbit`, `terminal`, `bold`, `ribbon` and the spotlight pill animate with SMIL, which keeps playing when reduced motion is on ([#32](https://github.com/tanmayai23/README-Editor-skill/issues/32)). All other styles use CSS only.
+- Page kit text is measured with Segoe UI widths plus a 4% margin, and every card uses system fonts. On a system with much wider fonts, a title can run close to the card edge, so keep copy short (page-kit.md rule 3).
 - PyPI, npm and Hugging Face ignore `<picture>`. Ask readme-forge for a platform port, which switches to single images with absolute URLs.
 - Widget hosts change. Run `check_links.py` from the core skill before publishing a profile.
 
