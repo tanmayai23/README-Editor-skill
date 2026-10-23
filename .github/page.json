@@ -1,0 +1,70 @@
+{
+  "_comment": "Cards for the root README, built with readme-forge-design/scripts/make_page.py. readme-cards.md is the generated snippet list; README.md places the cards by hand between its real headings.",
+  "theme": "keynote",
+  "accents": ["#19C3EC", "#8B4FD1", "#3D7FD8", "#3ECF8E"],
+  "motion": "ambient",
+  "github": "tanmayai23",
+  "readme": "readme-cards.md",
+  "assets": "assets/page",
+  "blocks": [
+    {
+      "type": "hero",
+      "window": "readme-forge — zsh — main",
+      "prompt": "~ $ /readme-forge write a README for this repo",
+      "greeting": "Your code is the source of truth.",
+      "title": "readme-forge",
+      "meta": ["Claude skill", "**verified** READMEs", "Python 3.8+ · stdlib only"],
+      "status": "MIT licensed",
+      "alt": "readme-forge: Your code is the source of truth. Your README should be too. A Claude skill for verified READMEs, Python 3.8+, standard library only."
+    },
+    {
+      "type": "projects",
+      "items": [
+        {"size": "link", "title": "In Claude", "subtitle": "Code, claude.ai, Desktop", "icon": "anthropic"},
+        {"size": "link", "title": "In CI", "subtitle": "one PR comment", "icon": "githubactions"},
+        {"size": "link", "title": "On its own", "subtitle": "no Claude account", "icon": "terminal"},
+        {
+          "size": "feature", "tag": "Claim check", "title": "verify_readme.py", "subtitle": "every claim, checked against the repo",
+          "description": "Checks commands, package-manager scripts, CLI flags, env vars and paths. What it can't check offline is reported as unverifiable, never as correct.",
+          "metrics": [{"value": "15", "label": "ecosystems detected"}, {"value": "100%", "label": "accuracy gate in CI"}, {"value": "0", "label": "dependencies"}],
+          "tech": ["Python", "stdlib only"], "visual": "code"
+        },
+        {
+          "size": "card", "tag": "Facts", "title": "analyze_repo.py", "subtitle": "facts, not guesses",
+          "description": "Reads manifests, lockfiles, scripts, env vars, Docker, CI and routes.",
+          "highlight": "15 ecosystems", "visual": "grid"
+        },
+        {
+          "size": "card", "tag": "Architecture", "title": "import_graph.py", "subtitle": "diagrams from real imports",
+          "description": "Drafts a Mermaid diagram from imports in Python, JS/TS, Go and Rust.",
+          "highlight": "Mermaid draft", "visual": "network"
+        },
+        {
+          "size": "card", "tag": "Score", "title": "score_readme.py", "subtitle": "score, lint and drift",
+          "description": "Grades structure, accessibility, links and drift, and flags commands that no longer match.",
+          "highlight": "0–100 rubric", "visual": "chart"
+        },
+        {
+          "size": "card", "tag": "Platforms", "title": "Every platform", "subtitle": "one source, many READMEs",
+          "description": "GitHub, Hugging Face cards with validated YAML, and PyPI, npm and GitLab ports.",
+          "highlight": "HF · PyPI · npm", "visual": "orbit"
+        },
+        {
+          "size": "feature", "tag": "Validated", "title": "The score, tested", "subtitle": "25 well-regarded vs 25 neglected READMEs",
+          "description": "Pinned to commit SHAs. The rubric still rewards headings over content, so use it as a checklist, not a verdict.",
+          "metrics": [{"value": "0.914", "label": "AUC"}, {"value": "67.5", "label": "mean, well-regarded"}, {"value": "37.0", "label": "mean, neglected"}],
+          "tech": ["bench/scorer-validation"], "visual": "chart", "color": 0
+        }
+      ]
+    },
+    {
+      "type": "footer",
+      "window": "readme-forge — zsh — done",
+      "prompt": "~ $ python verify_readme.py README.md --repo .",
+      "greeting": "Every claim checked.",
+      "title": "Ship the README.",
+      "meta": ["MIT License", "Made with readme-forge"],
+      "alt": "Every claim checked. Ship the README. MIT License, made with readme-forge."
+    }
+  ]
+}
