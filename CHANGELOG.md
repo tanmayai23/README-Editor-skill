@@ -4,6 +4,15 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### Added
+
+- Page kit in readme-forge-design (`scripts/make_page.py`): designs a whole README, not only the header and footer. One JSON spec becomes a set of matching SVG cards in light and dark plus the finished README. Blocks: terminal-window hero with a dripping edge, contact dock, numbered section headers, about card, tech-stack grid, project cards (feature / card / link), achievement cards (photo or emblem), themed stats widgets, Markdown passthrough and a mirrored footer. Six themes (`keynote`, `aurora`, `sunset`, `ocean`, `forest`, `mono`) or custom `accents`; `ambient`, `entrance` and `static` motion, CSS only. Paired cards share a height, linked cards are written on one line so GitHub keeps dark mode and the link, and the script refuses specs with `{{placeholders}}` left. Mode K in SKILL.md, `references/page-kit.md`, starter specs in `templates/page/`, and two examples (`examples/keynote-profile/`, `examples/keynote-project/`).
+- `assets/icons.json`: 103 brand icons from Simple Icons (CC0) for the stack and dock cards, with aliases (`aws`, `gcp`, `node`, `k8s`…) and line icons for mail, website, résumé and more. Unknown names fall back to a monogram tile.
+
+### Changed
+
+- `score_readme.py --profile` counts page-kit section cards (alt text like `02 — Tech stack`) as section headings, so a card-built profile is scored on its content instead of losing points for missing Markdown headings.
+
 ## [1.2.0] - 2026-10-19
 
 This release makes accuracy the headline: every README the skill writes is checked claim by claim against the code, and the design features move to an optional plugin.

@@ -1,0 +1,88 @@
+{
+  "theme": "keynote",
+  "motion": "ambient",
+  "github": "{{USER}}",
+  "readme": "README.md",
+  "assets": "assets/hello",
+  "blocks": [
+    {
+      "type": "hero",
+      "window": "{{first name, lowercase}} — zsh — hello-world",
+      "greeting": "Hello World,",
+      "title": "I'm {{FIRST_NAME}}",
+      "meta": ["{{ROLE}}", "{{ROLE_2, e.g. Founder, **COMPANY**}}", "{{SCHOOL_OR_CITY}}"],
+      "status": "{{Open to … (delete the line if not looking)}}",
+      "href": "https://github.com/{{USER}}"
+    },
+    {
+      "type": "dock",
+      "items": [
+        {"label": "LinkedIn", "handle": "in/{{LINKEDIN}}", "icon": "linkedin", "href": "https://www.linkedin.com/in/{{LINKEDIN}}/"},
+        {"label": "X", "handle": "@{{X_HANDLE}}", "icon": "x", "href": "https://x.com/{{X_HANDLE}}"},
+        {"label": "Email", "handle": "say hello", "icon": "mail", "href": "mailto:{{EMAIL}}"},
+        {"label": "Portfolio", "handle": "{{SITE_DOMAIN}}", "icon": "globe", "href": "https://{{SITE_DOMAIN}}/"},
+        {"label": "GitHub", "handle": "@{{USER}}", "icon": "github", "href": "https://github.com/{{USER}}"}
+      ]
+    },
+    {"type": "section", "title": "About", "subtitle": "the short version"},
+    {
+      "type": "about",
+      "headline": "{{One-line headline with the *accent phrase* in asterisks}}",
+      "body": "{{One or two sentences about what you build and how.}}",
+      "quote": "{{Optional quote in “curly quotes”; delete the line if none}}",
+      "items": [
+        {"label": "Building", "text": "{{what you're building now}}"},
+        {"label": "Exploring", "text": "{{what you're learning}}"},
+        {"label": "Open to", "text": "{{roles, collaborations}}"}
+      ]
+    },
+    {"type": "section", "title": "Tech stack", "subtitle": "what I reach for"},
+    {
+      "type": "stack",
+      "groups": [
+        {"label": "Languages", "items": ["{{python}}", "{{typescript}}"]},
+        {"label": "Frameworks", "items": ["{{react}}", "{{fastapi}}"]},
+        {"label": "Cloud · Tools", "items": ["{{docker}}", "{{aws}}", "{{git}}"]}
+      ]
+    },
+    {"type": "section", "title": "Projects", "subtitle": "shipped, not just started"},
+    {
+      "type": "projects",
+      "items": [
+        {
+          "size": "feature", "tag": "{{Flagship · Live}}", "title": "{{PROJECT_1}}", "subtitle": "{{what it is, in 3–5 words}}",
+          "description": "{{What it does, one or two sentences.}}",
+          "metrics": [{"value": "{{NUMBER}}", "label": "{{what it measures}}"}],
+          "tech": ["{{TECH}}"], "visual": "network", "href": "{{URL}}"
+        },
+        {
+          "size": "card", "tag": "{{CATEGORY}}", "title": "{{PROJECT_2}}", "subtitle": "{{3–5 words}}",
+          "description": "{{One sentence.}}", "highlight": "{{one real result}}", "tech": ["{{TECH}}"], "visual": "wave", "href": "{{URL}}"
+        },
+        {
+          "size": "card", "tag": "{{CATEGORY}}", "title": "{{PROJECT_3}}", "subtitle": "{{3–5 words}}",
+          "description": "{{One sentence.}}", "highlight": "{{one real result}}", "tech": ["{{TECH}}"], "visual": "chart", "href": "{{URL}}"
+        },
+        {"size": "link", "title": "All repositories", "subtitle": "on GitHub", "icon": "github", "href": "https://github.com/{{USER}}?tab=repositories"}
+      ]
+    },
+    {"type": "section", "title": "Achievements", "subtitle": "a few milestones"},
+    {
+      "type": "achievements",
+      "items": [
+        {"eyebrow": "{{ORG}}", "title": "{{Award title}}", "subtitle": "{{year or detail}}", "description": "{{One sentence.}}", "chip": "{{short tag}}", "image": "{{optional photo path, else delete}}"},
+        {"eyebrow": "{{ORG}}", "title": "{{Award title}}", "subtitle": "{{year or detail}}", "description": "{{One sentence.}}", "chip": "{{short tag}}"}
+      ]
+    },
+    {"type": "section", "title": "Commit graph", "subtitle": "the daily habit"},
+    {"type": "stats", "user": "{{USER}}"},
+    {
+      "type": "footer",
+      "window": "{{first name, lowercase}} — zsh — lets-connect",
+      "greeting": "Have an idea?",
+      "title": "Let's connect.",
+      "meta": ["{{EMAIL}}", "in/{{LINKEDIN}}", "@{{X_HANDLE}}"],
+      "href": "mailto:{{EMAIL}}"
+    }
+  ]
+}

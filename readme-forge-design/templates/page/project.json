@@ -1,0 +1,60 @@
+{
+  "theme": "aurora",
+  "motion": "ambient",
+  "github": "{{OWNER}}",
+  "readme": "README.md",
+  "assets": ".github/assets/page",
+  "blocks": [
+    {
+      "type": "hero",
+      "window": "{{repo}} — zsh — main",
+      "prompt": "~ $ {{the one command that shows it off}}",
+      "greeting": "{{Tagline, ≤ 6 words.}}",
+      "title": "{{PROJECT_NAME}}",
+      "meta": ["{{category}}", "{{key **fact**}}", "{{runtime / platform}}"],
+      "status": "{{LICENSE}} licensed",
+      "drips": false,
+      "href": "https://github.com/{{OWNER}}/{{REPO}}"
+    },
+    {
+      "type": "markdown",
+      "text": "<p align=\"center\"><b>{{One-line pitch as real text, so it is searchable.}}</b></p>\n\n<p align=\"center\">{{BADGES}}</p>"
+    },
+    {"type": "section", "title": "Why", "subtitle": "{{the problem in a few words}}"},
+    {
+      "type": "projects",
+      "items": [
+        {
+          "size": "feature", "tag": "{{HEADLINE FEATURE}}", "title": "{{feature name}}", "subtitle": "{{what it gives you}}",
+          "description": "{{One or two sentences, from the code.}}",
+          "metrics": [{"value": "{{NUMBER}}", "label": "{{verified fact}}"}],
+          "tech": ["{{LANG}}"], "visual": "code"
+        },
+        {"size": "card", "tag": "{{FEATURE}}", "title": "{{feature 2}}", "subtitle": "{{3–5 words}}", "description": "{{One sentence.}}", "visual": "chat"},
+        {"size": "card", "tag": "{{FEATURE}}", "title": "{{feature 3}}", "subtitle": "{{3–5 words}}", "description": "{{One sentence.}}", "visual": "chart"}
+      ]
+    },
+    {"type": "section", "title": "Quickstart", "subtitle": "{{time to first result}}"},
+    {
+      "type": "markdown",
+      "text": "```bash\n{{INSTALL_COMMAND — verified by verify_readme.py}}\n```\n\n{{First usage example as real Markdown.}}"
+    },
+    {"type": "section", "title": "Built with", "subtitle": "{{stack in a few words}}"},
+    {
+      "type": "stack",
+      "groups": [
+        {"label": "Language", "items": ["{{python}}"]},
+        {"label": "Runs on", "items": ["{{docker}}"]}
+      ]
+    },
+    {
+      "type": "footer",
+      "window": "{{repo}} — zsh — done",
+      "greeting": "{{Closing line.}}",
+      "title": "{{Call to action.}}",
+      "meta": ["{{LICENSE}} License", "github.com/{{OWNER}}/{{REPO}}"],
+      "drips": false,
+      "href": "https://github.com/{{OWNER}}/{{REPO}}"
+    }
+  ]
+}

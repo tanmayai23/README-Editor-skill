@@ -1,0 +1,69 @@
+{
+  "theme": "aurora",
+  "motion": "ambient",
+  "github": "tanmayai23",
+  "readme": "README.md",
+  "assets": "assets/page",
+  "blocks": [
+    {
+      "type": "hero",
+      "window": "readme-forge — zsh — main",
+      "prompt": "~ $ /readme-forge write a README for this repo",
+      "greeting": "Your code is the source of truth.",
+      "title": "readme-forge",
+      "meta": ["Claude skill", "**verified** READMEs", "Python 3.8+ · stdlib only"],
+      "status": "MIT licensed",
+      "drips": false,
+      "href": "https://github.com/tanmayai23/README-Editor-skill"
+    },
+    {
+      "type": "markdown",
+      "text": "<p align=\"center\"><b>A Claude skill that writes READMEs from your code, then checks every command, env var and path in them against the repo.</b></p>"
+    },
+    {"type": "section", "title": "Why", "subtitle": "a README that guesses is worse than none"},
+    {
+      "type": "projects",
+      "items": [
+        {
+          "size": "feature", "tag": "Claim check", "title": "verify_readme.py", "subtitle": "every claim, checked against the repo",
+          "description": "Extracts every command, script, flag, env var and path from a README and checks each one against the repository.",
+          "metrics": [{"value": "15", "label": "ecosystems detected"}, {"value": "100%", "label": "accuracy gate in CI"}, {"value": "0", "label": "dependencies"}],
+          "tech": ["Python", "stdlib"], "visual": "code", "href": "https://github.com/tanmayai23/README-Editor-skill"
+        },
+        {
+          "size": "card", "tag": "In Claude", "title": "/readme-forge", "subtitle": "Claude Code, claude.ai, Desktop",
+          "description": "Reads the repo first and writes only what it can point to in a file.",
+          "highlight": "One command", "visual": "chat"
+        },
+        {
+          "size": "card", "tag": "In CI", "title": "GitHub Action", "subtitle": "one PR comment",
+          "description": "Scores and fact-checks READMEs on pull requests and can fail below a minimum score.",
+          "highlight": "uses: …@v1", "visual": "chart"
+        }
+      ]
+    },
+    {"type": "section", "title": "Quickstart", "subtitle": "install once, use everywhere"},
+    {
+      "type": "markdown",
+      "text": "```bash\nclaude plugin install readme-forge --marketplace tanmayai23/README-Editor-skill\n```\n\nThen, in Claude Code: `/readme-forge write a README for this repo`."
+    },
+    {"type": "section", "title": "Built with", "subtitle": "no dependencies to install"},
+    {
+      "type": "stack",
+      "groups": [
+        {"label": "Scripts", "items": ["python"]},
+        {"label": "Runs in", "items": [{"name": "Claude", "icon": "anthropic"}, "githubactions"]}
+      ]
+    },
+    {
+      "type": "footer",
+      "window": "readme-forge — zsh — done",
+      "prompt": "~ $ python verify_readme.py README.md --repo .",
+      "greeting": "Every claim checked.",
+      "title": "Ship the README.",
+      "meta": ["MIT License", "github.com/tanmayai23/README-Editor-skill"],
+      "drips": false,
+      "href": "https://github.com/tanmayai23/README-Editor-skill"
+    }
+  ]
+}

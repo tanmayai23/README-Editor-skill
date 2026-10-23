@@ -67,6 +67,14 @@ jobs:
       - name: Linked banner snippet keeps <a> and <picture> on separate lines
         shell: bash
         run: python readme-forge-design/scripts/make_banner.py --kind button --title Go --href "#go" --out ci-btn | grep -qx '<a href="#go">'
+      - name: Page kit examples rebuild without changes
+        shell: bash
+        run: |
+          python readme-forge-design/scripts/make_page.py --spec readme-forge-design/examples/keynote-profile/page.json
+          python readme-forge-design/scripts/make_page.py --spec readme-forge-design/examples/keynote-project/page.json
+          git diff --exit-code -- readme-forge-design/examples
+      - name: Page kit README passes the scorer's design checks
+        run: python readme-forge/scripts/score_readme.py readme-forge-design/examples/keynote-profile/README.md --profile --min 85
       - name: Fancy text maps letters, digits and Unicode holes
         shell: bash
         run: |
