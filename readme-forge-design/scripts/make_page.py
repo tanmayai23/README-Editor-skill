@@ -52,7 +52,8 @@ THEMES = {
     "mono":    (["#1D1D1F", "#6E6E73", "#1D1D1F", "#A1A1A6"], ["#F5F5F7", "#8B949E", "#F5F5F7", "#6E7681"]),
 }
 VISUALS = ["network", "wave", "chart", "grid", "chat", "orbit", "code"]
-BLOCKS = ["hero", "dock", "section", "about", "stack", "projects", "achievements", "stats", "markdown", "footer"]
+BLOCKS = ["hero", "dock", "section", "about", "code", "portrait", "stack", "projects", "achievements", "certs", "stats",
+          "markdown", "footer"]
 
 # 24×24 line icons for things Simple Icons doesn't cover (drawn with stroke, not fill).
 LINE_ICONS = {
@@ -76,12 +77,15 @@ ALIASES = {
     "github actions": "githubactions", "gh actions": "githubactions", "rails": "rubyonrails", ".net": "dotnet",
     "twitter": "x", "dev.to": "devdotto", "email": "mail", "e-mail": "mail", "website": "globe", "portfolio": "globe",
     "web": "globe", "site": "globe", "blog": "rss", "resume": "file", "cv": "file", "location": "pin",
+    "java": "openjdk", "html": "html5", "css": "css3", "cf": "codeforces", "lc": "leetcode", "gfg": "geeksforgeeks",
+    "express.js": "express", "expressjs": "express",
 }
 
 
 # Shorter labels for icon titles that don't fit under a 68 px tile.
 SHORT = {"Amazon Web Services": "AWS", "Google Gemini": "Gemini", "Hugging Face": "Hugging Face", "GitHub Actions": "Actions",
-         "Ruby on Rails": "Rails", "scikit-learn": "scikit-learn", "Visual Studio Code": "VS Code"}
+         "Ruby on Rails": "Rails", "scikit-learn": "scikit-learn", "Visual Studio Code": "VS Code",
+         "OpenJDK": "Java", "HTML5": "HTML", "CSS3": "CSS", "GeeksforGeeks": "GfG"}
 
 
 def esc(s) -> str:
@@ -355,18 +359,40 @@ CSS_DECOR = """
 @keyframes drop{0%,30%{opacity:0;transform:translateY(0) scale(.4)}40%{opacity:1;transform:translateY(0) scale(1)}85%{opacity:1;transform:translateY(70px) scale(1,1.15)}100%{opacity:0;transform:translateY(84px) scale(1.2,.6)}}
 @keyframes zoom{from{transform:scale(1)}to{transform:scale(1.07)}}
 @keyframes dash{to{stroke-dashoffset:-84}}
+.scan{animation:scan 7s ease-in-out infinite}
+@keyframes scan{0%{transform:translateY(0)}50%{transform:translateY(var(--scan,560px))}100%{transform:translateY(0)}}
 """
+ROLE_SECONDS = 2.6  # how long each hero role stays on screen
+# class name → its rule + keyframes, so each card ships only the animations it uses
+DECOR_RULES = {}
+for _line in CSS_DECOR.strip().splitlines():
+    _m = re.match(r"\.(\w+)\{|@keyframes (\w+)\{", _line)
+    if _m:
+        _name = _m.group(1) or _m.group(2)
+        DECOR_RULES[_name] = DECOR_RULES.get(_name, "") + _line + "\n"
 CSS_ENTRANCE = """
 .up{animation:up .9s cubic-bezier(.2,.8,.2,1) both}
 @keyframes up{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
 """
 
 
-def doc(w, h, label, body, motion, defs="", fonts=""):
+def role_css(n):
+    """Keyframes for n rotating roles: each is fully visible for its own slot of the cycle."""
+    if n < 2:
+        return ""
+    slot = 100 / n
+    return (f".role{{animation:role {n * ROLE_SECONDS}s linear infinite}}"
+            f"@keyframes role{{0%,{slot * .82:.1f}%{{opacity:1}}{slot:.1f}%,100%{{opacity:0}}}}")
+
+
+def doc(w, h, label, body, motion, defs="", fonts="", extra_css=""):
     css = (f"{fonts}text{{font-family:{SANS};font-kerning:normal}}"
            f".mono{{font-family:{MONO}}}.serif{{font-family:{SERIF};font-style:italic;font-weight:400}}")
     if motion != "static":
-        css += CSS_DECOR + (CSS_ENTRANCE if motion == "entrance" else "")
+        used = set(re.findall(r'class="([^"]+)"', body))
+        used = {c for group in used for c in group.split()}
+        css += "".join(rule for name, rule in DECOR_RULES.items() if name in used)
+        css += (CSS_ENTRANCE if motion == "entrance" and "up" in used else "") + extra_css
         css += "@media (prefers-reduced-motion: reduce){*{animation:none!important}}"
     return (f'<svg xmlns="http://www.w3.org/2000/svg" width="{w}" height="{h}" viewBox="0 0 {w} {h}" role="img" '
             f'aria-label="{esc(label)}"><title>{esc(label)}</title><style>{css}</style><defs>{defs}</defs>{body}</svg>\n')
@@ -434,6 +460,22 @@ def window(t: T, spec, y0, base: Path, prompt_default):
     title = spec.get("title", "")
     o.append(txt(290, 330, title, fit(title, 88, 830, 700, spacing=-4.2), t.fg, 700, "up", spacing=-4.2))
     meta = [m for m in spec.get("meta", []) if m]
+    roles = [r for r in spec.get("roles", []) if r]
+    if roles:
+        # Rotating role line (a self-contained stand-in for readme-typing-svg). Role 1 is visible
+        # in the first frame and whenever motion is off; the others fade in on a CSS cycle.
+        size = 22
+        while size > 15 and max(text_w(r, size, 600) for r in roles) > 760:
+            size -= .5
+        parts = []
+        for i, r in enumerate(roles):
+            w = text_w(r, size, 600)
+            parts.append(f'<g class="role" style="opacity:{1 if i == 0 else 0};animation-delay:{i * ROLE_SECONDS}s">'
+                         + txt(296, 384, "›", size + 4, t.text_accent(0, need=3), 700)
+                         + txt(322, 384, r, size, t.fg, 600, spacing=-.3)
+                         + f'<rect x="{326 + w:.1f}" y="{384 - size * .8:.1f}" width="3" height="{size:.1f}" rx="1.5" fill="{t.a(0)}" class="blink"/></g>')
+        o.append('<g class="up">' + "".join(parts) + "</g>")
+        meta = []
     if meta:
         size = 19
         def total(sz):
@@ -472,9 +514,10 @@ def card_hero(spec, t, ctx, footer=False):
     edge = [(22, 250 + y0, 14.4), (1180, 150 + y0, 16), (1180, 345 + y0, 9.6), (60, 20 if not footer else 580, 11.2),
             (1140, 236 + y0, 12.8), (1130, 300 + y0, 8)]
     body.append(scatter(t, edge, seed + "e"))
+    roles = [r for r in spec.get("roles", []) if r]
     label = spec.get("alt") or " — ".join(x for x in (f'{spec.get("greeting", "")} {spec.get("title", "")}'.strip(),
-                                                     ", ".join(re.sub(r"\*", "", m) for m in spec.get("meta", []))) if x)
-    return doc(1200, H, label, "".join(body), ctx["motion"], defs), label
+                                                     "; ".join(roles) or ", ".join(re.sub(r"\*", "", m) for m in spec.get("meta", []))) if x)
+    return doc(1200, H, label, "".join(body), ctx["motion"], defs, extra_css=role_css(len(roles))), label
 
 
 def card_dock(item, t, ctx):
@@ -793,6 +836,282 @@ def card_achievement(item, t, ctx, i, n, min_h=430):
     return doc(590, H, alt, body, ctx["motion"], defs), alt
 
 
+def read_png(path: Path):
+    """Decode an 8- or 16-bit, non-interlaced PNG with the stdlib → (width, height, rows of RGBA tuples)."""
+    import struct
+    import zlib
+    data = path.read_bytes()
+    if data[:8] != b"\x89PNG\r\n\x1a\n":
+        die(f"{path.name} is not a PNG (the portrait block reads PNG only; export the photo as PNG)")
+    pos, idat, palette, trns = 8, b"", None, None
+    while pos < len(data):
+        length, kind = struct.unpack(">I4s", data[pos:pos + 8])
+        chunk = data[pos + 8:pos + 8 + length]
+        if kind == b"IHDR":
+            w, h, depth, ctype, _, _, interlace = struct.unpack(">IIBBBBB", chunk)
+        elif kind == b"PLTE":
+            palette = [tuple(chunk[i:i + 3]) for i in range(0, len(chunk), 3)]
+        elif kind == b"tRNS":
+            trns = chunk
+        elif kind == b"IDAT":
+            idat += chunk
+        elif kind == b"IEND":
+            break
+        pos += 12 + length
+    if interlace or depth not in (8, 16) and ctype != 3 or (ctype == 3 and depth != 8):
+        die(f"{path.name}: use a non-interlaced 8-bit PNG for the portrait")
+    channels = {0: 1, 2: 3, 3: 1, 4: 2, 6: 4}[ctype]
+    bpp = channels * depth // 8
+    stride = w * bpp
+    raw = zlib.decompress(idat)
+    prev = bytearray(stride)
+    rows = []
+    for y in range(h):
+        f = raw[y * (stride + 1)]
+        line = bytearray(raw[y * (stride + 1) + 1:(y + 1) * (stride + 1)])
+        if f == 1:
+            for i in range(bpp, stride):
+                line[i] = (line[i] + line[i - bpp]) & 255
+        elif f == 2:
+            for i in range(stride):
+                line[i] = (line[i] + prev[i]) & 255
+        elif f == 3:
+            for i in range(stride):
+                left = line[i - bpp] if i >= bpp else 0
+                line[i] = (line[i] + ((left + prev[i]) >> 1)) & 255
+        elif f == 4:
+            for i in range(stride):
+                a = line[i - bpp] if i >= bpp else 0
+                b, c = prev[i], prev[i - bpp] if i >= bpp else 0
+                p = a + b - c
+                pa, pb, pc = abs(p - a), abs(p - b), abs(p - c)
+                line[i] = (line[i] + (a if pa <= pb and pa <= pc else b if pb <= pc else c)) & 255
+        prev = line
+        step = depth // 8  # 16-bit: keep the high byte of each sample
+        px = []
+        for x in range(w):
+            s = [line[x * bpp + k * step] for k in range(channels)]
+            if ctype == 0:
+                px.append((s[0], s[0], s[0], 255))
+            elif ctype == 2:
+                px.append((s[0], s[1], s[2], 255))
+            elif ctype == 3:
+                r, g, b = palette[s[0]]
+                px.append((r, g, b, trns[s[0]] if trns and s[0] < len(trns) else 255))
+            elif ctype == 4:
+                px.append((s[0], s[0], s[0], s[1]))
+            else:
+                px.append(tuple(s))
+        rows.append(px)
+    return w, h, rows
+
+
+def card_portrait(spec, t, ctx):
+    """Dot-matrix (halftone) portrait drawn from a PNG: only the dots are stored, never the photo."""
+    if not spec.get("image"):
+        die("portrait block needs \"image\": a PNG path")
+    key = ("png", spec["image"])
+    if key not in ctx:
+        p = Path(spec["image"]) if Path(spec["image"]).is_absolute() else ctx["base"] / spec["image"]
+        if not p.exists():
+            die(f"image not found: {p}")
+        ctx[key] = read_png(p)
+    w, h, rows = ctx[key]
+    S, pad, cols = 640, 48, max(16, min(int(spec.get("dots", 46)), 72))
+    cell = (S - 2 * pad) / cols
+    side = min(w, h)  # centre-crop to a square
+    ox, oy = (w - side) // 2, (h - side) // 2
+    src = side / cols
+    caption, sub = spec.get("caption", ""), spec.get("subtitle", "")
+    H = S + (70 if caption else 0) + (26 if sub else 0)
+    dots = []
+    for cy in range(cols):
+        for cx in range(cols):
+            x0, y0 = ox + int(cx * src), oy + int(cy * src)
+            x1, y1 = max(x0 + 1, ox + int((cx + 1) * src)), max(y0 + 1, oy + int((cy + 1) * src))
+            stepx, stepy = max(1, (x1 - x0) // 4), max(1, (y1 - y0) // 4)
+            tot = cnt = alpha = 0.0
+            for yy in range(y0, y1, stepy):
+                row = rows[yy]
+                for xx in range(x0, x1, stepx):
+                    r, g, b, a = row[xx]
+                    tot += (.2126 * r + .7152 * g + .0722 * b) / 255 * a / 255
+                    alpha += a / 255
+                    cnt += 1
+            if not cnt or alpha / cnt < .1:
+                continue
+            lum_ = tot / alpha
+            # photo: dark mode draws brightness, so a face stays a positive image.
+            # shape: both themes draw darkness, so a logo or silhouette keeps its form.
+            v = (1 - lum_) if t.mode == "light" or spec.get("tone") == "shape" else lum_
+            v = max(0.0, v) ** 1.25
+            r = cell * .5 * v
+            if r >= cell * .09:
+                dots.append(f'<circle cx="{pad + (cx + .5) * cell:.1f}" cy="{pad + (cy + .5) * cell:.1f}" r="{r:.2f}"/>')
+    c1 = t.text_accent(0, need=3) if t.mode == "light" else t.a(0)
+    c2 = t.text_accent(1, need=3) if t.mode == "light" else t.a(1)
+    ink = spec.get("color", "accent")
+    fill = t.fg if ink == "ink" else "url(#pg)"
+    defs = (f'<linearGradient id="pg" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="{S}" y2="{S}">'
+            f'<stop offset="0" stop-color="{c1}"/><stop offset="1" stop-color="{c2}"/></linearGradient>'
+            f'<linearGradient id="sc" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="{t.a(0)}" stop-opacity="0"/>'
+            f'<stop offset=".5" stop-color="{t.a(0)}" stop-opacity=".16"/><stop offset="1" stop-color="{t.a(0)}" stop-opacity="0"/></linearGradient>'
+            f'<clipPath id="pc"><rect x="16" y="16" width="{S - 32}" height="{S - 32}" rx="28"/></clipPath>')
+    body = [f'<rect x="8" y="8" width="{S - 16}" height="{H - 16}" rx="34" fill="{t.card}"/>',
+            f'<g fill="{fill}">{"".join(dots)}</g>',
+            f'<g clip-path="url(#pc)"><rect x="16" y="-40" width="{S - 32}" height="80" fill="url(#sc)" class="scan" style="--scan:{S}px"/></g>']
+    if caption:
+        body.append(txt(S / 2, S + 18, caption, fit(caption, 30, S - 80, 700, spacing=-1), t.fg, 700, anchor="middle", spacing=-1))
+    if sub:
+        body.append(txt(S / 2, S + 48, sub, fit(sub, 19, S - 80, 400, "serif"), t.muted, cls="serif", anchor="middle"))
+    body.append(scatter(t, [(S - 40, 40, 14.4), (40, S - 40, 9.6), (S - 60, S - 70, 6.4)], "portrait"))
+    if len(dots) > 2600:
+        print(f"note: portrait has {len(dots)} dots; lower \"dots\" to make the SVG lighter", file=sys.stderr)
+    alt = spec.get("alt") or "Dot-matrix portrait" + (f" — {caption}" if caption else "") + (f", {sub}" if sub else "")
+    return doc(S, H, alt, "".join(body), ctx["motion"], defs), alt
+
+
+def code_lines(data, lang):
+    """data (a JSON object) → [(indent, [(text, role)])] for yaml or json. role: key, str, num, punct, dash, comment."""
+    def scalar(v):
+        if isinstance(v, bool):
+            return [("true" if v else "false", "num")]
+        if isinstance(v, (int, float)):
+            return [(str(v), "num")]
+        s = str(v)
+        if "  # " in s:  # trailing comment: "EngineX  # career tool"
+            s, c = s.split("  # ", 1)
+            return scalar_str(s, lang) + [("  # " + c, "comment")]
+        return scalar_str(s, lang)
+
+    def scalar_str(s, lang):
+        if lang == "json":
+            return [(json.dumps(s, ensure_ascii=False), "str")]
+        needs = s == "" or s[0] in "!&*[]{}|>%@`#'\",?:-" or ": " in s or s.strip() != s
+        return [(json.dumps(s, ensure_ascii=False) if needs else s, "str")]
+
+    out = []
+    if lang == "json":
+        out.append((0, [("{", "punct")]))
+        items = list(data.items())
+        for n, (k, v) in enumerate(items):
+            comma = [(",", "punct")] if n < len(items) - 1 else []
+            key = [(json.dumps(k), "key"), (": ", "punct")]
+            if isinstance(v, list):
+                out.append((1, key + [("[", "punct")]))
+                for m, it in enumerate(v):
+                    out.append((2, scalar(it) + ([(",", "punct")] if m < len(v) - 1 else [])))
+                out.append((1, [("]", "punct")] + comma))
+            elif isinstance(v, dict):
+                out.append((1, key + [("{", "punct")]))
+                sub = list(v.items())
+                for m, (k2, v2) in enumerate(sub):
+                    out.append((2, [(json.dumps(k2), "key"), (": ", "punct")] + scalar(v2) + ([(",", "punct")] if m < len(sub) - 1 else [])))
+                out.append((1, [("}", "punct")] + comma))
+            else:
+                out.append((1, key + scalar(v) + comma))
+        out.append((0, [("}", "punct")]))
+        return out
+    for k, v in data.items():
+        if isinstance(v, list):
+            out.append((0, [(k, "key"), (":", "punct")]))
+            out.extend((1, [("- ", "dash")] + scalar(it)) for it in v)
+        elif isinstance(v, dict):
+            out.append((0, [(k, "key"), (":", "punct")]))
+            out.extend((1, [(k2, "key"), (": ", "punct")] + scalar(v2)) for k2, v2 in v.items())
+        else:
+            out.append((0, [(k, "key"), (": ", "punct")] + scalar(v)))
+    return out
+
+
+def card_code(spec, t, ctx):
+    """'About me' as code: an editor window with line numbers and syntax colours (yaml or json)."""
+    data = spec.get("data")
+    if not isinstance(data, dict) or not data:
+        die("code block needs \"data\": a JSON object (keys become YAML/JSON keys)")
+    lang = spec.get("lang", "yaml")
+    if lang not in ("yaml", "json"):
+        die("code block \"lang\" must be yaml or json")
+    fname = spec.get("file", f"about.{'yml' if lang == 'yaml' else 'json'}")
+    lines = code_lines(data, lang)
+    size, lh, x0 = 17, 31, 132
+    maxc = int((1130 - x0) / (size * .6))
+    bg = t.surface
+    colors = {"key": t.text_accent(0, bg), "str": t.text_accent(3, bg), "num": t.text_accent(2, bg),
+              "punct": t.muted, "dash": t.text_accent(1, bg), "comment": t.muted}
+    top = 128
+    o = [f'<rect x="16" y="10" width="1168" height="__H__" rx="32" fill="{t.card}"/>',
+         f'<rect x="40" y="34" width="1120" height="__E__" rx="22" fill="{bg}" stroke="{t.line}"/>',
+         '<circle cx="72" cy="66" r="6.5" fill="#FF5F57"/><circle cx="94" cy="66" r="6.5" fill="#FEBC2E"/><circle cx="116" cy="66" r="6.5" fill="#28C840"/>']
+    tab_w = text_w(fname, 13, 500, "mono") + 36
+    o.append(f'<rect x="150" y="48" width="{tab_w:.1f}" height="36" rx="10" fill="{t.card}" stroke="{t.line}"/>'
+             + txt(168, 71, fname, 13, t.body, 500, "mono"))
+    o.append(txt(1132, 71, lang.upper(), 11.5, t.muted, 600, "mono", "end", 1.6))
+    o.append(f'<line x1="40" y1="98" x2="1160" y2="98" stroke="{t.line}"/>')
+    plain = []
+    for n, (ind, toks) in enumerate(lines):
+        y = top + n * lh
+        o.append(txt(96, y, str(n + 1), 14, t.muted, 400, "mono", "end"))
+        spans, used, text = [], ind * 2, ""
+        for s, role in toks:
+            room = maxc - used
+            if room <= 0:
+                break
+            if len(s) > room:
+                s = s[:max(room - 1, 0)] + "…"
+            cls = ' font-style="italic"' if role == "comment" else ""
+            spans.append(f'<tspan fill="{colors[role]}"{cls}>{esc(s)}</tspan>')
+            used += len(s)
+            text += s
+        o.append(f'<text x="{x0 + ind * 2 * size * .6:.1f}" y="{y}" font-size="{size}" class="mono" xml:space="preserve">{"".join(spans)}</text>')
+        plain.append("  " * ind + text)
+    last = top + (len(lines) - 1) * lh
+    o.append(f'<rect x="{x0 + (len(plain[-1]) + 1) * size * .6:.1f}" y="{last - size * .85:.1f}" width="10" height="{size + 2}" rx="2" fill="{t.a(0)}" class="blink"/>')
+    E = top + len(lines) * lh - 34 + 4
+    H = E + 34 + 40
+    body = "".join(o).replace("__H__", str(H - 20)).replace("__E__", str(E))
+    body += scatter(t, [(1170, 24, 12.8), (26, H - 30, 9.6), (1150, H - 24, 6.4)], fname)
+    alt = spec.get("alt") or f"{fname}: " + "; ".join(p.strip() for p in plain if p.strip() not in "{}[]")
+    return doc(1200, H, alt, body, ctx["motion"]), alt
+
+
+def card_certs(spec, t, ctx):
+    """Certification / badge wall: a grid of tiles with an icon or badge image, name, issuer and year."""
+    items = spec.get("items", [])
+    if not items:
+        die("certs block needs items: [{name, issuer, icon | image, year}]")
+    cols = max(2, min(int(spec.get("columns", 4)), 5))
+    gap, w, h = 18, 0.0, 132
+    w = (1100 - (cols - 1) * gap) / cols
+    o = []
+    for i, it in enumerate(items):
+        r, c = divmod(i, cols)
+        x, y = 50 + c * (w + gap), 44 + r * (h + gap)
+        name, issuer = it.get("name", ""), it.get("issuer", "")
+        o.append(f'<g class="up"><rect x="{x:.1f}" y="{y}" width="{w:.1f}" height="{h}" rx="24" fill="{t.surface}" stroke="{t.line}"/>')
+        if it.get("image"):
+            o.append(f'<image href="{embed(it["image"], ctx["base"])}" x="{x + 20:.1f}" y="{y + 20}" width="52" height="52" preserveAspectRatio="xMidYMid meet"/>')
+        else:
+            o.append(f'<rect x="{x + 20:.1f}" y="{y + 20}" width="52" height="52" rx="16" fill="{t.card}"/>'
+                     + icon(it.get("icon") or "star", x + 32, y + 32, 28, t, t.card, name))
+        if it.get("year"):
+            o.append(txt(x + w - 18, y + 36, str(it["year"]), 12, t.muted, 500, "mono", "end", 1))
+        tw = w - 40
+        nl = wrap(name, 16.5, tw, 600)[:2]
+        ny = y + 98 if len(nl) == 1 else y + 90
+        for k, ln in enumerate(nl):
+            o.append(txt(x + 20, ny + k * 20 - (0 if len(nl) == 1 else 8), ln, 16.5, t.fg, 600, spacing=-.2))
+        if issuer:
+            o.append(txt(x + 20, y + 120, issuer, fit(issuer, 14, tw, 400, "serif"), t.muted, cls="serif"))
+        o.append(star(x + w - 22, y + h - 20, 6.4, t.a(i), "glint", (i * .37) % 2.4) + "</g>")
+    rows = (len(items) + cols - 1) // cols
+    H = 44 + rows * (h + gap) - gap + 40
+    body = f'<rect x="16" y="10" width="1168" height="{H - 20}" rx="32" fill="{t.card}"/>' + "".join(o)
+    alt = spec.get("alt") or "Certifications — " + "; ".join(
+        " · ".join(str(x) for x in (it.get("name"), it.get("issuer"), it.get("year")) if x) for it in items)
+    return doc(1200, H, alt, body, ctx["motion"]), alt
+
+
 # ---------------------------------------------------------------- page assembly
 
 def picture(rel, alt, width, href=None, height=None):
@@ -822,7 +1141,8 @@ def stats_block(spec, page, light: T, dark: T):
         title = spec.get("title", "GitHub stats").replace(" ", "%20")
 
         def u(t):
-            return (f"https://github-readme-stats.vercel.app/api?username={user}&show_icons=true&include_all_commits=true"
+            every = "&include_all_commits=true" if spec.get("all_commits") else ""  # errors on the public instance for many users
+            return (f"https://github-readme-stats.vercel.app/api?username={user}&show_icons=true{every}"
                     f"&bg_color={hx(t.card)}&title_color={hx(t.fg)}&text_color={hx(t.body)}&icon_color={hx(t.a(0))}"
                     f"&ring_color={hx(t.a(0))}&hide_border=true&border_radius=24&custom_title={title}")
         cards.append(f'<picture><source media="(prefers-color-scheme: dark)" srcset="{esc(u(dark))}"><img src="{esc(u(light))}" alt="{esc(user)}\'s GitHub stats" height="190"></picture>')
@@ -832,9 +1152,34 @@ def stats_block(spec, page, light: T, dark: T):
                     f"&ring={hx(t.a(0))}&fire={hx(t.a(1))}&currStreakNum={hx(t.fg)}&sideNums={hx(t.fg)}"
                     f"&currStreakLabel={hx(t.text_accent(0))}&sideLabels={hx(t.muted)}&dates={hx(t.muted)}&hide_border=true&border_radius=24")
         cards.append(f'<picture><source media="(prefers-color-scheme: dark)" srcset="{esc(s(dark))}"><img src="{esc(s(light))}" alt="{esc(user)}\'s contribution streak" height="190"></picture>')
+    if spec.get("languages"):
+        def lg(t):
+            return (f"https://github-readme-stats.vercel.app/api/top-langs/?username={user}&layout=compact&langs_count=8"
+                    f"&bg_color={hx(t.card)}&title_color={hx(t.fg)}&text_color={hx(t.body)}&hide_border=true&border_radius=24")
+        cards.append(f'<picture><source media="(prefers-color-scheme: dark)" srcset="{esc(lg(dark))}"><img src="{esc(lg(light))}" alt="{esc(user)}\'s most used languages" height="190"></picture>')
+    if spec.get("leetcode"):
+        lc = spec["leetcode"]
+        def lcu(mode):
+            return f"https://leetcard.jacoblin.cool/{lc}?theme={mode}&font=Inter&border=0&radius=24&ext=heatmap"
+        cards.append(f'<a href="https://leetcode.com/u/{esc(lc)}/"><picture><source media="(prefers-color-scheme: dark)" srcset="{esc(lcu("dark"))}">'
+                     f'<img src="{esc(lcu("light"))}" alt="LeetCode stats for {esc(lc)}" height="190"></picture></a>')
+    if spec.get("codeforces"):
+        cf = spec["codeforces"]
+        def cfu(mode):
+            return f"https://codeforces-readme-stats.vercel.app/api/card?username={cf}&theme={mode}&disable_animations=false"
+        cards.append(f'<a href="https://codeforces.com/profile/{esc(cf)}"><picture><source media="(prefers-color-scheme: dark)" srcset="{esc(cfu("dark"))}">'
+                     f'<img src="{esc(cfu("light"))}" alt="Codeforces rating for {esc(cf)}" height="190"></picture></a>')
     if cards:
         out.append("<!-- Shared public instances can be rate-limited. For reliability, self-host them or commit the SVGs from an Action (workflows/metrics.yml). -->\n"
                    + "\n".join(cards))
+    if spec.get("calendar3d"):
+        lf, df = spec["calendar3d"] if isinstance(spec["calendar3d"], list) else ["profile-green-animate.svg", "profile-night-rainbow.svg"]
+        out.insert(1 if spec.get("snake", True) else 0,
+                   "<!-- 3D calendar: add templates/profile/workflows/profile-3d.yml and run it once. -->\n"
+                   f'<picture><source media="(prefers-color-scheme: dark)" srcset="./profile-3d-contrib/{df}">'
+                   f'<img src="./profile-3d-contrib/{lf}" alt="3D chart of {esc(user)}\'s GitHub contributions" width="100%"></picture>')
+    if spec.get("views"):
+        out.append(f'<img src="https://komarev.com/ghpvc/?username={esc(user)}&label=Profile%20views&color={hx(light.text_accent(0))}&style=flat-square" alt="Profile views">')
     return "\n\n".join(out)
 
 
@@ -920,30 +1265,63 @@ def build(spec_path: Path, readme: Path | None, preview: Path | None):
             rel, alt = emit(stem_for("stack"), lambda t: card_stack(b, t, ctx))
             md.append(picture(rel, alt, "100%"))
             preview_items.append((rel, "100%"))
+        elif kind == "code":
+            rel, alt = emit(stem_for("code"), lambda t: card_code(b, t, ctx))
+            md.append(picture(rel, alt, "100%"))
+            preview_items.append((rel, "100%"))
+        elif kind == "portrait":
+            w = b.get("width", "50%")
+            rel, alt = emit(stem_for("portrait"), lambda t: card_portrait(b, t, ctx))
+            md.extend([picture(rel, alt, w, b.get("href")), ""])
+            preview_items.append((rel, w))
+        elif kind == "certs":
+            rel, alt = emit(stem_for("certs"), lambda t: card_certs(b, t, ctx))
+            md.append(picture(rel, alt, "100%"))
+            preview_items.append((rel, "100%"))
         elif kind == "projects":
             items = b.get("items", [])
             sizes = {"feature": ("100%", card_feature), "card": ("49%", card_project), "link": ("32%", card_link)}
             cards = [(i, it) for i, it in enumerate(items) if it.get("size", "card") == "card"]
             heights = row_heights([card_project(it, light, ctx, i)[0] for i, it in cards])
-            prev, cards_seen = None, 0
+            # Cards with "links" (Live · Code) sit in a two-column table so each gets its own link row.
+            table = any(it.get("links") for it in items if it.get("size", "card") == "card")
+            prev, cards_seen, cells = None, 0, []
+
+            def flush_cells():
+                if not cells:
+                    return
+                rows = ["<tr>" + "".join(cells[k:k + 2]) + "</tr>" for k in range(0, len(cells), 2)]
+                md.extend(["", "<table>", *rows, "</table>", ""])
+                cells.clear()
+
             for i, it in enumerate(items):
                 size = it.get("size", "card")
                 if size not in sizes:
                     die(f"project size must be feature, card or link (got {size!r})")
+                if size != "card":
+                    flush_cells()
                 if prev == "card" and size == "link":
                     md.append("")
                 w, fn = sizes[size]
                 slug = re.sub(r"[^a-z0-9]+", "-", str(it.get("title", "project")).lower()).strip("-")
                 pre = "more" if size == "link" else "project"
+                links = it.get("links", [])
+                href = it.get("href") or (links[0].get("href") if links else None)
                 if size == "card":
                     h = heights[cards_seen]
                     cards_seen += 1
                     rel, alt = emit(stem_for(f"{pre}-{slug}"), lambda t, it=it, i=i, h=h: card_project(it, t, ctx, i, h))
                 else:
                     rel, alt = emit(stem_for(f"{pre}-{slug}"), lambda t, it=it, fn=fn, i=i: fn(it, t, ctx, i))
-                md.append(picture(rel, alt, w, it.get("href")))
+                if size == "card" and table:
+                    row = " · ".join(f'<a href="{esc(l["href"])}">{esc(l.get("label", "Link"))} ↗</a>' for l in links if l.get("href"))
+                    cells.append(f'<td width="50%" align="center" valign="top">{picture(rel, alt, "100%", href)}'
+                                 + (f"<br><sub>{row}</sub>" if row else "") + "</td>")
+                else:
+                    md.append(picture(rel, alt, w, href))
                 preview_items.append((rel, w))
                 prev = size
+            flush_cells()
         elif kind == "achievements":
             items = b.get("items", [])
             heights = row_heights([card_achievement(it, light, ctx, i, len(items))[0] for i, it in enumerate(items)])

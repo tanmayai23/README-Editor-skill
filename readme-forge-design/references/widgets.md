@@ -8,7 +8,7 @@ Replace `USER` / `OWNER/REPO`. Every widget below is an `<img>`: **always** give
 |---|---|---|
 | **A — static/self-contained** | shields.io, skillicons.dev, files committed by your own Action | default choice |
 | **B — shared public instance** | readme-stats, streak, trophy, activity-graph (Vercel/demolab hosted) | OK, but add the fallback comment; they rate-limit popular accounts |
-| **C — dead** | anything on `*.herokuapp.com` (Heroku free tier removed Nov 2022); public `github-profile-trophy.vercel.app` and `github-readme-activity-graph.vercel.app` (HTTP 402, Oct 2026) | never use the public URL; replace or self-host |
+| **C — dead** | anything on `*.herokuapp.com` (Heroku free tier removed Nov 2022); public `github-profile-trophy.vercel.app` and `github-readme-activity-graph.vercel.app` (HTTP 402, Oct 2026); `monkeytype-github-profile.deno.dev` (HTTP 404, Oct 2026) | never use the public URL; replace or self-host |
 
 Hosted services change. When network is allowed, **always run `check_links.py`** (from the core readme-forge skill) on the result. It catches 402/404s and widgets that return an error card instead of a chart.
 
@@ -39,7 +39,7 @@ Legacy alternative: `![alt](url#gh-dark-mode-only)` + `![alt](url#gh-light-mode-
 | Repo pin | `https://github-readme-stats.vercel.app/api/pin/?username=USER&repo=REPO&theme=THEME` |
 | WakaTime | `https://github-readme-stats.vercel.app/api/wakatime?username=WAKAUSER&layout=compact&theme=THEME` |
 
-Useful params: `include_all_commits=true`, `count_private=true` (only meaningful self-hosted with your PAT), `hide=issues,contribs`, `rank_icon=github|percentile`, `card_width=`, `langs_count=8`, `exclude_repo=a,b`, `hide_title=true`, `locale=`.
+Useful params: `include_all_commits=true` (the public instance answers "Could not fetch total commits" for many users, so leave it off unless self-hosted), `count_private=true` (only meaningful self-hosted with your PAT), `hide=issues,contribs`, `rank_icon=github|percentile`, `card_width=`, `langs_count=8`, `exclude_repo=a,b`, `hide_title=true`, `locale=`.
 Themes: `default`, `dark`, `radical`, `merko`, `gruvbox`, `tokyonight`, `onedark`, `cobalt`, `synthwave`, `highcontrast`, `dracula`, `github_dark`, `transparent`, `catppuccin_latte`, `catppuccin_mocha`, `nord`, `rose_pine`, `vue`, `buefy`…
 Top-languages caveat: it's bytes in public repos, so vendored/notebook code skews it — mention to the user, or `exclude_repo` the outliers.
 
@@ -94,7 +94,8 @@ Action needs `WAKATIME_API_KEY` secret and markers `<!--START_SECTION:waka-->` /
 | Widget | URL / note |
 |---|---|
 | Profile views | `https://komarev.com/ghpvc/?username=USER&style=flat-square&color=blue&label=Profile+views` — vanity metric; optional |
-| LeetCode card | `https://leetcard.jacoblin.cool/LCUSER?theme=dark&font=Fira%20Code&ext=heatmap` |
+| LeetCode card | `https://leetcard.jacoblin.cool/LCUSER?theme=dark&font=Fira%20Code&ext=heatmap` (themes `light` / `dark`; `border=0&radius=24` to match cards; checked Oct 2026) |
+| Codeforces card | `https://codeforces-readme-stats.vercel.app/api/card?username=CFUSER&theme=dark` (`light` / `dark`; Tier B; checked Oct 2026) |
 | Stack Overflow | `https://stackoverflow-card.vercel.app/?userID=ID&theme=dark` (Tier B) |
 | Spotify now playing | kittinan/spotify-github-profile (Tier B): the user connects Spotify once at its site to get a `uid`, then `https://spotify-github-profile.kittinanx.com/api/view?uid=UID&cover_image=true&theme=default&bar_color=HEX`. novatorem/novatorem needs self-hosting with Spotify API keys |
 | Star history (project) | `https://api.star-history.com/svg?repos=OWNER/REPO&type=Date` (+`&theme=dark` in a `<picture>` source) |

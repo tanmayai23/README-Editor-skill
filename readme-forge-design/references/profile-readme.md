@@ -22,7 +22,7 @@ Taken from the categories used by awesome-github-profile-readme and its gallery.
 | Minimal | `minimal.md` | senior devs, researchers | 5–10 lines: headline, focus, links. No widgets. |
 | Stats dashboard | `stats-dashboard.md` | active OSS contributors | stats + top-langs + streak (themed), skill icons |
 | Creative / animated | `creative.md` | frontend/design devs | banner, typing SVG, snake, GIF (≤ 2 animations) |
-| Code mode | `code-mode.md` | backend/systems devs | an "about me" as a code block (`const me = {…}` / Python dataclass) |
+| Code mode | `code-mode.md` | backend/systems devs | an "about me" as a code block (`const me = {…}` / Python dataclass). Designed version: the page kit's `code` card |
 | Data / ML | `data-scientist.md` | ML/DS/AI | HF, Kaggle, papers, models/datasets table, notebooks |
 | Student | `student.md` | students, bootcamp grads | learning journey, coursework projects, hackathons, open to internships |
 | OSS maintainer | `oss-maintainer.md` | maintainers | projects table with stars/downloads badges, sponsor links |

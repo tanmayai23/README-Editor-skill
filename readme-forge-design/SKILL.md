@@ -21,6 +21,7 @@ Skill directory: `SKILL_DIR` = the folder containing this file. Scripts are stdl
 
 Read `references/page-kit.md` first.
 1. Gather real content. Profile: the batched interview from `references/profile-readme.md`. Project: run the core skill's fact-gathering; commands and install steps stay in `markdown` blocks so `verify_readme.py` can check them.
+   **If the user pasted a sample README** (theirs or someone else's), map each of its patterns with the "Learning from a sample README" table in page-kit.md: typing banner → hero `roles`, YAML about-me → `code`, portrait → `portrait`, badge wall → `certs`, project table → `projects` with `links`, LeetCode/Codeforces → `stats`. Take the layout, never the content, and drop widgets whose hosts are dead.
 2. `python SKILL_DIR/scripts/make_page.py --init profile|project > page.json`. Fill every `{{…}}` from that content and delete fields or blocks with no data (the script refuses to run with placeholders left). Never invent metrics, awards or descriptions. Choose the theme from the brand (page-kit.md rule 4), or pass `accents` to match a logo.
 3. `python SKILL_DIR/scripts/make_page.py --spec page.json --preview preview.html` writes every card (light + dark) and the README. Open the preview, check both themes for clipped text, shorten copy that the script had to shrink a lot, and re-run.
 4. Score with the core skill (`score_readme.py`, `--profile` for profiles) and `check_links.py` when network is allowed. Don't commit `preview.html`.
