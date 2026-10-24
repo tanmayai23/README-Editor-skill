@@ -195,14 +195,16 @@ python scripts/make_page.py --init profile > page.json     # or --init project
 python scripts/make_page.py --spec page.json --preview preview.html
 ```
 
-Blocks: `hero` (terminal window with a dripping edge) · `dock` (contact tiles) · `section` (numbered headers) · `about` · `stack` (103 brand icons) · `projects` (feature, card and link sizes) · `achievements` (photo or emblem) · `stats` (themed to match) · `markdown` · `footer`. Themes: `keynote`, `aurora`, `sunset`, `ocean`, `forest`, `mono`, or your own `accents`. Spec reference: [references/page-kit.md](references/page-kit.md).
+Blocks: `hero` (terminal window with a dripping edge, optional rotating `roles`) · `dock` (contact tiles) · `section` (numbered headers) · `about` · `code` (about-me as a YAML/JSON editor) · `portrait` (dot-matrix from a PNG) · `stack` (117 brand icons) · `projects` (feature, card and link sizes, optional Live · Code links) · `achievements` (photo or emblem) · `certs` (badge wall) · `stats` (GitHub, top languages, LeetCode, Codeforces, 3D calendar, all themed) · `markdown` · `footer`. Themes: `keynote`, `aurora`, `sunset`, `ocean`, `forest`, `mono`, or your own `accents`. Spec reference: [references/page-kit.md](references/page-kit.md), including how to translate a sample README you like into page-kit blocks.
 
 <a href="examples/keynote-profile/README.md"><picture><source media="(prefers-color-scheme: dark)" srcset="examples/keynote-profile/assets/hello/hero-dark.svg"><img alt="Page kit hero card: a terminal window with traffic lights, a prompt tile, 'Hello World, I'm Mira' in serif and bold, a status pill and a melting bottom edge" src="examples/keynote-profile/assets/hello/hero-light.svg" width="100%"></picture></a>
 
 <picture><source media="(prefers-color-scheme: dark)" srcset="examples/keynote-profile/assets/hello/section-02-dark.svg"><img alt="Page kit section header: 02 — Tech stack, what I reach for" src="examples/keynote-profile/assets/hello/section-02-light.svg" width="100%"></picture>
 <picture><source media="(prefers-color-scheme: dark)" srcset="examples/keynote-profile/assets/hello/stack-dark.svg"><img alt="Page kit stack card: brand icons grouped into Languages, AI · ML, Web · Backend and Cloud · Tools" src="examples/keynote-profile/assets/hello/stack-light.svg" width="100%"></picture>
 
-Two complete examples are in the repo: a [personal profile](examples/keynote-profile/README.md) and a [project README](examples/keynote-project/README.md). The project example keeps the pitch and install commands as real Markdown, so they stay searchable and the core skill can verify them.
+Three complete examples are in the repo, all with fictional people: a [personal profile](examples/keynote-profile/README.md), a [developer profile](examples/keynote-coder/README.md) with the code, portrait, badge-wall and project-link cards, and a [project README](examples/keynote-project/README.md).
+
+<a href="examples/keynote-coder/README.md"><picture><source media="(prefers-color-scheme: dark)" srcset="examples/keynote-coder/assets/kai/code-dark.svg"><img alt="Page kit code card: an about.yml editor window with line numbers and syntax colours listing name, role, focus, current projects and philosophy" src="examples/keynote-coder/assets/kai/code-light.svg" width="100%"></picture></a> The project example keeps the pitch and install commands as real Markdown, so they stay searchable and the core skill can verify them.
 
 ## Profile READMEs
 
@@ -222,9 +224,9 @@ readme-forge-design/
 │   ├── page/           # starter specs for make_page.py: profile.json, project.json
 │   ├── design/         # centered header, profile header, landing-page hero, CTA section, footers
 │   └── profile/        # 19 archetypes, workflows/, game/
-├── examples/           # keynote-profile/ and keynote-project/: spec + generated cards + README
+├── examples/           # keynote-profile/, keynote-coder/, keynote-project/: spec + generated cards + README
 ├── assets/banners/     # every style, dark + light, and gallery.md
-├── assets/icons.json   # 103 brand icons from Simple Icons (CC0)
+├── assets/icons.json   # 117 brand icons from Simple Icons (CC0)
 └── scripts/            # make_page.py, make_banner.py, fancy_text.py
 ```
 

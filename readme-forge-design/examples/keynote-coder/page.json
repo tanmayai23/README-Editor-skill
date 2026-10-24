@@ -1,0 +1,109 @@
+{
+  "_comment": "Fictional demo persona for the code, portrait, certs, roles and project-links features. Names, projects, badges and links are made up; links point to example.com, stats use GitHub's public octocat account, and the portrait is drawn from this repo's own logo.",
+  "theme": "aurora",
+  "motion": "ambient",
+  "github": "octocat",
+  "readme": "README.md",
+  "assets": "assets/kai",
+  "blocks": [
+    {
+      "type": "hero",
+      "window": "kai — zsh — main",
+      "prompt": "~ $ ./solve --all",
+      "greeting": "Hey there,",
+      "title": "I'm Kai",
+      "roles": ["Competitive programmer", "Full-stack developer", "Machine learning explorer"],
+      "status": "Open to internships",
+      "href": "https://example.com/"
+    },
+    {
+      "type": "dock",
+      "items": [
+        {"label": "GitHub", "handle": "@octocat", "icon": "github", "href": "https://github.com/octocat"},
+        {"label": "LinkedIn", "handle": "in/kai-demo", "icon": "linkedin", "href": "https://example.com/linkedin"},
+        {"label": "Email", "handle": "say hello", "icon": "mail", "href": "mailto:kai@example.com"},
+        {"label": "LeetCode", "handle": "kai_demo", "icon": "leetcode", "href": "https://example.com/leetcode"},
+        {"label": "Codeforces", "handle": "kai_demo", "icon": "codeforces", "href": "https://example.com/codeforces"}
+      ]
+    },
+    {"type": "section", "title": "About", "subtitle": "as a config file"},
+    {"type": "portrait", "image": "../../../.github/assets/logo-320.png", "caption": "Kai Rowan", "subtitle": "dot-matrix portrait, drawn from a PNG", "dots": 40, "tone": "shape"},
+    {
+      "type": "code",
+      "file": "about.yml",
+      "lang": "yaml",
+      "data": {
+        "name": "Kai Rowan",
+        "role": "CS student · full-stack developer",
+        "focus": ["Data structures & algorithms", "Competitive programming", "Machine learning"],
+        "currently_building": ["Gridlock  # contest tracker", "Pocket ML notebooks"],
+        "learning": ["Rust", "System design"],
+        "philosophy": "Solve → Learn → Optimize → Repeat"
+      }
+    },
+    {"type": "section", "title": "Tech stack", "subtitle": "grouped, not a wall"},
+    {
+      "type": "stack",
+      "groups": [
+        {"label": "Languages", "items": ["cpp", "java", "python", "typescript"]},
+        {"label": "Web", "items": ["react", "nextdotjs", "nodedotjs", "express", "tailwindcss"]},
+        {"label": "ML · Data", "items": ["pytorch", "scikitlearn", "pandas", "jupyter"]},
+        {"label": "Tools", "items": ["git", "docker", "postgresql", "figma", "postman"]}
+      ]
+    },
+    {"type": "section", "title": "Projects", "subtitle": "live demos and code"},
+    {
+      "type": "projects",
+      "items": [
+        {
+          "size": "card", "tag": "Tools", "title": "Gridlock", "subtitle": "contest tracker",
+          "description": "Collects upcoming contests and ratings into one calendar.",
+          "highlight": "12 judges", "tech": ["Next.js", "Postgres"], "visual": "chart",
+          "links": [{"label": "Live", "href": "https://example.com/gridlock"}, {"label": "Code", "href": "https://example.com/gridlock/code"}]
+        },
+        {
+          "size": "card", "tag": "Desktop", "title": "Waveline", "subtitle": "audio visualiser",
+          "description": "Turns whatever is playing into soft ambient waves on the desktop.",
+          "highlight": "3 themes", "tech": ["Electron", "TypeScript"], "visual": "wave",
+          "links": [{"label": "Live", "href": "https://example.com/waveline"}, {"label": "Code", "href": "https://example.com/waveline/code"}]
+        },
+        {
+          "size": "card", "tag": "Privacy", "title": "Timekeep", "subtitle": "screen-time tracker",
+          "description": "Logs app usage locally and shows it in a clean dashboard.",
+          "highlight": "Offline-first", "tech": ["Python", "SQLite"], "visual": "grid",
+          "links": [{"label": "Download", "href": "https://example.com/timekeep"}, {"label": "Code", "href": "https://example.com/timekeep/code"}]
+        },
+        {
+          "size": "card", "tag": "DSA", "title": "Solutions", "subtitle": "800+ problems, explained",
+          "description": "Clean, commented solutions grouped by topic and difficulty.",
+          "highlight": "C++ · Java", "tech": ["C++", "Java"], "visual": "code",
+          "links": [{"label": "Code", "href": "https://example.com/solutions"}]
+        }
+      ]
+    },
+    {"type": "section", "title": "Badges", "subtitle": "earned along the way"},
+    {
+      "type": "certs",
+      "items": [
+        {"name": "Python — 5 stars", "issuer": "Codeplace Academy", "icon": "python", "year": 2025},
+        {"name": "Java — 5 stars", "issuer": "Codeplace Academy", "icon": "java", "year": 2025},
+        {"name": "API Fundamentals", "issuer": "API Guild", "icon": "postman", "year": 2025},
+        {"name": "Cloud Practitioner", "issuer": "OpenCloud Institute", "icon": "googlecloud", "year": 2026},
+        {"name": "Hack Week finalist", "issuer": "Hack Week 2026", "icon": "star", "year": 2026},
+        {"name": "Open-source contributor", "issuer": "Community sprint", "icon": "github", "year": 2025},
+        {"name": "Problem solving — Gold", "issuer": "Online judge", "icon": "code", "year": 2026},
+        {"name": "Project admin", "issuer": "Student open-source program", "icon": "file", "year": 2026}
+      ]
+    },
+    {"type": "section", "title": "Stats", "subtitle": "the daily habit"},
+    {"type": "stats", "user": "octocat", "snake": false, "languages": true},
+    {
+      "type": "footer",
+      "window": "kai — zsh — lets-connect",
+      "greeting": "Let's build",
+      "title": "something real.",
+      "meta": ["kai@example.com", "in/kai-demo", "@octocat"],
+      "href": "mailto:kai@example.com"
+    }
+  ]
+}

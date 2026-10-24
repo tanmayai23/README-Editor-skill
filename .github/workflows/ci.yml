@@ -72,6 +72,7 @@ jobs:
         run: |
           python readme-forge-design/scripts/make_page.py --spec readme-forge-design/examples/keynote-profile/page.json
           python readme-forge-design/scripts/make_page.py --spec readme-forge-design/examples/keynote-project/page.json
+          python readme-forge-design/scripts/make_page.py --spec readme-forge-design/examples/keynote-coder/page.json
           python readme-forge-design/scripts/make_page.py --spec .github/page.json
           git diff --exit-code -- readme-forge-design/examples .github/assets/page .github/readme-cards.md
       - name: Page kit README passes the scorer's design checks
