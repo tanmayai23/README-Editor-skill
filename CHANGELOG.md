@@ -15,6 +15,7 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ### Changed
 
+- README: the install command now sits on the first screen; a Limitations section collects what the claim check, score, diagrams and analyzer can't do (moved out of the FAQ); a Support section and `.github/FUNDING.yml` add a Buy Me a Coffee link and GitHub's Sponsor button.
 - The page kit's stats card no longer sets `include_all_commits`: the public github-readme-stats instance answers "Could not fetch total commits" for many users. Turn it back on with `"all_commits": true` when self-hosting. `widgets.md` notes this, adds the Codeforces card and marks the MonkeyType card as dead (HTTP 404).
 - The project README is built from page-kit cards (`.github/page.json`): a hero with a dripping edge, three ways-to-use-it cards, a claim-check feature card with four feature cards, a validated-score card and a mirrored footer. Headings, commands and data stay as real Markdown, so anchors and the claim check still work.
 - `score_readme.py --profile` counts page-kit section cards (alt text like `02 — Tech stack`) as section headings, so a card-built profile is scored on its content instead of losing points for missing Markdown headings.

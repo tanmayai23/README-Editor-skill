@@ -17,7 +17,11 @@
   <a href="readme-forge-design/assets/banners/gallery.md"><picture><source media="(prefers-color-scheme: dark)" srcset=".github/assets/cta-secondary-dark.svg"><img alt="Banner gallery" src=".github/assets/cta-secondary-light.svg" height="44"></picture></a>
 </p>
 
-<p align="center"><a href="#why">Why</a> · <a href="#quickstart">Quickstart</a> · <a href="#how-it-works">How it works</a> · <a href="#scripts">Scripts</a> · <a href="#check-readmes-in-ci">CI</a> · <a href="#how-far-to-trust-the-score">Trust</a> · <a href="#optional-design-and-profiles">Design</a> · <a href="#faq">FAQ</a> · <a href="#roadmap">Roadmap</a></p>
+<p align="center"><a href="#why">Why</a> · <a href="#quickstart">Quickstart</a> · <a href="#how-it-works">How it works</a> · <a href="#scripts">Scripts</a> · <a href="#check-readmes-in-ci">CI</a> · <a href="#how-far-to-trust-the-score">Trust</a> · <a href="#limitations">Limitations</a> · <a href="#optional-design-and-profiles">Design</a> · <a href="#faq">FAQ</a> · <a href="#support">Support</a></p>
+
+```bash
+claude plugin install readme-forge --marketplace tanmayai23/README-Editor-skill
+```
 
 <p align="center">
 <a href="#quickstart"><picture><source media="(prefers-color-scheme: dark)" srcset=".github/assets/page/more-in-claude-dark.svg"><img alt="In Claude: Claude Code, claude.ai and Claude Desktop" src=".github/assets/page/more-in-claude-light.svg" width="32%"></picture></a>
@@ -177,6 +181,14 @@ The claim check is the part you can audit line by line. The 0–100 score is a r
 
 The same report lists where the rubric falls short. It rewards having the expected headings more than their content (a filled-in bootcamp template scored highest of all 50), and README length alone separated the groups better (AUC 0.979). Read the method, failure cases and how to reproduce it in [bench/scorer-validation](bench/scorer-validation/README.md). Use the score as a checklist, not a verdict.
 
+## Limitations
+
+- **The claim check works offline.** It can't tell whether `pip install NAME` resolves on PyPI or whether a command succeeds at runtime. Those claims are reported as unverifiable, never as correct. Commands written in plain prose, outside code, aren't extracted.
+- **The score is a rubric, not proof.** It rewards expected headings more than their content (see [the validation](bench/scorer-validation/README.md)).
+- **Architecture diagrams** come from imports in Python, JS/TS, Go and Rust only. Other languages are on the [roadmap](#roadmap).
+- **Very large monorepos:** the analyzer stops after 20,000 files ([#8](https://github.com/tanmayai23/README-Editor-skill/issues/8)).
+- **Profile widgets** (stats, streak, LeetCode) are third-party services that can rate-limit or go down. Run `check_links.py` before publishing.
+
 ## Optional: design and profiles
 
 Whole-page design, banners, CTA buttons and GitHub profile READMEs live in a separate plugin, so the core skill stays about accuracy:
@@ -223,12 +235,6 @@ Something else? [Open an issue](https://github.com/tanmayai23/README-Editor-skil
 <summary><b>Does it send my code anywhere?</b></summary>
 
 The scripts only read files on your machine. Only `check_links.py` uses the network, and only for the URLs already in your README. What Claude sees is governed by your normal Claude Code settings.
-</details>
-
-<details>
-<summary><b>What can't the claim check verify?</b></summary>
-
-It works offline, so it can't tell whether `pip install NAME` resolves on PyPI or whether a command succeeds at runtime. Those claims are reported as unverifiable, never as correct. Commands written in plain prose, outside code, aren't extracted.
 </details>
 
 <details>
@@ -283,6 +289,14 @@ Code, design, docs, ideas and bug reports all count ([emoji key](https://allcont
 <!-- prettier-ignore-end -->
 
 <!-- ALL-CONTRIBUTORS-LIST:END -->
+
+## Support
+
+readme-forge is free and MIT-licensed, and it stays that way. If it saves you time:
+
+- ⭐ Star the repo so other developers can find it.
+- 🐛 [Report a bug](https://github.com/tanmayai23/README-Editor-skill/issues/new?template=bug_report.yml), especially a README it got wrong.
+- ☕ [Buy me a coffee](https://buymeacoffee.com/tanmaycode3) to support the time that goes into it.
 
 ## License
 
