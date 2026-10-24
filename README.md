@@ -1,11 +1,6 @@
 <a id="top"></a>
 
-<a href="#readme-forge">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset=".github/assets/header-dark.svg">
-    <img alt="readme-forge: Your code is the source of truth. Your README should be too." src=".github/assets/header-light.svg" width="100%">
-  </picture>
-</a>
+<a href="#why"><picture><source media="(prefers-color-scheme: dark)" srcset=".github/assets/page/hero-dark.svg"><img alt="readme-forge: Your code is the source of truth. Your README should be too. A Claude skill for verified READMEs, Python 3.8+, standard library only." src=".github/assets/page/hero-light.svg" width="100%"></picture></a>
 
 <p align="center"><b>A Claude skill that writes READMEs from your code, then checks every command, env var and path in them against the repo.</b></p>
 
@@ -24,34 +19,11 @@
 
 <p align="center"><a href="#why">Why</a> · <a href="#quickstart">Quickstart</a> · <a href="#how-it-works">How it works</a> · <a href="#scripts">Scripts</a> · <a href="#check-readmes-in-ci">CI</a> · <a href="#how-far-to-trust-the-score">Trust</a> · <a href="#optional-design-and-profiles">Design</a> · <a href="#faq">FAQ</a> · <a href="#roadmap">Roadmap</a></p>
 
-<table>
-<tr>
-<td width="33%" valign="top">
-
-**In Claude**<br>
-<sub>Claude Code, claude.ai, Claude Desktop</sub>
-
-`/readme-forge write a README for this repo`
-
-</td>
-<td width="33%" valign="top">
-
-**In CI**<br>
-<sub>GitHub Action, one PR comment</sub>
-
-`uses: tanmayai23/README-Editor-skill@v1`
-
-</td>
-<td width="33%" valign="top">
-
-**On its own**<br>
-<sub>No Claude account needed</sub>
-
-`python readme-forge/scripts/verify_readme.py README.md --repo .`
-
-</td>
-</tr>
-</table>
+<p align="center">
+<a href="#quickstart"><picture><source media="(prefers-color-scheme: dark)" srcset=".github/assets/page/more-in-claude-dark.svg"><img alt="In Claude: Claude Code, claude.ai and Claude Desktop" src=".github/assets/page/more-in-claude-light.svg" width="32%"></picture></a>
+<a href="#check-readmes-in-ci"><picture><source media="(prefers-color-scheme: dark)" srcset=".github/assets/page/more-in-ci-dark.svg"><img alt="In CI: a GitHub Action that keeps one PR comment" src=".github/assets/page/more-in-ci-light.svg" width="32%"></picture></a>
+<a href="#try-it-without-claude"><picture><source media="(prefers-color-scheme: dark)" srcset=".github/assets/page/more-on-its-own-dark.svg"><img alt="On its own: the scripts run without a Claude account" src=".github/assets/page/more-on-its-own-light.svg" width="32%"></picture></a>
+</p>
 
 ## Why
 
@@ -147,50 +119,15 @@ flowchart LR
     score -->|"fix until it passes"| claude
 ```
 
-<table>
-<tr>
-<td width="50%" valign="top">
+<p align="center">
+<picture><source media="(prefers-color-scheme: dark)" srcset=".github/assets/page/project-verify-readme-py-dark.svg"><img alt="Claim check, verify_readme.py: checks commands, package-manager scripts, CLI flags, env vars and paths against the repo; anything it can't check offline is reported as unverifiable, never as correct. 15 ecosystems detected, 100% accuracy gate in CI, 0 dependencies." src=".github/assets/page/project-verify-readme-py-light.svg" width="100%"></picture>
+<picture><source media="(prefers-color-scheme: dark)" srcset=".github/assets/page/project-analyze-repo-py-dark.svg"><img alt="Facts, not guesses, analyze_repo.py: reads manifests, lockfiles, scripts, env vars, Docker, CI and routes for 15 ecosystems" src=".github/assets/page/project-analyze-repo-py-light.svg" width="49%"></picture>
+<picture><source media="(prefers-color-scheme: dark)" srcset=".github/assets/page/project-import-graph-py-dark.svg"><img alt="Architecture from imports, import_graph.py: drafts a Mermaid diagram from real imports in Python, JS/TS, Go and Rust" src=".github/assets/page/project-import-graph-py-light.svg" width="49%"></picture>
+<picture><source media="(prefers-color-scheme: dark)" srcset=".github/assets/page/project-score-readme-py-dark.svg"><img alt="Score and drift, score_readme.py: grades structure, accessibility, links and drift from 0 to 100, and flags commands that no longer match the code" src=".github/assets/page/project-score-readme-py-light.svg" width="49%"></picture>
+<picture><source media="(prefers-color-scheme: dark)" srcset=".github/assets/page/project-every-platform-dark.svg"><img alt="Every platform: GitHub READMEs, Hugging Face cards with validated YAML, and PyPI, npm and GitLab ports" src=".github/assets/page/project-every-platform-light.svg" width="49%"></picture>
+</p>
 
-**🔎 Facts, not guesses**<br>
-`analyze_repo.py` reads manifests, lockfiles, scripts, env vars, Docker, CI and routes for 15 ecosystems: Node, Python, Rust, Go, JVM, Ruby, PHP, Dart, Elixir, .NET, C/C++, Deno, Swift, Zig and Haskell. Each one has a fixture and a unit test.
-
-</td>
-<td width="50%" valign="top">
-
-**✅ Claim check**<br>
-`verify_readme.py` checks commands, package-manager scripts, CLI flags, env vars and paths against the repo. Anything it can't check offline is reported as unverifiable, never as correct.
-
-</td>
-</tr>
-<tr>
-<td width="50%" valign="top">
-
-**🧭 Architecture from imports**<br>
-`import_graph.py` drafts a Mermaid diagram from real imports in Python, JS/TS, Go and Rust.
-
-</td>
-<td width="50%" valign="top">
-
-**📊 Score and drift**<br>
-`score_readme.py` grades structure, accessibility, links and drift from 0 to 100, and flags commands and paths that no longer match the code.
-
-</td>
-</tr>
-<tr>
-<td width="50%" valign="top">
-
-**🌐 Every platform**<br>
-GitHub READMEs, Hugging Face model/dataset/Space cards with validated YAML, and PyPI/npm/GitLab ports.
-
-</td>
-<td width="50%" valign="top">
-
-**📄 Companion docs**<br>
-CONTRIBUTING, SECURITY, Code of Conduct, CITATION.cff, issue and PR templates.
-
-</td>
-</tr>
-</table>
+`analyze_repo.py` covers Node, Python, Rust, Go, JVM, Ruby, PHP, Dart, Elixir, .NET, C/C++, Deno, Swift, Zig and Haskell, each with a fixture and a unit test. The skill also writes companion docs: CONTRIBUTING, SECURITY, Code of Conduct, CITATION.cff, and issue and PR templates.
 
 ## Scripts
 
@@ -234,13 +171,9 @@ Outputs (`score`, `grade`, `accuracy`, `report`) and a sample comment are in [ac
 
 ## How far to trust the score
 
-The claim check is the part you can audit line by line. The 0–100 score is a rubric, so it was tested: on 25 READMEs from [awesome-readme](https://github.com/matiassingers/awesome-readme) against 25 neglected ones, pinned to commit SHAs.
+The claim check is the part you can audit line by line. The 0–100 score is a rubric, so it was tested: on 25 READMEs from [awesome-readme](https://github.com/matiassingers/awesome-readme) against 25 neglected ones, pinned to commit SHAs. The well-regarded READMEs averaged 67.5 against 37.0, 21 of 25 scored 55 or more against 4 of 25, and the AUC (the chance a good one outscores a neglected one) was **0.914**.
 
-| | Well-regarded | Neglected |
-|---|---|---|
-| Mean score | 67.5 | 37.0 |
-| Scored 55 or more | 21 of 25 | 4 of 25 |
-| AUC (chance a good one outscores a neglected one) | **0.914** | |
+<a href="bench/scorer-validation/README.md"><picture><source media="(prefers-color-scheme: dark)" srcset=".github/assets/page/project-the-score-tested-dark.svg"><img alt="The score, tested on 25 well-regarded vs 25 neglected READMEs: AUC 0.914, mean 67.5 for well-regarded and 37.0 for neglected" src=".github/assets/page/project-the-score-tested-light.svg" width="100%"></picture></a>
 
 The same report lists where the rubric falls short. It rewards having the expected headings more than their content (a filled-in bootcamp template scored highest of all 50), and README length alone separated the groups better (AUC 0.979). Read the method, failure cases and how to reproduce it in [bench/scorer-validation](bench/scorer-validation/README.md). Use the score as a checklist, not a verdict.
 
@@ -256,7 +189,7 @@ Its page kit designs the whole README, not just the ends. You write one JSON spe
 
 <a href="readme-forge-design/examples/keynote-profile/README.md"><picture><source media="(prefers-color-scheme: dark)" srcset="readme-forge-design/examples/keynote-profile/assets/hello/project-tidewatch-dark.svg"><img alt="Page kit example: a feature project card with a tag pill, bold title, serif subtitle, three metrics and an animated network visual" src="readme-forge-design/examples/keynote-profile/assets/hello/project-tidewatch-light.svg" width="100%"></picture></a>
 
-It also generates self-contained animated SVG headers in 20 styles. The newest four rebuild the look of WebGL shader scenes in plain SVG and CSS, so GitHub can render them: a spinning vortex, a light beam racing around the edge, voronoi glass and RGB-split blinds. The header above is `--style vortex` with the logo in its eye, and the buttons under it are `--kind button`.
+It also generates self-contained animated SVG headers in 20 styles. The newest four rebuild the look of WebGL shader scenes in plain SVG and CSS, so GitHub can render them: a spinning vortex, a light beam racing around the edge, voronoi glass and RGB-split blinds. The cards on this page come from the page kit ([spec](.github/page.json)), and the buttons under the hero are `--kind button`.
 
 <table>
 <tr>
@@ -355,14 +288,6 @@ Code, design, docs, ideas and bug reports all count ([emoji key](https://allcont
 
 Distributed under the MIT License. See [LICENSE](LICENSE).
 
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset=".github/assets/divider-dark.svg">
-  <img alt="Section divider" src=".github/assets/divider-light.svg" width="100%">
-</picture>
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset=".github/assets/footer-dark.svg">
-  <img alt="Made with readme-forge" src=".github/assets/footer-light.svg" width="100%">
-</picture>
+<a href="#top"><picture><source media="(prefers-color-scheme: dark)" srcset=".github/assets/page/footer-dark.svg"><img alt="Every claim checked. Ship the README. MIT License, made with readme-forge." src=".github/assets/page/footer-light.svg" width="100%"></picture></a>
 
 <p align="right"><a href="#top">Back to top ↑</a></p>

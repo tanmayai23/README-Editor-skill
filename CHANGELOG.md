@@ -11,6 +11,7 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ### Changed
 
+- The project README is built from page-kit cards (`.github/page.json`): a hero with a dripping edge, three ways-to-use-it cards, a claim-check feature card with four feature cards, a validated-score card and a mirrored footer. Headings, commands and data stay as real Markdown, so anchors and the claim check still work.
 - `score_readme.py --profile` counts page-kit section cards (alt text like `02 — Tech stack`) as section headings, so a card-built profile is scored on its content instead of losing points for missing Markdown headings.
 
 ## [1.2.0] - 2026-10-19
