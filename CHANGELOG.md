@@ -4,6 +4,8 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-10-24
+
 ### Added
 
 - Page kit in readme-forge-design (`scripts/make_page.py`): designs a whole README, not only the header and footer. One JSON spec becomes a set of matching SVG cards in light and dark plus the finished README. Blocks: terminal-window hero with a dripping edge, contact dock, numbered section headers, about card, tech-stack grid, project cards (feature / card / link), achievement cards (photo or emblem), themed stats widgets, Markdown passthrough and a mirrored footer. Six themes (`keynote`, `aurora`, `sunset`, `ocean`, `forest`, `mono`) or custom `accents`; `ambient`, `entrance` and `static` motion, CSS only. Paired cards share a height, linked cards are written on one line so GitHub keeps dark mode and the link, and the script refuses specs with `{{placeholders}}` left. Mode K in SKILL.md, `references/page-kit.md`, starter specs in `templates/page/`, and two examples (`examples/keynote-profile/`, `examples/keynote-project/`).
@@ -16,6 +18,10 @@ All notable changes to this project are documented here. The format follows [Kee
 - The page kit's stats card no longer sets `include_all_commits`: the public github-readme-stats instance answers "Could not fetch total commits" for many users. Turn it back on with `"all_commits": true` when self-hosting. `widgets.md` notes this, adds the Codeforces card and marks the MonkeyType card as dead (HTTP 404).
 - The project README is built from page-kit cards (`.github/page.json`): a hero with a dripping edge, three ways-to-use-it cards, a claim-check feature card with four feature cards, a validated-score card and a mirrored footer. Headings, commands and data stay as real Markdown, so anchors and the claim check still work.
 - `score_readme.py --profile` counts page-kit section cards (alt text like `02 — Tech stack`) as section headings, so a card-built profile is scored on its content instead of losing points for missing Markdown headings.
+
+### Fixed
+
+- The demo GIF and video ended on `/plugin install readme-forge`, which fails on its own. The end card now shows the repository address, `github.com/tanmayai23/README-Editor-skill`, where the README has the working install command.
 
 ## [1.2.0] - 2026-10-19
 
