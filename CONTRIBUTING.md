@@ -21,9 +21,33 @@ cp -r readme-forge ~/.claude/skills/readme-forge                 # core skill: f
 cp -r readme-forge-design ~/.claude/skills/readme-forge-design   # optional: banners and profile READMEs
 ```
 
+### Keeping your fork in sync
+
+When working from a fork, ensure your fork is kept up to date with upstream `main` before starting new work or submitting a pull request:
+
+```bash
+# Add upstream remote if not already added
+git remote add upstream https://github.com/tanmayai23/README-Editor-skill.git
+
+# Fetch upstream changes and sync main
+git fetch upstream
+git checkout main
+git merge --ff-only upstream/main
+
+# Rebase your topic branch on updated main
+git checkout feat/your-feature
+git rebase main
+```
+
 ## Before you open a PR
 
-Run the same checks as CI:
+Run the local verification runner to execute the full CI test suite:
+
+```bash
+python scripts/check_all.py
+```
+
+Or run individual checks as needed:
 
 ```bash
 python -m unittest discover -s tests -v

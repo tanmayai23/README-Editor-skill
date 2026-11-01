@@ -8,8 +8,7 @@
 
 ## Checklist
 
+- [ ] Fork is synced with upstream `main` (`git fetch upstream && git rebase upstream/main`)
 - [ ] Scripts still use the Python standard library only
-- [ ] `python -m unittest discover -s tests` passes
-- [ ] `python readme-forge/scripts/score_readme.py README.md --repo .` still scores 85+
-- [ ] `python readme-forge/scripts/verify_readme.py README.md --repo .` reports no claims "not found"
+- [ ] Local CI checks pass (`python scripts/check_all.py` or unit tests, py_compile, score_readme, verify_readme)
 - [ ] `CHANGELOG.md` updated under **Unreleased**

@@ -4,6 +4,11 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### Added
+
+- `scripts/check_all.py`: standard-library cross-platform local CI check runner mirroring the complete `.github/workflows/ci.yml` validation suite (#22).
+- Contributor fork-sync guidance in `CONTRIBUTING.md` and pre-submission checklist in `.github/pull_request_template.md` (#22).
+
 ## [1.3.0] - 2026-10-24
 
 ### Added
