@@ -15,6 +15,7 @@
       "title": "readme-forge",
       "meta": ["Claude skill", "**verified** READMEs", "Python 3.8+ · stdlib only"],
       "status": "MIT licensed",
+      "logo": "assets/brand/icon-240.png",
       "alt": "readme-forge: Your code is the source of truth. Your README should be too. A Claude skill for verified READMEs, Python 3.8+, standard library only."
     },
     {
