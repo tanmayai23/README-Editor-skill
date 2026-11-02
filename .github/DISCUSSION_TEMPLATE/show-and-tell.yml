@@ -1,0 +1,58 @@
+title: "[Show] "
+labels: ["showcase"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Share a README you made or fixed with readme-forge. Good entries may be added to the examples gallery that the skill learns from, so only post what you're happy to have reused under your repo's license.
+  - type: input
+    id: repo
+    attributes:
+      label: Repository
+      description: Link to the repo, or to the README file itself.
+      placeholder: https://github.com/you/project
+    validations:
+      required: true
+  - type: dropdown
+    id: kind
+    attributes:
+      label: What kind of README is it?
+      options:
+        - Project README
+        - GitHub profile README
+        - Organization profile
+        - Hugging Face model, dataset or Space card
+        - PyPI or npm page
+        - Other
+    validations:
+      required: true
+  - type: input
+    id: stack
+    attributes:
+      label: Stack
+      description: Main language and framework, for example "Python, FastAPI" or "TypeScript, Next.js".
+  - type: textarea
+    id: prompt
+    attributes:
+      label: What you asked for
+      description: The prompt or command you ran, for example `/readme-forge write a README for this repo`.
+      render: text
+  - type: textarea
+    id: scores
+    attributes:
+      label: Before and after
+      description: Paste the summary lines from `score_readme.py` and `verify_readme.py`, or add screenshots.
+      render: text
+  - type: textarea
+    id: notes
+    attributes:
+      label: What worked and what didn't
+      description: What you kept, what you changed by hand, and anything the skill got wrong.
+  - type: checkboxes
+    id: consent
+    attributes:
+      label: Permission
+      options:
+        - label: The maintainers may copy this README's structure and design into the examples gallery, crediting my repo.
+        - label: The README contains no personal data I don't want reused (emails, phone numbers, private links).
+          required: true
