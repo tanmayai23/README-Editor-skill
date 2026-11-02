@@ -8,8 +8,9 @@ heading style. This script treats each choice as an arm of a contextual bandit (
 reinforcement-learning setting for one-step decisions). The context is the project
 (mode, kind, language); the reward comes from the user. Edits are the signal: a section
 the user deletes, a banner they regenerate or a README they cut by half is a 0 for that
-choice; what survives is a 1. Thompson sampling then picks options that fit this user and
-this kind of project, and still tries an alternative now and then while it is unsure.
+choice; what survives is a 1. The next run picks the option this user is most likely to
+keep for this kind of project, and uses Thompson sampling to try untried alternatives
+only when nothing is known to be better.
 
 Usage:
     python learn.py suggest --context mode=project,kind=cli --decision banner.style:beam,aurora,prism [--sections "Features,FAQ"] [--json]
@@ -41,6 +42,7 @@ VERSION = 1
 DECAY = 0.95            # older feedback counts less, so tastes can change
 GLOBAL_WEIGHT = 0.5     # evidence from other contexts counts half
 CONFIDENT = 3.0         # observations before a ranking is called confident
+TIE = 0.02              # options this close to the best mean are explored between
 DROP_BELOW = 0.35       # keep-probability under which a section is suggested for removal
 STALE_DAYS = 7          # an untouched README this old counts as accepted
 HISTORY_MAX = 200
@@ -142,9 +144,11 @@ def posterior(data: dict, decision: str, option: str, ctx: dict):
 
 
 def rank(data: dict, decision: str, options, ctx: dict, rng: random.Random) -> dict:
-    """Rank options by posterior mean. `pick` is a Thompson sample, so an option that
-    hasn't been tried enough still gets chosen sometimes. With no evidence at all the
-    pick is the first option given, which keeps the skill's own default."""
+    """Rank options by posterior mean. `pick` is the best-ranked option; when several
+    are tied for best (say, the default was rejected and the rest are untried), a
+    Thompson sample chooses among them, so alternatives get tried without ever
+    replacing something the user is known to like. With no evidence at all the pick
+    is the first option given, which keeps the skill's own default."""
     seen = list(data["decisions"].get(decision, {}))
     order = list(dict.fromkeys(list(options) + seen))
     rows = []
@@ -153,7 +157,9 @@ def rank(data: dict, decision: str, options, ctx: dict, rng: random.Random) -> d
         rows.append({"option": opt, "mean": round(a / (a + b), 3), "evidence": round(a + b - 2, 2),
                      "_sample": rng.betavariate(a, b), "_i": i})
     total = sum(r["evidence"] for r in rows)
-    pick = max(rows, key=lambda r: r["_sample"])["option"] if total > 0 else (order[0] if order else None)
+    best = max((r["mean"] for r in rows), default=0)
+    tied = [r for r in rows if r["mean"] >= best - TIE]
+    pick = max(tied, key=lambda r: r["_sample"])["option"] if total > 0 else (order[0] if order else None)
     rows.sort(key=lambda r: (-r["mean"], r["_i"]))
     for r in rows:
         del r["_sample"], r["_i"]

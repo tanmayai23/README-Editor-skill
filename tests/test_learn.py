@@ -138,6 +138,20 @@ class Bandit(Base):
                  for i in range(50)]
         self.assertGreater(picks.count("aurora"), 40)
 
+    def test_a_kept_choice_is_never_swapped_for_an_untried_one(self):
+        data = ln.load()
+        ln.update(data, "length", "standard", 1, {}, "test")
+        picks = {ln.rank(data, "length", ["standard", "concise", "detailed"], {}, random.Random(i))["pick"]
+                 for i in range(50)}
+        self.assertEqual(picks, {"standard"})
+
+    def test_a_rejected_default_makes_room_for_untried_options(self):
+        data = ln.load()
+        ln.update(data, "banner.style", "beam", 0, {}, "test")
+        picks = {ln.rank(data, "banner.style", ["beam", "aurora", "prism"], {}, random.Random(i))["pick"]
+                 for i in range(50)}
+        self.assertEqual(picks, {"aurora", "prism"})
+
     def test_context_specific_evidence_wins(self):
         data = ln.load()
         for _ in range(3):

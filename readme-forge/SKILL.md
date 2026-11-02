@@ -108,7 +108,7 @@ Copy and fill from `templates/extras/`: `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md` 
    python SKILL_DIR/scripts/learn.py suggest --repo <repo_path> --context mode=<project|hf|audit> --decision length:standard,concise,detailed --sections "<planned H2 sections>"
    ```
    - `preferences` are the user's own words: follow them like hard rules, unless they conflict with rules 1–3 above.
-   - For each decision use `pick` (it explores a little while `confident` is false). An explicit request in this conversation always wins.
+   - For each decision use `pick` (the best-known option; it explores only between options tied for best). An explicit request in this conversation always wins.
    - Drop a section only when its advice is `omit` **and** the hard rules or the blueprint don't require it (title, pitch, quickstart, installation, usage, license always stay).
 2. **During the conversation:** when the user states a lasting preference ("always…", "never…", "I prefer…"), save it with `learn.py prefer "<their words>"`. When they reject or praise a choice, record it: `learn.py reward length=detailed --value 0 --context mode=project`.
 3. **After writing**, snapshot what you chose, so their edits can be learned from next time:

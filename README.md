@@ -241,7 +241,7 @@ The scripts only read files on your machine. Only `check_links.py` uses the netw
 <details>
 <summary><b>Does it learn my style?</b></summary>
 
-Yes, on your machine only. Every choice the skill makes (sections, length, heading emoji, banner style, palette) is an option in a small reinforcement-learning model, a contextual bandit. When you delete a section, regenerate a banner or cut a README by half, that choice gets a low reward for your kind of project; what you keep gets a high one. Next time, the skill picks what you're likely to keep, and still tries an alternative now and then while it's unsure. It also remembers preferences you state, such as "never use emoji in headings".
+Yes, on your machine only. Every choice the skill makes (sections, length, heading emoji, banner style, palette) is an option in a small reinforcement-learning model, a contextual bandit. When you delete a section, regenerate a banner or cut a README by half, that choice gets a low reward for your kind of project; what you keep gets a high one. Next time, the skill picks what you're most likely to keep, and only tries something new when nothing is known to work better. It also remembers preferences you state, such as "never use emoji in headings".
 
 It stores counts and your own preference sentences in `~/.readme-forge`, never README text, and sends nothing anywhere. It doesn't retrain Claude. `learn.py show` prints what it has learned, `learn.py off` stops it, and `learn.py reset` forgets everything.
 </details>
