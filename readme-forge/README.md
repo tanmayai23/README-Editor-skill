@@ -15,6 +15,7 @@
 - **Architecture from real imports.** `import_graph.py` drafts a Mermaid diagram from Python, JS/TS, Go and Rust imports.
 - **Score and drift.** `score_readme.py` grades a README 0–100 and flags drift: wrong package manager, missing scripts, undocumented env vars, dead relative links.
 - **Platforms.** GitHub, Hugging Face model/dataset/Space cards with validated YAML, and PyPI/npm/GitLab ports.
+- **Learns your style.** `learn.py` is a small contextual bandit: what you keep, edit and delete becomes the reward for each choice (sections, length, heading emoji, banner style), so the next README fits you better. It runs locally and stores no README text.
 
 Banners and GitHub profile READMEs are in the optional [readme-forge-design](../readme-forge-design/README.md) skill.
 
@@ -71,6 +72,7 @@ python scripts/verify_readme.py README.md --repo path/to/repo  # check every cla
 python scripts/score_readme.py README.md --repo path/to/repo   # score + lint + drift
 python scripts/score_readme.py README.md --hf                  # Hugging Face card rubric
 python scripts/check_links.py README.md                        # network: verify every URL
+python scripts/learn.py show                                   # what it has learned from your edits
 ```
 
 `verify_readme.py --min-accuracy 100` and `score_readme.py --min 85` exit 1 below the threshold, so either can gate CI. The [GitHub Action](../action/README.md) runs both on pull requests and comments the result.
@@ -85,7 +87,7 @@ readme-forge/
 │   ├── project/          # library, cli, webapp, api, ml-project, monorepo, minimal
 │   ├── huggingface/      # model card, dataset card, Space README
 │   └── extras/           # CONTRIBUTING, CODE_OF_CONDUCT, SECURITY, SUPPORT, CHANGELOG, CITATION.cff, FUNDING, issue/PR templates
-└── scripts/              # analyze_repo, import_graph, verify_readme, score_readme, check_links
+└── scripts/              # analyze_repo, import_graph, verify_readme, score_readme, check_links, learn
 ```
 
 ## Limitations
