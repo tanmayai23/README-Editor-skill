@@ -98,6 +98,26 @@ Read `references/platforms.md`. Typical transforms: relative → absolute URLs (
 
 Copy and fill from `templates/extras/`: `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md` (Contributor Covenant 2.1 — requires a contact method; ask), `SECURITY.md`, `SUPPORT.md`, `CHANGELOG.md` (Keep a Changelog), `CITATION.cff` (research/academic), `.github/FUNDING.yml`, `.github/ISSUE_TEMPLATE/*`, `.github/pull_request_template.md`. Fill commands from analyzer facts. Link each from the README.
 
+## Learning loop — adapt to this user (every mode that writes a README)
+
+`scripts/learn.py` learns from what the user keeps, edits and deletes, and from preferences they state. It runs locally, stores counts and the user's own preference sentences in `~/.readme-forge`, and never stores README text. Skip it when the user asked for a review only, or said not to learn (`learn.py off`).
+
+1. **Before writing**, harvest the edits made since the last run, then ask for suggestions:
+   ```bash
+   python SKILL_DIR/scripts/learn.py observe README.md
+   python SKILL_DIR/scripts/learn.py suggest --repo <repo_path> --context mode=<project|hf|audit> --decision length:standard,concise,detailed --sections "<planned H2 sections>"
+   ```
+   - `preferences` are the user's own words: follow them like hard rules, unless they conflict with rules 1–3 above.
+   - For each decision use `pick` (it explores a little while `confident` is false). An explicit request in this conversation always wins.
+   - Drop a section only when its advice is `omit` **and** the hard rules or the blueprint don't require it (title, pitch, quickstart, installation, usage, license always stay).
+2. **During the conversation:** when the user states a lasting preference ("always…", "never…", "I prefer…"), save it with `learn.py prefer "<their words>"`. When they reject or praise a choice, record it: `learn.py reward length=detailed --value 0 --context mode=project`.
+3. **After writing**, snapshot what you chose, so their edits can be learned from next time:
+   ```bash
+   python SKILL_DIR/scripts/learn.py snapshot README.md --repo <repo_path> --context mode=<mode> --choice length=<used>
+   ```
+   If the user approves the result as it is, run `learn.py observe README.md --accepted`.
+4. In the final message, mention once that the skill learns from their edits on this machine, and that `learn.py show`, `off` and `reset` control it.
+
 ## Final message to the user
 
 Keep it short: what files you wrote, the claim check (`N claims checked, all match the code` or what's left), the final score, the list of TODOs that need their input (screenshots, demo URL, contact email…), and any setup they must do.

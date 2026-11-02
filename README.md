@@ -142,6 +142,7 @@ flowchart LR
 | `score_readme.py` | Scores a README 0–100, lints it and checks drift | `python readme-forge/scripts/score_readme.py README.md --repo . --min 85` |
 | `import_graph.py` | Draws a Mermaid architecture draft from real imports | `python readme-forge/scripts/import_graph.py . --mermaid` |
 | `check_links.py` | Finds dead links, broken badges and widgets that return error cards | `python readme-forge/scripts/check_links.py README.md` |
+| `learn.py` | Learns your style from what you keep, edit and delete | `python readme-forge/scripts/learn.py show` |
 
 > [!TIP]
 > This README passes its own checks: [CI](.github/workflows/ci.yml) runs `verify_readme.py --min-accuracy 100` and `score_readme.py --min 85` on it, plus the unit tests in `tests/`.
@@ -238,6 +239,14 @@ The scripts only read files on your machine. Only `check_links.py` uses the netw
 </details>
 
 <details>
+<summary><b>Does it learn my style?</b></summary>
+
+Yes, on your machine only. Every choice the skill makes (sections, length, heading emoji, banner style, palette) is an option in a small reinforcement-learning model, a contextual bandit. When you delete a section, regenerate a banner or cut a README by half, that choice gets a low reward for your kind of project; what you keep gets a high one. Next time, the skill picks what you're likely to keep, and still tries an alternative now and then while it's unsure. It also remembers preferences you state, such as "never use emoji in headings".
+
+It stores counts and your own preference sentences in `~/.readme-forge`, never README text, and sends nothing anywhere. It doesn't retrain Claude. `learn.py show` prints what it has learned, `learn.py off` stops it, and `learn.py reset` forgets everything.
+</details>
+
+<details>
 <summary><b>What if it can't find something, like the install command?</b></summary>
 
 It leaves a `TODO` in the README and lists every TODO back to you.
@@ -256,6 +265,8 @@ Yes, with the optional design plugin. Its page kit turns one JSON spec into a fu
 - [x] GitHub Action that comments the score and claim check on pull requests ([#1](https://github.com/tanmayai23/README-Editor-skill/issues/1))
 - [x] Scorer validated against 50 pinned READMEs, with its weak spots written down ([bench/scorer-validation](bench/scorer-validation/README.md))
 - [x] Page kit: the whole README designed as light and dark SVG cards from one spec ([readme-forge-design](readme-forge-design/README.md#page-kit))
+- [x] Learns each user's style from their edits, locally (`learn.py`)
+- [ ] Community examples gallery: READMEs shared in [Show and tell](https://github.com/tanmayai23/README-Editor-skill/discussions/categories/show-and-tell), checked by CI, used as models
 - [ ] Published benchmark against Claude without the skill on 20 pinned third-party repos ([#12](https://github.com/tanmayai23/README-Editor-skill/issues/12))
 - [ ] Architecture diagrams for Java/Kotlin ([#3](https://github.com/tanmayai23/README-Editor-skill/issues/3)), C# ([#4](https://github.com/tanmayai23/README-Editor-skill/issues/4)), PHP and Ruby ([#5](https://github.com/tanmayai23/README-Editor-skill/issues/5))
 - [ ] Check documented API routes against the code ([#6](https://github.com/tanmayai23/README-Editor-skill/issues/6))

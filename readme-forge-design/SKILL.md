@@ -57,6 +57,17 @@ Never: hotlink a third-party banner by default, put the only copy of the pitch i
 5. Run `score_readme.py --profile` and `check_links.py` from the core skill (if network allowed) and fix failures.
 6. Tell the user exactly where it goes: repo named exactly like their username, public, `README.md` at root (org: `.github` repo → `profile/README.md`).
 
+## Learning loop — adapt to this user's taste
+
+If the core skill is installed, use its `scripts/learn.py` (see "Learning loop" in its SKILL.md) for design choices too. Skip it if the user said not to learn.
+
+1. Before choosing, run `learn.py observe README.md`, then `learn.py suggest --repo <path> --context mode=<design|profile|page-kit> --decision banner.style:<your first choice>,<2–4 fitting alternatives> --decision banner.palette:<first choice>,<alternatives>`. Put your own best choice first: it stays the pick until there is evidence. Add `--decision profile.archetype:…` for profiles and `--decision page.theme:…` for the page kit.
+2. Use each `pick` and follow every saved `preferences` line, unless the user asks for something else now. Record rejections and praise with `learn.py reward banner.style=<style> --value 0|1`.
+3. After generating, snapshot the choices with a `file:` marker, so the script can tell later whether the user kept or replaced the asset:
+   ```bash
+   python <core SKILL_DIR>/scripts/learn.py snapshot README.md --context mode=design --choice banner.style=beam@file:.github/assets/header-dark.svg --choice banner.palette=ghost@file:.github/assets/header-dark.svg
+   ```
+
 ## Final message to the user
 
 Keep it short: which assets and files you wrote, how to preview both themes, and any setup they must do (Actions secrets, making the profile repo public).

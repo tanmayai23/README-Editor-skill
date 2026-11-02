@@ -4,6 +4,10 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### Added
+
+- `scripts/learn.py`: the skill learns each user's style. Every choice it makes (sections, length, heading emoji, banner style, palette, profile archetype, page theme) is an arm of a contextual bandit, with the mode, project kind and language as context. Rewards come from the user's edits: `snapshot` records what was generated, and `observe` scores what survived (a deleted section, a regenerated banner or a README cut by more than a quarter counts as a rejection). `suggest` ranks options by posterior mean and picks by Thompson sampling, keeping the skill's default until there is evidence. Older feedback decays, so tastes can change. Stated preferences (`prefer "never use emoji in headings"`) are kept as rules. Data stays in `~/.readme-forge` (no README text, no network); `show`, `off`, `on` and `reset` control it. Both SKILL.md files run the loop, and 20 unit tests cover it.
+
 ## [1.3.0] - 2026-10-24
 
 ### Added
