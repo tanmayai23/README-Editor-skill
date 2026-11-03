@@ -273,6 +273,49 @@ class Controls(Base):
         self.assertNotIn("Does things", stored)
         self.assertNotIn("npm install", stored)
 
+    def test_missing_readme_is_a_clean_error(self):
+        code, out = self.run_main("snapshot", self.proj / "NOPE.md")
+        self.assertEqual(code, 2)
+
+    def test_moved_readme_teaches_nothing(self):
+        self.snapshot()
+        self.readme.rename(self.proj / "OLD.md")
+        code, out = self.run_main("observe", self.readme)
+        self.assertIn("nothing learned", out)
+        self.assertEqual(ln.load()["decisions"], {})
+        self.assertTrue(ln.snapshot_path(self.readme).exists())
+
+    def test_corrupt_store_is_kept_aside(self):
+        ln.store_path().parent.mkdir(parents=True, exist_ok=True)
+        ln.store_path().write_text("{not json", encoding="utf-8")
+        with contextlib.redirect_stderr(io.StringIO()):
+            self.run_main("reward", "length=concise", "--value", "1")
+        backups = list(ln.store_path().parent.glob("learn.broken-*.json"))
+        self.assertEqual(len(backups), 1)
+        self.assertEqual(backups[0].read_text(encoding="utf-8"), "{not json")
+        self.assertIn("length", ln.load()["decisions"])
+
+    def test_corrupt_snapshot_is_dropped(self):
+        self.snapshot()
+        ln.snapshot_path(self.readme).write_text("{}", encoding="utf-8")
+        self.readme.write_text(EDITED, encoding="utf-8")
+        code, out = self.run_main("observe", self.readme)
+        self.assertIn("unreadable", out)
+        self.assertEqual(ln.load()["decisions"], {})
+
+    def test_bom_readme_matches_its_snapshot(self):
+        self.readme.write_text("﻿" + GENERATED, encoding="utf-8")
+        self.snapshot()
+        self.readme.write_text(GENERATED, encoding="utf-8")
+        code, out = self.run_main("observe", self.readme)
+        self.assertIn("no edits", out)
+
+    def test_bad_repo_path_falls_back_to_context(self):
+        with contextlib.redirect_stderr(io.StringIO()) as err:
+            out = self.suggest("--repo", self.proj / "nope", "--context", "kind=cli")
+        self.assertEqual(out["context"], {"kind": "cli"})
+        self.assertIn("not a directory", err.getvalue())
+
     def test_cli_runs(self):
         env = dict(os.environ)
         proc = subprocess.run([sys.executable, str(SCRIPT), "show"], capture_output=True, text=True,
