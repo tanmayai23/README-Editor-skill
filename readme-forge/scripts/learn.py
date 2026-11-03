@@ -60,12 +60,19 @@ def store_path() -> Path:
 
 
 def load() -> dict:
+    p = store_path()
     try:
-        data = json.loads(store_path().read_text(encoding="utf-8"))
-        if data.get("version") == VERSION:
+        data = json.loads(p.read_text(encoding="utf-8"))
+        if isinstance(data, dict) and data.get("version") == VERSION:
             return data
-    except (OSError, ValueError):
+        raise ValueError("unknown format")
+    except OSError:
         pass
+    except ValueError:
+        # Keep the unreadable file instead of overwriting it on the next save.
+        backup = p.with_name(f"learn.broken-{int(time.time())}.json")
+        os.replace(p, backup)
+        print(f"warning: {p} was unreadable; moved it to {backup.name} and started fresh", file=sys.stderr)
     return {"version": VERSION, "enabled": True, "decisions": {}, "preferences": [], "history": []}
 
 
@@ -95,6 +102,9 @@ def parse_context(text: str | None) -> dict:
 
 def repo_context(repo: str | None) -> dict:
     if not repo:
+        return {}
+    if not Path(repo).is_dir():
+        print(f"warning: {repo} is not a directory; using --context only", file=sys.stderr)
         return {}
     spec = importlib.util.spec_from_file_location("rf_analyze_repo", str(Path(__file__).with_name("analyze_repo.py")))
     mod = importlib.util.module_from_spec(spec)
@@ -283,7 +293,10 @@ def cmd_snapshot(args, data):
         print("learning is off: no snapshot taken")
         return 0
     readme = Path(args.readme)
-    text = readme.read_text(encoding="utf-8", errors="replace")
+    if not readme.is_file():
+        print(f"error: {readme} not found; write the README before taking a snapshot", file=sys.stderr)
+        return 2
+    text = readme.read_text(encoding="utf-8-sig", errors="replace")
     choices = [parse_choice(c) for c in args.choice or []]
     for c in choices:
         if c["marker"] and c["marker"].startswith("file:"):
@@ -305,8 +318,18 @@ def cmd_observe(args, data):
     if not enabled(data) or not p.exists():
         print("nothing to learn: no snapshot for this README" if enabled(data) else "learning is off")
         return 0
-    snap = json.loads(p.read_text(encoding="utf-8"))
-    now = readme.read_text(encoding="utf-8", errors="replace") if readme.exists() else ""
+    if not readme.is_file():
+        # A moved or deleted README would look like every section was deleted.
+        print(f"{readme} not found: nothing learned, snapshot kept for when it's back")
+        return 0
+    try:
+        snap = json.loads(p.read_text(encoding="utf-8"))
+        snap["choices"], snap["sections"], snap["text_hash"]
+    except (ValueError, KeyError, TypeError):
+        p.unlink()
+        print("snapshot was unreadable and has been removed: nothing learned")
+        return 0
+    now = readme.read_text(encoding="utf-8-sig", errors="replace")
     unchanged = hashlib.sha1(now.encode("utf-8")).hexdigest() == snap["text_hash"]
     stale = time.time() - snap["created"] > STALE_DAYS * 86400
     if unchanged and not (args.accepted or stale):
