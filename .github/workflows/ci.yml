@@ -3,7 +3,7 @@ name: CI
 on:
   push:
     branches: [main]
-    tags: ["v*"]
+    tags: ["v*.*.*"]
   pull_request:
 
 permissions:
@@ -116,6 +116,34 @@ jobs:
               assert market[plugin["name"]] == plugin["version"], "bump the version of " + d + " in both manifests"
           assert len(set(market.values())) == 1, "both plugins ship together; keep their versions equal"
           EOF
+
+  action:
+    name: Action runs on this README
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      # The same step users add with `uses: tanmayai23/README-Editor-skill@v1`.
+      - id: rf
+        uses: ./
+        with:
+          min-score: "85"
+          min-accuracy: "100"
+          comment: "false"
+      - name: Outputs are set
+        shell: bash
+        env:
+          SCORE: ${{ steps.rf.outputs.score }}
+          GRADE: ${{ steps.rf.outputs.grade }}
+          ACCURACY: ${{ steps.rf.outputs.accuracy }}
+          REPORT: ${{ steps.rf.outputs.report }}
+        run: |
+          echo "score=$SCORE grade=$GRADE accuracy=$ACCURACY"
+          test "$SCORE" -ge 85
+          test -n "$GRADE"
+          test -s "$REPORT"
 
   release:
     name: Attach skill zip to release
