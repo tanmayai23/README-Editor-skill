@@ -184,7 +184,7 @@ GitHub shows SVGs through `<img>`, so WebGL and JavaScript never run. These four
 
 Palettes: `ember` · `ocean` · `violet` · `mint` · `sunset` · `mono` · `cyber` · dark-design `midnight` · `carbon` · `ghost` · `obsidian` · ShaderGradient `halo` · `pensive` · `interstella` · `universe` · `mandarin` · `nighty` · shader `inferno` · `prism`, or any brand colour with `--accent "#HEX"`.
 
-Footers (`--kind footer --style wave|minimal|vortex`), dividers (`--kind divider`, `--style beam` for a comet of light) and clickable CTA buttons (`--kind button --variant primary|secondary`) are in [the full gallery](assets/banners/gallery.md).
+Footers (`--kind footer --style wave|minimal|vortex`), dividers (`--kind divider`, `--style beam` for a comet of light) and clickable CTA buttons (`--kind button --variant primary|secondary`) are in [the full gallery](assets/banners/gallery.md). The [gallery website](https://readme-forge-gallery.vercel.app/) shows every style in both themes, with the command that makes it.
 
 ## Page kit
 

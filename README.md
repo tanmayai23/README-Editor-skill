@@ -14,10 +14,10 @@
 <p align="center">
   <a href="#quickstart"><picture><source media="(prefers-color-scheme: dark)" srcset=".github/assets/cta-primary-dark.svg"><img alt="Get started" src=".github/assets/cta-primary-light.svg" height="44"></picture></a>
   &nbsp;
-  <a href="readme-forge-design/assets/banners/gallery.md"><picture><source media="(prefers-color-scheme: dark)" srcset=".github/assets/cta-secondary-dark.svg"><img alt="Banner gallery" src=".github/assets/cta-secondary-light.svg" height="44"></picture></a>
+  <a href="https://readme-forge-gallery.vercel.app/#banners"><picture><source media="(prefers-color-scheme: dark)" srcset=".github/assets/cta-secondary-dark.svg"><img alt="Banner gallery" src=".github/assets/cta-secondary-light.svg" height="44"></picture></a>
 </p>
 
-<p align="center"><a href="#why">Why</a> · <a href="#quickstart">Quickstart</a> · <a href="#how-it-works">How it works</a> · <a href="#scripts">Scripts</a> · <a href="#check-readmes-in-ci">CI</a> · <a href="#how-far-to-trust-the-score">Trust</a> · <a href="#limitations">Limitations</a> · <a href="#optional-design-and-profiles">Design</a> · <a href="#faq">FAQ</a> · <a href="#support">Support</a></p>
+<p align="center"><a href="#why">Why</a> · <a href="#quickstart">Quickstart</a> · <a href="#how-it-works">How it works</a> · <a href="#scripts">Scripts</a> · <a href="#check-readmes-in-ci">CI</a> · <a href="#how-far-to-trust-the-score">Trust</a> · <a href="#limitations">Limitations</a> · <a href="#optional-design-and-profiles">Design</a> · <a href="https://readme-forge-gallery.vercel.app/">Gallery</a> · <a href="#faq">FAQ</a> · <a href="#support">Support</a></p>
 
 ```bash
 claude plugin install readme-forge --marketplace tanmayai23/README-Editor-skill
@@ -211,7 +211,7 @@ It also generates self-contained animated SVG headers in 20 styles. The newest f
 </tr>
 </table>
 
-It also has 19 profile README archetypes with tested widgets and 6 profile Actions. See the [design README](readme-forge-design/README.md) or the [banner gallery](readme-forge-design/assets/banners/gallery.md) for every style.
+It also has 19 profile README archetypes with tested widgets and 6 profile Actions. See every banner, full README design and profile style on the [gallery website](https://readme-forge-gallery.vercel.app/), or read the [design README](readme-forge-design/README.md).
 
 ## Troubleshooting
 
@@ -266,7 +266,8 @@ Yes, with the optional design plugin. Its page kit turns one JSON spec into a fu
 - [x] Scorer validated against 50 pinned READMEs, with its weak spots written down ([bench/scorer-validation](bench/scorer-validation/README.md))
 - [x] Page kit: the whole README designed as light and dark SVG cards from one spec ([readme-forge-design](readme-forge-design/README.md#page-kit))
 - [x] Learns each user's style from their edits, locally (`learn.py`)
-- [ ] Community examples gallery: READMEs shared in [Show and tell](https://github.com/tanmayai23/README-Editor-skill/discussions/categories/show-and-tell), checked by CI, used as models
+- [x] [Gallery website](https://readme-forge-gallery.vercel.app/) with every banner, full README design and profile style, fed by [`gallery/gallery.json`](gallery/gallery.json)
+- [ ] Community READMEs in the gallery, added by pull request ([how to add yours](gallery/README.md)) and used by the skill as models
 - [ ] Published benchmark against Claude without the skill on 20 pinned third-party repos ([#12](https://github.com/tanmayai23/README-Editor-skill/issues/12))
 - [ ] Architecture diagrams for Java/Kotlin ([#3](https://github.com/tanmayai23/README-Editor-skill/issues/3)), C# ([#4](https://github.com/tanmayai23/README-Editor-skill/issues/4)), PHP and Ruby ([#5](https://github.com/tanmayai23/README-Editor-skill/issues/5))
 - [ ] Check documented API routes against the code ([#6](https://github.com/tanmayai23/README-Editor-skill/issues/6))
