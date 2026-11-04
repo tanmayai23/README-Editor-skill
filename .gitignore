@@ -38,3 +38,6 @@ tests/fixtures/**/target/
 
 # Page kit previews (make_page.py --preview): local check only
 preview.html
+
+# Site build: the Pages workflow copies gallery/gallery.json in at deploy time
+site/gallery.json
