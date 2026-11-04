@@ -1,0 +1,682 @@
+{
+  "version": 1,
+  "repo": "tanmayai23/README-Editor-skill",
+  "assetBase": "https://cdn.jsdelivr.net/gh/tanmayai23/README-Editor-skill@main/",
+  "categories": [
+    {
+      "id": "banners",
+      "name": "Banners",
+      "emoji": "🎨"
+    },
+    {
+      "id": "page-kit",
+      "name": "Full README designs",
+      "emoji": "🧩"
+    },
+    {
+      "id": "profiles",
+      "name": "Profile styles",
+      "emoji": "👤"
+    },
+    {
+      "id": "buttons-footers",
+      "name": "Buttons & footers",
+      "emoji": "🔘"
+    },
+    {
+      "id": "before-after",
+      "name": "Before → after",
+      "emoji": "📈"
+    },
+    {
+      "id": "community",
+      "name": "Made with readme-forge",
+      "emoji": "⭐"
+    }
+  ],
+  "items": [
+    {
+      "id": "banner-aurora",
+      "category": "banners",
+      "title": "aurora",
+      "description": "Drifting mesh-gradient light, modern SaaS.",
+      "image": {
+        "dark": "readme-forge-design/assets/banners/aurora-dark.svg",
+        "light": "readme-forge-design/assets/banners/aurora-light.svg"
+      },
+      "animated": true,
+      "command": "python readme-forge-design/scripts/make_banner.py --style aurora --title \"my-app\" --out .github/assets",
+      "link": "readme-forge-design/assets/banners/gallery.md#aurora",
+      "source": "official"
+    },
+    {
+      "id": "banner-synthwave",
+      "category": "banners",
+      "title": "synthwave",
+      "description": "3D perspective grid floor + striped sun, retro-futurism.",
+      "image": {
+        "dark": "readme-forge-design/assets/banners/synthwave-dark.svg",
+        "light": "readme-forge-design/assets/banners/synthwave-light.svg"
+      },
+      "animated": true,
+      "command": "python readme-forge-design/scripts/make_banner.py --style synthwave --title \"my-app\" --out .github/assets",
+      "link": "readme-forge-design/assets/banners/gallery.md#synthwave",
+      "source": "official"
+    },
+    {
+      "id": "banner-isometric",
+      "category": "banners",
+      "title": "isometric",
+      "description": "3D isometric cube stack that floats, infra/dev-tools.",
+      "image": {
+        "dark": "readme-forge-design/assets/banners/isometric-dark.svg",
+        "light": "readme-forge-design/assets/banners/isometric-light.svg"
+      },
+      "animated": true,
+      "command": "python readme-forge-design/scripts/make_banner.py --style isometric --title \"my-app\" --out .github/assets",
+      "link": "readme-forge-design/assets/banners/gallery.md#isometric",
+      "source": "official"
+    },
+    {
+      "id": "banner-orbit",
+      "category": "banners",
+      "title": "orbit",
+      "description": "3D tilted orbits with revolving planets, platforms/ecosystems.",
+      "image": {
+        "dark": "readme-forge-design/assets/banners/orbit-dark.svg",
+        "light": "readme-forge-design/assets/banners/orbit-light.svg"
+      },
+      "animated": true,
+      "command": "python readme-forge-design/scripts/make_banner.py --style orbit --title \"my-app\" --out .github/assets",
+      "link": "readme-forge-design/assets/banners/gallery.md#orbit",
+      "source": "official"
+    },
+    {
+      "id": "banner-glass",
+      "category": "banners",
+      "title": "glass",
+      "description": "Frosted-glass card over moving colour blobs.",
+      "image": {
+        "dark": "readme-forge-design/assets/banners/glass-dark.svg",
+        "light": "readme-forge-design/assets/banners/glass-light.svg"
+      },
+      "animated": true,
+      "command": "python readme-forge-design/scripts/make_banner.py --style glass --title \"my-app\" --out .github/assets",
+      "link": "readme-forge-design/assets/banners/gallery.md#glass",
+      "source": "official"
+    },
+    {
+      "id": "banner-terminal",
+      "category": "banners",
+      "title": "terminal",
+      "description": "Code window that types the title, CLIs and libraries.",
+      "image": {
+        "dark": "readme-forge-design/assets/banners/terminal-dark.svg",
+        "light": "readme-forge-design/assets/banners/terminal-light.svg"
+      },
+      "animated": true,
+      "command": "python readme-forge-design/scripts/make_banner.py --style terminal --title \"my-app\" --out .github/assets",
+      "link": "readme-forge-design/assets/banners/gallery.md#terminal",
+      "source": "official"
+    },
+    {
+      "id": "banner-neon",
+      "category": "banners",
+      "title": "neon",
+      "description": "Glowing neon outline title, games/creative.",
+      "image": {
+        "dark": "readme-forge-design/assets/banners/neon-dark.svg",
+        "light": "readme-forge-design/assets/banners/neon-light.svg"
+      },
+      "animated": true,
+      "command": "python readme-forge-design/scripts/make_banner.py --style neon --title \"my-app\" --out .github/assets",
+      "link": "readme-forge-design/assets/banners/gallery.md#neon",
+      "source": "official"
+    },
+    {
+      "id": "banner-wave",
+      "category": "banners",
+      "title": "wave",
+      "description": "Layered animated waves (also a footer).",
+      "image": {
+        "dark": "readme-forge-design/assets/banners/wave-dark.svg",
+        "light": "readme-forge-design/assets/banners/wave-light.svg"
+      },
+      "animated": true,
+      "command": "python readme-forge-design/scripts/make_banner.py --style wave --title \"my-app\" --out .github/assets",
+      "link": "readme-forge-design/assets/banners/gallery.md#wave",
+      "source": "official"
+    },
+    {
+      "id": "banner-blueprint",
+      "category": "banners",
+      "title": "blueprint",
+      "description": "Engineering grid with lines drawing themselves.",
+      "image": {
+        "dark": "readme-forge-design/assets/banners/blueprint-dark.svg",
+        "light": "readme-forge-design/assets/banners/blueprint-light.svg"
+      },
+      "animated": true,
+      "command": "python readme-forge-design/scripts/make_banner.py --style blueprint --title \"my-app\" --out .github/assets",
+      "link": "readme-forge-design/assets/banners/gallery.md#blueprint",
+      "source": "official"
+    },
+    {
+      "id": "banner-constellation",
+      "category": "banners",
+      "title": "constellation",
+      "description": "Twinkling particle network, AI/data.",
+      "image": {
+        "dark": "readme-forge-design/assets/banners/constellation-dark.svg",
+        "light": "readme-forge-design/assets/banners/constellation-light.svg"
+      },
+      "animated": true,
+      "command": "python readme-forge-design/scripts/make_banner.py --style constellation --title \"my-app\" --out .github/assets",
+      "link": "readme-forge-design/assets/banners/gallery.md#constellation",
+      "source": "official"
+    },
+    {
+      "id": "banner-minimal",
+      "category": "banners",
+      "title": "minimal",
+      "description": "Clean type, one accent line drawing in.",
+      "image": {
+        "dark": "readme-forge-design/assets/banners/minimal-dark.svg",
+        "light": "readme-forge-design/assets/banners/minimal-light.svg"
+      },
+      "animated": true,
+      "command": "python readme-forge-design/scripts/make_banner.py --style minimal --title \"my-app\" --out .github/assets",
+      "link": "readme-forge-design/assets/banners/gallery.md#minimal",
+      "source": "official"
+    },
+    {
+      "id": "banner-bold",
+      "category": "banners",
+      "title": "bold",
+      "description": "Oversized type with a moving gradient fill.",
+      "image": {
+        "dark": "readme-forge-design/assets/banners/bold-dark.svg",
+        "light": "readme-forge-design/assets/banners/bold-light.svg"
+      },
+      "animated": true,
+      "command": "python readme-forge-design/scripts/make_banner.py --style bold --title \"my-app\" --out .github/assets",
+      "link": "readme-forge-design/assets/banners/gallery.md#bold",
+      "source": "official"
+    },
+    {
+      "id": "banner-shader",
+      "category": "banners",
+      "title": "shader",
+      "description": "Grainy flowing 3D colour field (ShaderGradient look).",
+      "image": {
+        "dark": "readme-forge-design/assets/banners/shader-dark.svg",
+        "light": "readme-forge-design/assets/banners/shader-light.svg"
+      },
+      "animated": true,
+      "command": "python readme-forge-design/scripts/make_banner.py --style shader --title \"my-app\" --out .github/assets",
+      "link": "readme-forge-design/assets/banners/gallery.md#shader",
+      "source": "official"
+    },
+    {
+      "id": "banner-spotlight",
+      "category": "banners",
+      "title": "spotlight",
+      "description": "Dark landing-page hero: masked grid, light beam, announcement pill, gradient title.",
+      "image": {
+        "dark": "readme-forge-design/assets/banners/spotlight-dark.svg",
+        "light": "readme-forge-design/assets/banners/spotlight-light.svg"
+      },
+      "animated": true,
+      "command": "python readme-forge-design/scripts/make_banner.py --style spotlight --title \"my-app\" --out .github/assets",
+      "link": "readme-forge-design/assets/banners/gallery.md#spotlight",
+      "source": "official"
+    },
+    {
+      "id": "banner-ribbon",
+      "category": "banners",
+      "title": "ribbon",
+      "description": "Twisting silk ribbon of light strands, 3D depth.",
+      "image": {
+        "dark": "readme-forge-design/assets/banners/ribbon-dark.svg",
+        "light": "readme-forge-design/assets/banners/ribbon-light.svg"
+      },
+      "animated": true,
+      "command": "python readme-forge-design/scripts/make_banner.py --style ribbon --title \"my-app\" --out .github/assets",
+      "link": "readme-forge-design/assets/banners/gallery.md#ribbon",
+      "source": "official"
+    },
+    {
+      "id": "banner-pulse",
+      "category": "banners",
+      "title": "pulse",
+      "description": "Soft glowing rings expanding behind the title.",
+      "image": {
+        "dark": "readme-forge-design/assets/banners/pulse-dark.svg",
+        "light": "readme-forge-design/assets/banners/pulse-light.svg"
+      },
+      "animated": true,
+      "command": "python readme-forge-design/scripts/make_banner.py --style pulse --title \"my-app\" --out .github/assets",
+      "link": "readme-forge-design/assets/banners/gallery.md#pulse",
+      "source": "official"
+    },
+    {
+      "id": "banner-vortex",
+      "category": "banners",
+      "title": "vortex",
+      "description": "Spinning blade vortex over liquid swirl contours, condensed serif title.",
+      "image": {
+        "dark": "readme-forge-design/assets/banners/vortex-dark.svg",
+        "light": "readme-forge-design/assets/banners/vortex-light.svg"
+      },
+      "animated": true,
+      "command": "python readme-forge-design/scripts/make_banner.py --style vortex --title \"my-app\" --out .github/assets",
+      "link": "readme-forge-design/assets/banners/gallery.md#vortex",
+      "source": "official"
+    },
+    {
+      "id": "banner-beam",
+      "category": "banners",
+      "title": "beam",
+      "description": "Light beam racing around the edge over a nebula glow.",
+      "image": {
+        "dark": "readme-forge-design/assets/banners/beam-dark.svg",
+        "light": "readme-forge-design/assets/banners/beam-light.svg"
+      },
+      "animated": true,
+      "command": "python readme-forge-design/scripts/make_banner.py --style beam --title \"my-app\" --out .github/assets",
+      "link": "readme-forge-design/assets/banners/gallery.md#beam",
+      "source": "official"
+    },
+    {
+      "id": "banner-shatter",
+      "category": "banners",
+      "title": "shatter",
+      "description": "Voronoi glass shards with glowing cracks and a light sweep.",
+      "image": {
+        "dark": "readme-forge-design/assets/banners/shatter-dark.svg",
+        "light": "readme-forge-design/assets/banners/shatter-light.svg"
+      },
+      "animated": true,
+      "command": "python readme-forge-design/scripts/make_banner.py --style shatter --title \"my-app\" --out .github/assets",
+      "link": "readme-forge-design/assets/banners/gallery.md#shatter",
+      "source": "official"
+    },
+    {
+      "id": "banner-prism",
+      "category": "banners",
+      "title": "prism",
+      "description": "RGB-split light blinds with a swipe reveal.",
+      "image": {
+        "dark": "readme-forge-design/assets/banners/prism-dark.svg",
+        "light": "readme-forge-design/assets/banners/prism-light.svg"
+      },
+      "animated": true,
+      "command": "python readme-forge-design/scripts/make_banner.py --style prism --title \"my-app\" --out .github/assets",
+      "link": "readme-forge-design/assets/banners/gallery.md#prism",
+      "source": "official"
+    },
+    {
+      "id": "footer-wave",
+      "category": "buttons-footers",
+      "title": "Wave footer",
+      "description": "Layered animated waves closing the page.",
+      "image": {
+        "dark": "readme-forge-design/assets/banners/footer-wave-dark.svg",
+        "light": "readme-forge-design/assets/banners/footer-wave-light.svg"
+      },
+      "animated": true,
+      "command": "python readme-forge-design/scripts/make_banner.py --kind footer --style wave --out .github/assets",
+      "link": "readme-forge-design/assets/banners/gallery.md",
+      "source": "official"
+    },
+    {
+      "id": "footer-vortex",
+      "category": "buttons-footers",
+      "title": "Vortex footer",
+      "description": "Spinning blade vortex as a page footer.",
+      "image": {
+        "dark": "readme-forge-design/assets/banners/footer-vortex-dark.svg",
+        "light": "readme-forge-design/assets/banners/footer-vortex-light.svg"
+      },
+      "animated": true,
+      "command": "python readme-forge-design/scripts/make_banner.py --kind footer --style vortex --out .github/assets",
+      "link": "readme-forge-design/assets/banners/gallery.md",
+      "source": "official"
+    },
+    {
+      "id": "footer-minimal",
+      "category": "buttons-footers",
+      "title": "Minimal footer",
+      "description": "Clean credit line with one accent.",
+      "image": {
+        "dark": "readme-forge-design/assets/banners/footer-minimal-dark.svg",
+        "light": "readme-forge-design/assets/banners/footer-minimal-light.svg"
+      },
+      "animated": true,
+      "command": "python readme-forge-design/scripts/make_banner.py --kind footer --style minimal --out .github/assets",
+      "link": "readme-forge-design/assets/banners/gallery.md",
+      "source": "official"
+    },
+    {
+      "id": "divider-aurora",
+      "category": "buttons-footers",
+      "title": "Aurora divider",
+      "description": "A thin animated aurora line between sections.",
+      "image": {
+        "dark": "readme-forge-design/assets/banners/divider-aurora-dark.svg",
+        "light": "readme-forge-design/assets/banners/divider-aurora-light.svg"
+      },
+      "animated": true,
+      "command": "python readme-forge-design/scripts/make_banner.py --kind divider --style aurora --out .github/assets",
+      "link": "readme-forge-design/assets/banners/gallery.md",
+      "source": "official"
+    },
+    {
+      "id": "divider-beam",
+      "category": "buttons-footers",
+      "title": "Beam divider",
+      "description": "A light beam sweeping across a section break.",
+      "image": {
+        "dark": "readme-forge-design/assets/banners/divider-beam-dark.svg",
+        "light": "readme-forge-design/assets/banners/divider-beam-light.svg"
+      },
+      "animated": true,
+      "command": "python readme-forge-design/scripts/make_banner.py --kind divider --style beam --out .github/assets",
+      "link": "readme-forge-design/assets/banners/gallery.md",
+      "source": "official"
+    },
+    {
+      "id": "button-primary",
+      "category": "buttons-footers",
+      "title": "Primary button",
+      "description": "Clickable call-to-action button, light and dark.",
+      "image": {
+        "dark": "readme-forge-design/assets/banners/button-primary-dark.svg",
+        "light": "readme-forge-design/assets/banners/button-primary-light.svg"
+      },
+      "animated": false,
+      "command": "python readme-forge-design/scripts/make_banner.py --kind button --title \"Get started\" --href \"#quickstart\" --out .github/assets",
+      "link": "readme-forge-design/assets/banners/gallery.md",
+      "source": "official"
+    },
+    {
+      "id": "button-secondary",
+      "category": "buttons-footers",
+      "title": "Secondary button",
+      "description": "Outline call-to-action button, light and dark.",
+      "image": {
+        "dark": "readme-forge-design/assets/banners/button-secondary-dark.svg",
+        "light": "readme-forge-design/assets/banners/button-secondary-light.svg"
+      },
+      "animated": false,
+      "command": "python readme-forge-design/scripts/make_banner.py --kind button --title \"Docs\" --href \"docs/\" --out .github/assets",
+      "link": "readme-forge-design/assets/banners/gallery.md",
+      "source": "official"
+    },
+    {
+      "id": "page-keynote-profile",
+      "category": "page-kit",
+      "title": "Keynote profile",
+      "description": "A whole profile README as light and dark cards: terminal hero, contact dock, about, stack, projects, achievements and stats. Fictional demo persona.",
+      "image": {
+        "dark": "readme-forge-design/examples/keynote-profile/assets/hello/hero-dark.svg",
+        "light": "readme-forge-design/examples/keynote-profile/assets/hello/hero-light.svg"
+      },
+      "animated": true,
+      "command": "python readme-forge-design/scripts/make_page.py --spec readme-forge-design/examples/keynote-profile/page.json",
+      "link": "readme-forge-design/examples/keynote-profile/README.md",
+      "source": "official"
+    },
+    {
+      "id": "page-keynote-project",
+      "category": "page-kit",
+      "title": "Keynote project",
+      "description": "A project README designed as cards, with the install steps kept as real Markdown so they stay copyable and checkable.",
+      "image": {
+        "dark": "readme-forge-design/examples/keynote-project/assets/page/hero-dark.svg",
+        "light": "readme-forge-design/examples/keynote-project/assets/page/hero-light.svg"
+      },
+      "animated": true,
+      "command": "python readme-forge-design/scripts/make_page.py --spec readme-forge-design/examples/keynote-project/page.json",
+      "link": "readme-forge-design/examples/keynote-project/README.md",
+      "source": "official"
+    },
+    {
+      "id": "page-keynote-coder",
+      "category": "page-kit",
+      "title": "Keynote coder",
+      "description": "A developer profile with a YAML about-me card, a dot-matrix portrait, a badge wall and rotating roles. Fictional demo persona.",
+      "image": {
+        "dark": "readme-forge-design/examples/keynote-coder/assets/kai/hero-dark.svg",
+        "light": "readme-forge-design/examples/keynote-coder/assets/kai/hero-light.svg"
+      },
+      "animated": true,
+      "command": "python readme-forge-design/scripts/make_page.py --spec readme-forge-design/examples/keynote-coder/page.json",
+      "link": "readme-forge-design/examples/keynote-coder/README.md",
+      "source": "official"
+    },
+    {
+      "id": "profile-actions-dynamic",
+      "category": "profiles",
+      "title": "Auto-updating",
+      "description": "GitHub Actions keep it fresh: latest blog posts, WakaTime coding time and a metrics card, refreshed on a schedule.",
+      "image": null,
+      "animated": false,
+      "command": "/readme-forge-design make my GitHub profile README in the actions-dynamic style",
+      "link": "readme-forge-design/templates/profile/actions-dynamic.md",
+      "source": "official"
+    },
+    {
+      "id": "profile-anime-art",
+      "category": "profiles",
+      "title": "Anime / art",
+      "description": "Your own illustration beside a terminal-style status card. Uses art you drew or have the rights to.",
+      "image": null,
+      "animated": false,
+      "command": "/readme-forge-design make my GitHub profile README in the anime-art style",
+      "link": "readme-forge-design/templates/profile/anime-art.md",
+      "source": "official"
+    },
+    {
+      "id": "profile-badges-wall",
+      "category": "profiles",
+      "title": "Badges wall",
+      "description": "Your real skills as one consistent wall of for-the-badge badges.",
+      "image": null,
+      "animated": false,
+      "command": "/readme-forge-design make my GitHub profile README in the badges-wall style",
+      "link": "readme-forge-design/templates/profile/badges-wall.md",
+      "source": "official"
+    },
+    {
+      "id": "profile-code-mode",
+      "category": "profiles",
+      "title": "Code mode",
+      "description": "Your intro written as code, in the language you write most.",
+      "image": null,
+      "animated": false,
+      "command": "/readme-forge-design make my GitHub profile README in the code-mode style",
+      "link": "readme-forge-design/templates/profile/code-mode.md",
+      "source": "official"
+    },
+    {
+      "id": "profile-creative",
+      "category": "profiles",
+      "title": "Creative / animated",
+      "description": "Up to two animations, such as the contribution snake, with everything else kept calm.",
+      "image": null,
+      "animated": false,
+      "command": "/readme-forge-design make my GitHub profile README in the creative style",
+      "link": "readme-forge-design/templates/profile/creative.md",
+      "source": "official"
+    },
+    {
+      "id": "profile-data-scientist",
+      "category": "profiles",
+      "title": "Data / ML / AI",
+      "description": "For data and ML work: models, datasets and papers, with only real numbers and links.",
+      "image": null,
+      "animated": false,
+      "command": "/readme-forge-design make my GitHub profile README in the data-scientist style",
+      "link": "readme-forge-design/templates/profile/data-scientist.md",
+      "source": "official"
+    },
+    {
+      "id": "profile-descriptive",
+      "category": "profiles",
+      "title": "Descriptive",
+      "description": "A short intro up front, with the longer story folded into collapsible sections.",
+      "image": null,
+      "animated": false,
+      "command": "/readme-forge-design make my GitHub profile README in the descriptive style",
+      "link": "readme-forge-design/templates/profile/descriptive.md",
+      "source": "official"
+    },
+    {
+      "id": "profile-fancy-fonts",
+      "category": "profiles",
+      "title": "Fancy fonts",
+      "description": "Styled Unicode lettering generated by a script, used sparingly so screen readers and search still work.",
+      "image": null,
+      "animated": false,
+      "command": "/readme-forge-design make my GitHub profile README in the fancy-fonts style",
+      "link": "readme-forge-design/templates/profile/fancy-fonts.md",
+      "source": "official"
+    },
+    {
+      "id": "profile-game-mode",
+      "category": "profiles",
+      "title": "Game mode",
+      "description": "A tic-tac-toe game anyone can play from your profile, run by a GitHub Action.",
+      "image": null,
+      "animated": false,
+      "command": "/readme-forge-design make my GitHub profile README in the game-mode style",
+      "link": "readme-forge-design/templates/profile/game-mode.md",
+      "source": "official"
+    },
+    {
+      "id": "profile-icons",
+      "category": "profiles",
+      "title": "Icons",
+      "description": "Your skills as a grid of icons grouped by area, each with a name on hover.",
+      "image": null,
+      "animated": false,
+      "command": "/readme-forge-design make my GitHub profile README in the icons style",
+      "link": "readme-forge-design/templates/profile/icons.md",
+      "source": "official"
+    },
+    {
+      "id": "profile-just-image",
+      "category": "profiles",
+      "title": "Just an image",
+      "description": "The whole profile is one picture, with the introduction carried in its alt text.",
+      "image": null,
+      "animated": false,
+      "command": "/readme-forge-design make my GitHub profile README in the just-image style",
+      "link": "readme-forge-design/templates/profile/just-image.md",
+      "source": "official"
+    },
+    {
+      "id": "profile-minimal",
+      "category": "profiles",
+      "title": "Minimal",
+      "description": "Name, one line about you and your links. Nothing else.",
+      "image": null,
+      "animated": false,
+      "command": "/readme-forge-design make my GitHub profile README in the minimal style",
+      "link": "readme-forge-design/templates/profile/minimal.md",
+      "source": "official"
+    },
+    {
+      "id": "profile-org-profile",
+      "category": "profiles",
+      "title": "Organization",
+      "description": "A profile for a GitHub organization, public or members-only.",
+      "image": null,
+      "animated": false,
+      "command": "/readme-forge-design make my GitHub profile README in the org-profile style",
+      "link": "readme-forge-design/templates/profile/org-profile.md",
+      "source": "official"
+    },
+    {
+      "id": "profile-oss-maintainer",
+      "category": "profiles",
+      "title": "Open-source maintainer",
+      "description": "Your projects, what you maintain and how people can help.",
+      "image": null,
+      "animated": false,
+      "command": "/readme-forge-design make my GitHub profile README in the oss-maintainer style",
+      "link": "readme-forge-design/templates/profile/oss-maintainer.md",
+      "source": "official"
+    },
+    {
+      "id": "profile-retro",
+      "category": "profiles",
+      "title": "Retro / terminal",
+      "description": "Your name in ASCII art, sized to fit a phone screen.",
+      "image": null,
+      "animated": false,
+      "command": "/readme-forge-design make my GitHub profile README in the retro style",
+      "link": "readme-forge-design/templates/profile/retro.md",
+      "source": "official"
+    },
+    {
+      "id": "profile-simple-innovative",
+      "category": "profiles",
+      "title": "Simple but innovative",
+      "description": "A few plain lines plus one clever live element, such as now playing, latest posts or a game.",
+      "image": null,
+      "animated": false,
+      "command": "/readme-forge-design make my GitHub profile README in the simple-innovative style",
+      "link": "readme-forge-design/templates/profile/simple-innovative.md",
+      "source": "official"
+    },
+    {
+      "id": "profile-stats-dashboard",
+      "category": "profiles",
+      "title": "Stats dashboard",
+      "description": "GitHub stats, streak and top-language cards, themed for dark and light mode.",
+      "image": null,
+      "animated": false,
+      "command": "/readme-forge-design make my GitHub profile README in the stats-dashboard style",
+      "link": "readme-forge-design/templates/profile/stats-dashboard.md",
+      "source": "official"
+    },
+    {
+      "id": "profile-student",
+      "category": "profiles",
+      "title": "Student / early career",
+      "description": "What you're learning, what you've built and what you're looking for.",
+      "image": null,
+      "animated": false,
+      "command": "/readme-forge-design make my GitHub profile README in the student style",
+      "link": "readme-forge-design/templates/profile/student.md",
+      "source": "official"
+    },
+    {
+      "id": "profile-typing",
+      "category": "profiles",
+      "title": "Typing",
+      "description": "An animated typing line as the hero, with every typed line also in the alt text.",
+      "image": null,
+      "animated": false,
+      "command": "/readme-forge-design make my GitHub profile README in the typing style",
+      "link": "readme-forge-design/templates/profile/typing.md",
+      "source": "official"
+    },
+    {
+      "id": "demo-before-after",
+      "category": "before-after",
+      "title": "orbit-api: 43 → 95",
+      "description": "One /readme-forge command rewrote a README that scored 43/100 (grade F) into one that scores 95/100 (grade A), with all 12 checked claims matching the code.",
+      "image": {
+        "dark": "demo/readme-forge-demo.gif",
+        "light": "demo/readme-forge-demo.gif"
+      },
+      "animated": true,
+      "command": "/readme-forge improve my README",
+      "link": "demo/sample-app/README.after.md",
+      "source": "official"
+    }
+  ]
+}
