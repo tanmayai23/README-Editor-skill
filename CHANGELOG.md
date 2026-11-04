@@ -19,6 +19,10 @@ This release teaches the skill your style: it learns from what you keep, edit an
 
 - Releases are cut from tags like `v1.4.0` only. A moving `v1` tag now follows the latest 1.x release, so `uses: tanmayai23/README-Editor-skill@v1` in the README and the Action docs resolves; until now no `v1` tag existed.
 
+### Fixed
+
+- The readme-forge-design skill description was 1051 characters, over the 1024 that claude.ai accepts, so uploading `readme-forge-design.zip` failed. It is now 1009, and `tests/test_skills.py` checks the name and description limits of both skills.
+
 ## [1.3.0] - 2026-10-24
 
 ### Added
