@@ -141,7 +141,7 @@ flowchart LR
 | `verify_readme.py` | Checks every claim in a README against the repo | `python readme-forge/scripts/verify_readme.py README.md --repo .` |
 | `score_readme.py` | Scores a README 0–100, lints it and checks drift | `python readme-forge/scripts/score_readme.py README.md --repo . --min 85` |
 | `import_graph.py` | Draws a Mermaid architecture draft from real imports | `python readme-forge/scripts/import_graph.py . --mermaid` |
-| `check_links.py` | Finds dead links, broken badges and widgets that return error cards | `python readme-forge/scripts/check_links.py README.md` |
+| `check_links.py` | Finds dead links, broken badges and widgets that return error cards. Pages that block bots (npm, LinkedIn, GitHub stargazers) show as `UNVERIFIED` and don't fail the run | `python readme-forge/scripts/check_links.py README.md` |
 | `learn.py` | Learns your style from what you keep, edit and delete | `python readme-forge/scripts/learn.py show` |
 
 > [!TIP]
