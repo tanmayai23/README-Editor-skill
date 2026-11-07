@@ -3,9 +3,8 @@
 
 Stdlib only. No external services: the SVGs are committed to the repo, so they never
 rate-limit or go down. Every file ships a dark and a light variant and uses system
-font stacks (external fonts are blocked inside <img>). prefers-reduced-motion stops
-every CSS animation; orbit, terminal, bold, ribbon and the spotlight pill still use
-SMIL, which browsers keep playing (issue #32).
+font stacks (external fonts are blocked inside <img>). Every style animates with CSS
+@keyframes only (no SMIL), so prefers-reduced-motion stops all motion.
 
 Usage:
   python make_banner.py --style aurora --title "orbit-api" --subtitle "Subscription billing for SaaS" --out assets/
@@ -18,7 +17,7 @@ Options:
   --kind header|footer|divider   (default header)
   --style NAME                   see --list
   --palette NAME                 see --list (default: the style's own)
-  --accent "#RRGGBB"             override the main accent colour
+  --accent "#RRGGBB"             override the main accent colour (#RGB also works)
   --title / --subtitle / --tag   text (tag = small caps line above the title)
   --width 1280 --height 320      canvas (footer default 160, divider default 24)
   --theme dark|light|both        (default both)
@@ -36,7 +35,9 @@ import os
 import html
 import math
 import random
+import re
 import sys
+import unicodedata
 from pathlib import Path
 
 SANS = "'Segoe UI', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Inter, Roboto, Arial, sans-serif"
@@ -131,12 +132,102 @@ def esc(s: str) -> str:
     return html.escape(s or "", quote=True)
 
 
+def _zero_width(ch: str, prev: str) -> bool:
+    """Combining marks, variation selectors, ZWJ and skin-tone modifiers take no room of their own."""
+    cp = ord(ch)
+    return (unicodedata.category(ch) in ("Mn", "Me", "Cf") or 0x1F3FB <= cp <= 0x1F3FF or prev == "‍")
+
+
+def _wide(ch: str) -> bool:
+    """East Asian wide/fullwidth characters and emoji render about 1em wide."""
+    cp = ord(ch)
+    return unicodedata.east_asian_width(ch) in ("W", "F") or 0x1F000 <= cp <= 0x1FAFF or 0x2600 <= cp <= 0x27BF
+
+
+def text_em(text: str, per: float, wide: float = 1.0) -> float:
+    """Estimated width of text in em: `per` for each narrow character, `wide` for CJK and emoji.
+    (SVG inside <img> can't measure text, so every size here is an estimate.)"""
+    narrow = wides = 0
+    prev = ""
+    for ch in text:
+        if not _zero_width(ch, prev):
+            if _wide(ch):
+                wides += 1
+            else:
+                narrow += 1
+        prev = ch
+    return narrow * per + wides * wide
+
+
+def clip(text: str, max_em: float, per: float, wide: float = 1.0) -> str:
+    """Text as is if it fits in max_em, else cut short with an ellipsis."""
+    if text_em(text, per, wide) <= max_em:
+        return text
+    for i in range(len(text) - 1, 0, -1):
+        cut = text[:i].rstrip() + "…"
+        if text_em(cut, per, wide) <= max_em:
+            return cut
+    return "…"
+
+
+def wrap(text: str, max_em: float, per: float, max_lines: int = 2, wide: float = 1.0) -> list:
+    """Greedy word wrap into at most max_lines lines (CJK breaks between characters).
+    Text left over after the last line is cut with an ellipsis."""
+    lines, rest, sep = [], text.strip(), " "
+    while rest and len(lines) < max_lines:
+        if text_em(rest, per, wide) <= max_em:
+            lines.append(rest)
+            rest = ""
+            break
+        fit = 1
+        while fit < len(rest) and text_em(rest[:fit + 1], per, wide) <= max_em:
+            fit += 1
+        brk = next((j for j in range(fit, 0, -1)
+                    if rest[j] == " " or rest[j - 1] == " " or _wide(rest[j]) or _wide(rest[j - 1])), fit)
+        sep = " " if rest[brk] == " " or rest[brk - 1] == " " else ""
+        lines.append(rest[:brk].rstrip())
+        rest = rest[brk:].lstrip()
+    if rest:
+        lines[-1] = clip(lines[-1] + sep + rest, max_em, per, wide)
+    return lines or [""]
+
+
+def fit_text(text: str, max_w: float, size: int, min_size: int, per: float, max_lines: int = 1, wide: float = 1.0):
+    """(font size, lines) for text that must stay within max_w px: shrink down to min_size,
+    then wrap onto up to max_lines lines, then cut the last line with an ellipsis."""
+    em = text_em(text, per, wide)
+    if em * size <= max_w:
+        return size, [text]
+    shrunk = int(max_w / em)
+    if shrunk >= min_size:
+        return shrunk, [text]
+    return min_size, wrap(text, max_w / min_size, per, max_lines, wide)
+
+
 def title_size(text: str, width: int, height: int, base: float, mono=False) -> int:
     """Estimate a font size that fits ~80% of the width (no text measuring in SVG-as-image)."""
-    ch = max(len(text), 1)
     per = 0.62 if mono else 0.56
-    fit = (width * 0.80) / (ch * per)
+    em = max(text_em(text, per), per)
+    fit = (width * 0.80) / em
     return int(max(18, min(base, fit, height * 0.32)))
+
+
+def parse_hex(value: str):
+    """'#RGB' or '#RRGGBB' as '#RRGGBB' (upper case), or None if it is neither."""
+    m = re.fullmatch(r"#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})", (value or "").strip())
+    if not m:
+        return None
+    h = m.group(1)
+    if len(h) == 3:
+        h = "".join(ch * 2 for ch in h)
+    return "#" + h.upper()
+
+
+def _rgb(hex_: str):
+    h = parse_hex(hex_)
+    if h is None:
+        raise ValueError(f"not a hex colour: {hex_!r} (use #RGB or #RRGGBB)")
+    return tuple(int(h[i:i + 2], 16) for i in (1, 3, 5))
 
 
 class Ctx:
@@ -163,28 +254,35 @@ def bg_rect(x: Ctx, radius=0):
     x.body.append(f'<rect width="{x.W}" height="{x.H}" rx="{radius}" fill="url(#bg)"/>')
 
 
-def text_block(x: Ctx, cx=None, anchor="middle", y_center=None, mono=False, size=None, glow=False, fill=None):
-    """Tag + title + subtitle, vertically centred around y_center."""
+def text_block(x: Ctx, cx=None, anchor="middle", y_center=None, mono=False, size=None, glow=False, fill=None, title_wrap=None):
+    """Tag + title + subtitle, vertically centred around y_center. Long text shrinks, then the
+    subtitle wraps onto a second line and anything still too long ends in an ellipsis.
+    title_wrap, if given, receives the title <text> element and returns the markup to use."""
     W, H, c = x.W, x.H, x.c
     cx = W / 2 if cx is None else cx
     y_center = H / 2 if y_center is None else y_center
     fam = MONO if mono else SANS
-    ts = size or title_size(x.title, x.text_w if anchor == "middle" else W * 0.62, H, 72 if x.kind == "header" else 40, mono)
-    ss = max(14, int(ts * 0.34))
+    box = x.text_w if anchor == "middle" else min(W * 0.62, W - cx - 16)
+    ts = size or title_size(x.title, box, H, 72 if x.kind == "header" else 40, mono)
+    title = clip(x.title, box * 0.96 / ts, 0.62 if mono else 0.56)
+    ss, sub = fit_text(x.sub, box * 0.92, max(14, int(ts * 0.34)), 14, 0.56, max_lines=2)
     tg = max(11, int(ts * 0.2))
-    lines_h = (tg * 1.9 if x.tag else 0) + ts + (ss * 1.7 if x.sub else 0)
+    tag = clip(x.tag.upper(), box * 0.96 / tg, 0.95, 1.32)
+    lines_h = (tg * 1.9 if x.tag else 0) + ts + (ss * 1.7 + (len(sub) - 1) * ss * 1.3 if x.sub else 0)
     y = y_center - lines_h / 2
     out = []
     if x.tag:
         y += tg
-        out.append(f'<text class="tag fade d1" x="{cx}" y="{y:.1f}" text-anchor="{anchor}" font-family="{SANS}" font-size="{tg}" font-weight="700" letter-spacing="{tg * 0.32:.1f}" fill="{c["a1"]}">{esc(x.tag.upper())}</text>')
+        out.append(f'<text class="tag fade d1" x="{cx}" y="{y:.1f}" text-anchor="{anchor}" font-family="{SANS}" font-size="{tg}" font-weight="700" letter-spacing="{tg * 0.32:.1f}" fill="{c["a1"]}">{esc(tag)}</text>')
         y += tg * 0.9
     y += ts * 0.92
     filt = ' filter="url(#glow)"' if glow else ""
-    out.append(f'<text class="title fade d2" x="{cx}" y="{y:.1f}" text-anchor="{anchor}" font-family="{fam}" font-size="{ts}" font-weight="800" letter-spacing="{-ts * 0.02:.1f}" fill="{fill or c["fg"]}"{filt}>{esc(x.title)}</text>')
+    t_el = f'<text class="title fade d2" x="{cx}" y="{y:.1f}" text-anchor="{anchor}" font-family="{fam}" font-size="{ts}" font-weight="800" letter-spacing="{-ts * 0.02:.1f}" fill="{fill or c["fg"]}"{filt}>{esc(title)}</text>'
+    out.append(title_wrap(t_el) if title_wrap else t_el)
     if x.sub:
-        y += ss * 1.7
-        out.append(f'<text class="sub fade d3" x="{cx}" y="{y:.1f}" text-anchor="{anchor}" font-family="{SANS}" font-size="{ss}" font-weight="500" fill="{c["muted"]}">{esc(x.sub)}</text>')
+        for i, line in enumerate(sub):
+            y += ss * (1.7 if i == 0 else 1.3)
+            out.append(f'<text class="sub fade d3" x="{cx}" y="{y:.1f}" text-anchor="{anchor}" font-family="{SANS}" font-size="{ss}" font-weight="500" fill="{c["muted"]}">{esc(line)}</text>')
     x.bottom = y + ss * 0.35
     x.body.extend(out)
     # Text never animates in: the first frame must be complete (link previews, thumbnails, slow loads).
@@ -298,8 +396,7 @@ def iso_cube(cx, cy, s, top, left, right, cls=""):
 
 
 def shade(hex_, f):
-    h = hex_.lstrip("#")
-    r, g, b = (int(h[i:i + 2], 16) for i in (0, 2, 4))
+    r, g, b = _rgb(hex_)
     if f >= 0:
         r, g, b = (int(v + (255 - v) * f) for v in (r, g, b))
     else:
@@ -349,10 +446,18 @@ def s_orbit(x):
         x.defs.append(f'<path id="o{i}" d="{path}"/>')
         back.append(f'<use href="#o{i}" fill="none" stroke="{c["fg"]}" stroke-opacity=".18" stroke-width="1.2" transform="rotate({rot} {cx} {cy})"/>')
         pr = 5 + i * 1.6
-        anim = (f'<animateMotion dur="{dur}s" repeatCount="indefinite" rotate="0"><mpath href="#o{i}"/></animateMotion>'
-                f'<animate attributeName="r" values="{pr * .7:.1f};{pr * 1.25:.1f};{pr * .7:.1f}" keyTimes="0;.5;1" dur="{dur}s" repeatCount="indefinite"/>') if x.animate else ""
-        start = "" if x.animate else f' cx="{cx - rx:.1f}" cy="{cy:.1f}"'
-        front.append(f'<g transform="rotate({rot} {cx} {cy})"><circle r="{pr:.1f}"{start} fill="{col}">{anim}</circle></g>')
+        px = cx - rx
+        # The planet travels the flattened orbit: squash the plane by k, spin the planet round the
+        # centre (anticlockwise, from the left end, like the path), then undo the spin and the squash
+        # on the planet itself so it stays round. CSS transforms only, so reduced motion stops it.
+        front.append(f'<g transform="rotate({rot} {cx} {cy})"><g transform="translate(0 {cy:.1f}) scale(1 {k}) translate(0 {-cy:.1f})">'
+                     f'<g class="orb{i}"><g class="orbc{i}"><g transform="translate({px:.1f} {cy:.1f}) scale(1 {1 / k:.4f}) translate({-px:.1f} {-cy:.1f})">'
+                     f'<circle class="planet{i}" cx="{px:.1f}" cy="{cy:.1f}" r="{pr:.1f}" fill="{col}"/></g></g></g></g></g>')
+        x.css.append(f"@keyframes orb{i}{{to{{transform:rotate(-360deg)}}}}@keyframes orbc{i}{{to{{transform:rotate(360deg)}}}}"
+                     f"@keyframes planet{i}{{0%,100%{{transform:scale(.7)}}50%{{transform:scale(1.25)}}}}"
+                     f".orb{i}{{transform-origin:{cx:.1f}px {cy:.1f}px;animation:orb{i} {dur}s linear infinite}}"
+                     f".orbc{i}{{transform-origin:{px:.1f}px {cy:.1f}px;animation:orbc{i} {dur}s linear infinite}}"
+                     f".planet{i}{{transform-box:fill-box;transform-origin:center;animation:planet{i} {dur}s linear infinite}}")
     x.body.extend(back)
     x.body.append(f'<circle cx="{cx:.0f}" cy="{cy:.0f}" r="{H * 0.09:.0f}" fill="url(#core)"/>')
     x.body.append(f'<circle class="pulse" cx="{cx:.0f}" cy="{cy:.0f}" r="{H * 0.09:.0f}" fill="none" stroke="{c["a1"]}" stroke-width="2"/>')
@@ -374,19 +479,27 @@ def s_terminal(x):
     ts = title_size("$ " + x.title, pw * 1.05, H, 54, mono=True)
     ty = py + ph * 0.50
     char_w = ts * 0.6
-    full = (len(x.title) + 2) * char_w
     tx = px + 30
-    # frame 0 shows the whole command; every 7 s it is erased and typed again
-    x.defs.append(f'<clipPath id="type"><rect x="{tx:.0f}" y="{ty - ts:.0f}" width="{full:.0f}" height="{ts * 1.4:.0f}">'
-                  + (f'<animate attributeName="width" values="{full:.0f};{full:.0f};0;{full:.0f};{full:.0f}" keyTimes="0;.55;.6;.85;1" dur="7s" repeatCount="indefinite"/>' if x.animate else "")
-                  + "</rect></clipPath>")
-    x.body.append(f'<g clip-path="url(#type)"><text x="{tx:.0f}" y="{ty:.0f}" font-family="{MONO}" font-size="{ts}" font-weight="700" fill="{c["fg"]}"><tspan fill="{c["a1"]}">$ </tspan>{esc(x.title)}</text></g>')
+    title = clip(x.title, (pw - 60 - ts * 0.5) / char_w - 2, 1, wide=ts / char_w)
+    full = (text_em(title, 1, wide=ts / char_w) + 2) * char_w
+    x.body.append(f'<text x="{tx:.0f}" y="{ty:.0f}" font-family="{MONO}" font-size="{ts}" font-weight="700" fill="{c["fg"]}"><tspan fill="{c["a1"]}">$ </tspan>{esc(title)}</text>')
+    if x.animate:
+        # Frame 0 shows the whole command; every 7 s a window-coloured cover sweeps in from the
+        # right (erasing it) and slides back off (typing it again). Its resting state is
+        # transform="scale(0 1)", so with reduced motion, or no CSS, the cover is gone and the
+        # title stays fully visible.
+        x.body.append(f'<rect class="erase" x="{tx:.0f}" y="{ty - ts:.0f}" width="{full:.0f}" height="{ts * 1.4:.0f}" fill="{win}" transform="scale(0 1)"/>')
+        x.css.append("@keyframes erase{0%,55%{transform:scaleX(0)}60%{transform:scaleX(1)}85%,100%{transform:scaleX(0)}}"
+                     ".erase{transform-box:fill-box;transform-origin:100% 50%;animation:erase 7s linear infinite}")
     x.body.append(f'<rect class="cursor" x="{tx + full + 4:.0f}" y="{ty - ts * 0.8:.0f}" width="{ts * 0.5:.0f}" height="{ts * 0.95:.0f}" fill="{c["a1"]}"/>')
     x.css.append("@keyframes blink{50%{opacity:0}}.cursor{animation:blink 1s steps(1) infinite}")
     if x.sub:
-        x.body.append(f'<text x="{tx:.0f}" y="{ty + ts * 1.15:.0f}" font-family="{MONO}" font-size="{max(14, int(ts * .36))}" fill="{c["muted"]}"><tspan fill="{c["a2"]}">→ </tspan>{esc(x.sub)}</text>')
+        ss, lines = fit_text("→ " + x.sub, pw - 50, max(14, int(ts * .36)), 12, 0.6, max_lines=2)
+        for i, line in enumerate(lines):
+            text = f'<tspan fill="{c["a2"]}">→ </tspan>{esc(line[2:])}' if i == 0 else esc(line)
+            x.body.append(f'<text x="{tx:.0f}" y="{ty + ts * 1.15 + i * ss * 1.35:.0f}" font-family="{MONO}" font-size="{ss}" fill="{c["muted"]}">{text}</text>')
     if x.tag:
-        x.body.append(f'<text x="{px + pw / 2:.0f}" y="{py + 25:.0f}" text-anchor="middle" font-family="{MONO}" font-size="13" fill="{c["muted"]}">{esc(x.tag.lower())}</text>')
+        x.body.append(f'<text x="{px + pw / 2:.0f}" y="{py + 25:.0f}" text-anchor="middle" font-family="{MONO}" font-size="13" fill="{c["muted"]}">{esc(clip(x.tag.lower(), (pw - 160) / 13, 0.6))}</text>')
 
 
 def s_neon(x):
@@ -398,14 +511,15 @@ def s_neon(x):
     x.defs.append('<filter id="neon" x="-20%" y="-60%" width="140%" height="220%"><feGaussianBlur stdDeviation="2.5" result="b1"/><feGaussianBlur stdDeviation="9" result="b2"/>'
                   '<feMerge><feMergeNode in="b2"/><feMergeNode in="b1"/><feMergeNode in="SourceGraphic"/></feMerge></filter>')
     y = H * (0.52 if x.sub else 0.58)
-    x.body.append(f'<text class="flicker" x="{W / 2}" y="{y:.0f}" text-anchor="middle" font-family="{SANS}" font-size="{ts}" font-weight="800" fill="none" stroke="{c["a1"]}" stroke-width="2.4" filter="url(#neon)">{esc(x.title)}</text>')
+    x.body.append(f'<text class="flicker" x="{W / 2}" y="{y:.0f}" text-anchor="middle" font-family="{SANS}" font-size="{ts}" font-weight="800" fill="none" stroke="{c["a1"]}" stroke-width="2.4" filter="url(#neon)">{esc(clip(x.title, W * 0.94 / ts, 0.56))}</text>')
     if x.sub:
-        x.body.append(f'<text x="{W / 2}" y="{y + ts * 0.62:.0f}" text-anchor="middle" font-family="{SANS}" font-size="{max(14, int(ts * .3))}" font-weight="600" letter-spacing="2" fill="{c["a2"]}" filter="url(#neon)">{esc(x.sub)}</text>')
+        # letter-spacing="2" adds ~0.14em per character at the 14 px minimum
+        ss, lines = fit_text(x.sub, W * 0.92, max(14, int(ts * .3)), 14, 0.70, max_lines=2, wide=1.14)
+        for i, line in enumerate(lines):
+            x.body.append(f'<text x="{W / 2}" y="{y + ts * 0.62 + i * ss * 1.3:.0f}" text-anchor="middle" font-family="{SANS}" font-size="{ss}" font-weight="600" letter-spacing="2" fill="{c["a2"]}" filter="url(#neon)">{esc(line)}</text>')
     if x.tag:
-        x.body.append(f'<text x="{W / 2}" y="{y - ts * 0.95:.0f}" text-anchor="middle" font-family="{MONO}" font-size="14" letter-spacing="6" fill="{c["a3"]}">{esc(x.tag.upper())}</text>')
+        x.body.append(f'<text x="{W / 2}" y="{y - ts * 0.95:.0f}" text-anchor="middle" font-family="{MONO}" font-size="14" letter-spacing="6" fill="{c["a3"]}">{esc(clip(x.tag.upper(), W * 0.92 / 14, 1.03, 1.43))}</text>')
     x.css.append("@keyframes flick{0%,19%,21%,23%,80%,100%{opacity:1}20%,22%{opacity:.35}81%{opacity:.6}}.flicker{animation:flick 5s linear infinite}")
-    if x.theme == "light":  # neon reads poorly on light: fill the title too
-        x.body[-1 if not x.sub else -2] = x.body[-1 if not x.sub else -2]
 
 
 def wave_path(W, H, amp, base, phase, k=2):
@@ -433,7 +547,7 @@ def s_wave(x, flip=False):
     if x.kind == "footer":
         if x.title:
             ts = title_size(x.title, W, H, 26)
-            x.body.append(f'<text x="{W / 2}" y="{H * (0.84 if flip else 0.30):.0f}" text-anchor="middle" font-family="{SANS}" font-size="{ts}" font-weight="700" fill="{c["fg"]}">{esc(x.title)}</text>')
+            x.body.append(f'<text x="{W / 2}" y="{H * (0.84 if flip else 0.30):.0f}" text-anchor="middle" font-family="{SANS}" font-size="{ts}" font-weight="700" fill="{c["fg"]}">{esc(clip(x.title, W * 0.94 / ts, 0.56))}</text>')
     else:
         text_block(x, y_center=H * 0.33)
 
@@ -506,12 +620,20 @@ def s_minimal(x):
 def s_bold(x):
     W, H, c = x.W, x.H, x.c
     x.body.append(f'<rect width="{W}" height="{H}" fill="{c["bg0"]}"/>')
-    sweep = (f'<animateTransform attributeName="gradientTransform" type="translate" values="0 0;{W} 0;0 0" dur="12s" repeatCount="indefinite"/>'
-             if x.animate else "")
     x.defs.append(f'<linearGradient id="ink" x1="0" y1="0" x2="{W}" y2="0" gradientUnits="userSpaceOnUse" spreadMethod="reflect">'
-                  f'<stop offset="0" stop-color="{c["a1"]}"/><stop offset=".5" stop-color="{c["a2"]}"/><stop offset="1" stop-color="{c["a3"]}"/>{sweep}</linearGradient>')
+                  f'<stop offset="0" stop-color="{c["a1"]}"/><stop offset=".5" stop-color="{c["a2"]}"/><stop offset="1" stop-color="{c["a3"]}"/></linearGradient>')
     ts = int(min(title_size(x.title, W, H, 150) * 1.15, H * 0.42))
-    text_block(x, size=ts, fill="url(#ink)")
+    if not x.animate:
+        text_block(x, size=ts, fill="url(#ink)")
+        return
+
+    def ink(title_el):
+        # CSS can't move a gradient, so the title becomes a clip path over a wide gradient-filled
+        # rect that slides right and back; the gradient moves with the rect.
+        x.defs.append(f'<clipPath id="inkclip">{title_el}</clipPath>')
+        return f'<g clip-path="url(#inkclip)"><rect class="ink" x="{-W}" y="0" width="{2 * W}" height="{H}" fill="url(#ink)"/></g>'
+    x.css.append(f"@keyframes ink{{50%{{transform:translateX({W}px)}}}}.ink{{animation:ink 12s linear infinite}}")
+    text_block(x, size=ts, title_wrap=ink)
 
 
 def grain(x, strength=0.14, freq=0.85):
@@ -573,49 +695,59 @@ def s_spotlight(x):
     x.css.append("@keyframes breathe{0%,100%{opacity:1}50%{opacity:.72}}.beam{animation:breathe 7s ease-in-out infinite}")
     # announcement pill (the tag) with a light sweeping across its border
     ts = title_size(x.title, W, H, 72)
-    ss = max(17, int(ts * .32))
+    ss, sub = fit_text(x.sub, W * 0.92, max(17, int(ts * .32)), 15, 0.56, max_lines=2)
     lsize = H * .40 if x.logo else 0
     top = (lsize + 14) if x.logo else (40 + 20 if x.tag else 0)
-    block = top + ts + (ss * 1.8 if x.sub else 0)
+    block = top + ts + (ss * 1.8 + (len(sub) - 1) * ss * 1.35 if x.sub else 0)
     y = H / 2 - block / 2 + 6
     if x.logo:
         logo_mark(x, W / 2, y + lsize / 2, lsize)
         y += lsize + 14
     elif x.tag:
-        label = x.tag
-        pw = len(label) * 9.6 + 66
+        label = clip(x.tag, (W * 0.92 - 66) / 9.6, 1, wide=16.5 / 9.6)
+        pw = text_em(label, 1, wide=16.5 / 9.6) * 9.6 + 66
         px = W / 2 - pw / 2
         surf = c.get("surface", c["bg1"])
-        x.defs.append(f'<linearGradient id="pillb" x1="0" x2="1"><stop offset="0" stop-color="{line}" stop-opacity=".14"/><stop offset=".5" stop-color="{c["a1"]}" stop-opacity=".9"/><stop offset="1" stop-color="{line}" stop-opacity=".14"/>'
-                      + (f'<animateTransform attributeName="gradientTransform" type="translate" values="-1 0;1 0" dur="4s" repeatCount="indefinite"/>' if x.animate else "")
-                      + "</linearGradient>")
-        x.body.append(f'<rect x="{px:.0f}" y="{y:.0f}" width="{pw:.0f}" height="40" rx="20" fill="{surf}" fill-opacity="{.85 if dark else .95}" stroke="url(#pillb)" stroke-width="1"/>'
+        pill = f'x="{px:.0f}" y="{y:.0f}" width="{pw:.0f}" height="40" rx="20"'
+        # border light: an accent highlight masked to the pill's outline slides from left to right
+        x.defs.append(f'<linearGradient id="pillb" x1="0" x2="1"><stop offset="0" stop-color="{c["a1"]}" stop-opacity="0"/><stop offset=".5" stop-color="{c["a1"]}" stop-opacity=".9"/><stop offset="1" stop-color="{c["a1"]}" stop-opacity="0"/></linearGradient>'
+                      f'<mask id="pillm" maskUnits="userSpaceOnUse" x="0" y="0" width="{W}" height="{H}"><rect {pill} fill="none" stroke="#fff" stroke-width="1"/></mask>')
+        x.css.append(f"@keyframes pillsw{{from{{transform:translateX({-pw:.0f}px)}}to{{transform:translateX({pw:.0f}px)}}}}.pillsw{{animation:pillsw 4s linear infinite}}")
+        x.body.append(f'<rect {pill} fill="{surf}" fill-opacity="{.85 if dark else .95}" stroke="{line}" stroke-opacity=".14" stroke-width="1"/>'
+                      f'<g mask="url(#pillm)"><rect class="pillsw" x="{px:.0f}" y="{y - 1:.0f}" width="{pw:.0f}" height="42" fill="url(#pillb)"/></g>'
                       f'<circle cx="{px + 21:.0f}" cy="{y + 20:.0f}" r="4.5" fill="{c["a1"]}"/>'
                       f'<text x="{px + 34:.0f}" y="{y + 26:.0f}" font-family="{SANS}" font-size="16.5" font-weight="600" fill="{c["fg"]}">{esc(label)}</text>'
                       f'<text x="{px + pw - 26:.0f}" y="{y + 26:.0f}" font-family="{SANS}" font-size="16.5" fill="{c["muted"]}">→</text>')
         y += 40 + 20
     x.defs.append(f'<linearGradient id="tgrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="{c["fg"]}"/><stop offset="1" stop-color="{c["fg"]}" stop-opacity="{.80 if dark else .82}"/></linearGradient>')
     y += ts * 0.86
-    x.body.append(f'<text x="{W / 2}" y="{y:.0f}" text-anchor="middle" font-family="{SANS}" font-size="{ts}" font-weight="700" letter-spacing="{-ts * .035:.1f}" fill="url(#tgrad)">{esc(x.title)}</text>')
+    x.body.append(f'<text x="{W / 2}" y="{y:.0f}" text-anchor="middle" font-family="{SANS}" font-size="{ts}" font-weight="700" letter-spacing="{-ts * .035:.1f}" fill="url(#tgrad)">{esc(clip(x.title, W * 0.94 / ts, 0.56))}</text>')
     if x.sub:
-        y += ss * 1.8
-        x.body.append(f'<text x="{W / 2}" y="{y:.0f}" text-anchor="middle" font-family="{SANS}" font-size="{ss}" fill="{c["muted"]}">{esc(x.sub)}</text>')
+        for i, sub_line in enumerate(sub):
+            y += ss * (1.8 if i == 0 else 1.35)
+            x.body.append(f'<text x="{W / 2}" y="{y:.0f}" text-anchor="middle" font-family="{SANS}" font-size="{ss}" fill="{c["muted"]}">{esc(sub_line)}</text>')
     x.body.append(f'<rect x="0" y="{H - 1}" width="{W}" height="1" fill="{line}" opacity="{.08 if dark else .10}"/>')
 
 
 def s_ribbon(x):
     """Silk ribbon: many strands following a twisting sine band; per-strand phase gives 3D depth.
-    SMIL morphs each strand between two phases so the ribbon flows."""
+    The strands run past the right edge and slide left and back (a CSS transform), which closely
+    follows the old morph between phase 0 and 0.55. Colour moves with the strands; the fade at
+    the ends is a fixed mask, so it stays put."""
     W, H, c = x.W, x.H, x.c
     bg_rect(x)
     n = 20
-    x.defs.append(f'<linearGradient id="silk" x1="0" x2="1"><stop offset="0" stop-color="{c["a3"]}" stop-opacity="0"/><stop offset=".25" stop-color="{c["a3"]}"/>'
-                  f'<stop offset=".6" stop-color="{c["a1"]}"/><stop offset="1" stop-color="{c["a2"]}" stop-opacity=".2"/></linearGradient>')
+    shift = (W + 80) * 0.325  # how far phase 0.55 moves the wave (0.306) and the twist (0.344), averaged
+    x.defs.append(f'<linearGradient id="silk" x1="-40" x2="{W + 40}" gradientUnits="userSpaceOnUse" spreadMethod="reflect"><stop offset="0" stop-color="{c["a3"]}"/><stop offset=".25" stop-color="{c["a3"]}"/>'
+                  f'<stop offset=".6" stop-color="{c["a1"]}"/><stop offset="1" stop-color="{c["a2"]}"/></linearGradient>'
+                  f'<linearGradient id="silkf" x1="-40" x2="{W + 40}" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset=".25" stop-color="#fff"/>'
+                  f'<stop offset=".6" stop-color="#fff"/><stop offset="1" stop-color="#fff" stop-opacity=".2"/></linearGradient>'
+                  f'<mask id="silkm" maskUnits="userSpaceOnUse" x="0" y="0" width="{W}" height="{H}"><rect width="{W}" height="{H}" fill="url(#silkf)"/></mask>')
 
     def strand(i, phase):
         t = i / (n - 1)
         pts = []
-        for k in range(0, 19):
+        for k in range(0, 26):  # u up to 1.39: the extra length slides into view
             u = k / 18
             X = -40 + (W + 80) * u
             twist = math.cos(math.pi * (u * 1.6 + phase))           # ribbon edge-on where cos≈0
@@ -629,14 +761,13 @@ def s_ribbon(x):
         d += f" T{pts[-1][0]:.0f},{pts[-1][1]:.0f}"
         return d
 
-    g = ['<g fill="none" stroke="url(#silk)" stroke-linecap="round">']
+    g = ['<g mask="url(#silkm)"><g class="flow" fill="none" stroke="url(#silk)" stroke-linecap="round">']
     for i in range(n):
-        d0, d1 = strand(i, 0.0), strand(i, 0.55)
         op = 0.25 + 0.75 * math.sin(math.pi * i / (n - 1))          # centre strands brightest
-        anim = f'<animate attributeName="d" values="{d0};{d1};{d0}" dur="14s" repeatCount="indefinite" calcMode="spline" keySplines=".45 0 .55 1;.45 0 .55 1"/>' if x.animate else ""
-        g.append(f'<path d="{d0}" stroke-width="{1.1 + op * .6:.2f}" stroke-opacity="{op:.2f}">{anim}</path>')
-    g.append("</g>")
+        g.append(f'<path d="{strand(i, 0.0)}" stroke-width="{1.1 + op * .6:.2f}" stroke-opacity="{op:.2f}"/>')
+    g.append("</g></g>")
     x.body.extend(g)
+    x.css.append(f"@keyframes flow{{50%{{transform:translateX({-shift:.0f}px)}}}}.flow{{animation:flow 14s cubic-bezier(.45,0,.55,1) infinite}}")
     scrim(x, rx=0.34, ry=0.30, strength=0.8 if x.theme == "dark" else 0.85)
     text_block(x, y_center=H * 0.42)
 
@@ -747,21 +878,25 @@ def serif_title(x, lx, max_w):
     title = x.title.upper()
     squeeze = 0.80
     per = 0.70 * squeeze + 0.06  # cap width after condensing, plus tracking
-    ts = int(max(20, min(H * 0.30, max_w / (max(len(title), 1) * per))))
-    ss = max(15, int(min(ts * 0.36, 24)))
+    wide = 1.0 * squeeze + 0.06
+    ts = int(max(20, min(H * 0.30, max_w / max(text_em(title, per, wide), per))))
+    title = clip(title, max_w / ts, per, wide)
+    ss, sub = fit_text(x.sub, max_w, max(15, int(min(ts * 0.36, 24))), 13, 0.56, max_lines=2)
     tg = 12
-    block = (tg * 2.2 if x.tag else 0) + ts * 0.82 + (ss * 2.0 if x.sub else 0)
+    tag = clip(x.tag.upper(), max_w / tg, 0.83, 1.2)
+    block = (tg * 2.2 if x.tag else 0) + ts * 0.82 + (ss * 2.0 + (len(sub) - 1) * ss * 1.35 if x.sub else 0)
     y = H / 2 - block / 2
     if x.tag:
         y += tg
-        x.body.append(f'<text x="{lx:.0f}" y="{y:.0f}" font-family="{SANS}" font-size="{tg}" font-weight="600" letter-spacing="2.4" fill="{c["a1"]}">{esc(x.tag.upper())}</text>')
+        x.body.append(f'<text x="{lx:.0f}" y="{y:.0f}" font-family="{SANS}" font-size="{tg}" font-weight="600" letter-spacing="2.4" fill="{c["a1"]}">{esc(tag)}</text>')
         x.body.append(f'<rect x="{lx:.0f}" y="{y + 9:.0f}" width="28" height="1.5" fill="{c["a1"]}"/>')
         y += tg * 1.2
     y += ts * 0.82
     x.body.append(f'<text transform="translate({lx:.1f} {y:.1f}) scale({squeeze} 1)" font-family="{SERIF}" font-size="{ts}" font-weight="400" letter-spacing="{ts * 0.06:.1f}" fill="{c["fg"]}">{esc(title)}</text>')
     if x.sub:
-        y += ss * 2.0
-        x.body.append(f'<text x="{lx:.0f}" y="{y:.0f}" font-family="{SANS}" font-size="{ss}" font-weight="500" fill="{c["muted"]}">{esc(x.sub)}</text>')
+        for i, line in enumerate(sub):
+            y += ss * (2.0 if i == 0 else 1.35)
+            x.body.append(f'<text x="{lx:.0f}" y="{y:.0f}" font-family="{SANS}" font-size="{ss}" font-weight="500" fill="{c["muted"]}">{esc(line)}</text>')
 
 
 def nebula(x, opacity=0.8):
@@ -832,8 +967,7 @@ def voronoi_cells(W, H, sites):
 
 
 def mix(h1, h2, t):
-    a = [int(h1.lstrip("#")[i:i + 2], 16) for i in (0, 2, 4)]
-    b = [int(h2.lstrip("#")[i:i + 2], 16) for i in (0, 2, 4)]
+    a, b = _rgb(h1), _rgb(h2)
     return "#" + "".join(f"{int(u + (v - u) * t):02X}" for u, v in zip(a, b))
 
 
@@ -906,7 +1040,7 @@ def button_svg(a, theme) -> str:
     label = a.title or "Get started"
     arrow = " →" if a.variant == "primary" else ""
     fs = 15
-    w = int(len(label + arrow) * fs * 0.58 + 44)
+    w = int(text_em(label + arrow, 1, wide=1 / 0.58) * fs * 0.58 + 44)
     h = 44
     dark = theme == "dark"
     if a.variant == "primary":
@@ -931,8 +1065,7 @@ def button_svg(a, theme) -> str:
 
 
 def _lum(hex_):
-    h = hex_.lstrip("#")
-    r, g, b = (int(h[i:i + 2], 16) / 255 for i in (0, 2, 4))
+    r, g, b = (v / 255 for v in _rgb(hex_))
     return 0.2126 * r + 0.7152 * g + 0.0722 * b
 
 
@@ -954,9 +1087,11 @@ def footer(x):
     x.defs.append(f'<linearGradient id="rule" x1="0" x2="1"><stop offset="0" stop-color="{c["a1"]}" stop-opacity="0"/><stop offset=".5" stop-color="{c["a1"]}"/><stop offset="1" stop-color="{c["a2"]}" stop-opacity="0"/></linearGradient>')
     line_sweep(x, W * .1, H * .32, W * .8, 2, "url(#rule)", "fl")
     if x.title:
-        x.body.append(f'<text x="{W / 2}" y="{H * .62:.0f}" text-anchor="middle" font-family="{SANS}" font-size="{title_size(x.title, W, H, 24)}" font-weight="700" fill="{c["fg"]}">{esc(x.title)}</text>')
+        ts = title_size(x.title, W, H, 24)
+        x.body.append(f'<text x="{W / 2}" y="{H * .62:.0f}" text-anchor="middle" font-family="{SANS}" font-size="{ts}" font-weight="700" fill="{c["fg"]}">{esc(clip(x.title, W * 0.94 / ts, 0.56))}</text>')
     if x.sub:
-        x.body.append(f'<text x="{W / 2}" y="{H * .82:.0f}" text-anchor="middle" font-family="{SANS}" font-size="14" fill="{c["muted"]}">{esc(x.sub)}</text>')
+        ss, (sub,) = fit_text(x.sub, W * 0.92, 14, 11, 0.56)
+        x.body.append(f'<text x="{W / 2}" y="{H * .82:.0f}" text-anchor="middle" font-family="{SANS}" font-size="{ss}" fill="{c["muted"]}">{esc(sub)}</text>')
 
 
 def vortex_footer(x):
@@ -969,15 +1104,16 @@ def vortex_footer(x):
     x.css.append(spin_css("fcont", cx, cy, 120, reverse=True))
     x.defs.append(f'<linearGradient id="fscr" x1="0" x2="1"><stop offset="0" stop-color="{c["bg0"]}" stop-opacity="0"/><stop offset=".5" stop-color="{c["bg0"]}" stop-opacity=".85"/><stop offset="1" stop-color="{c["bg0"]}" stop-opacity="0"/></linearGradient>')
     x.body.append(f'<rect x="{W * .2:.0f}" width="{W * .6:.0f}" height="{H}" fill="url(#fscr)"/>')
-    vx = W / 2 - min(W * .34, len(x.title) * 10.5 + 70)
+    vx = W / 2 - min(W * .34, text_em(x.title, 1, wide=2.5) * 10.5 + 70)
     x.body.append(f'<g class="fspin" fill="{c["a1"]}">' + "".join(
         f'<path d="{blade(vx, cy, R * .15, R, k * math.pi / 2, 2.0, R * .22)}"/>' for k in range(4)) + "</g>")
     x.css.append(spin_css("fspin", vx, cy, 10))
     if x.title:
         ts = title_size(x.title, W * .55, H, 26)
-        x.body.append(f'<text x="{W / 2}" y="{H * (.52 if x.sub else .58):.0f}" text-anchor="middle" font-family="{SERIF}" font-size="{ts}" letter-spacing="{ts * .08:.1f}" fill="{c["fg"]}">{esc(x.title.upper())}</text>')
+        x.body.append(f'<text x="{W / 2}" y="{H * (.52 if x.sub else .58):.0f}" text-anchor="middle" font-family="{SERIF}" font-size="{ts}" letter-spacing="{ts * .08:.1f}" fill="{c["fg"]}">{esc(clip(x.title.upper(), W * 0.6 / ts, 0.78, 1.08))}</text>')
     if x.sub:
-        x.body.append(f'<text x="{W / 2}" y="{H * .76:.0f}" text-anchor="middle" font-family="{SANS}" font-size="13" fill="{c["muted"]}">{esc(x.sub)}</text>')
+        ss, (sub,) = fit_text(x.sub, W * 0.6, 13, 11, 0.56)
+        x.body.append(f'<text x="{W / 2}" y="{H * .76:.0f}" text-anchor="middle" font-family="{SANS}" font-size="{ss}" fill="{c["muted"]}">{esc(sub)}</text>')
 
 
 def divider(x):
@@ -1075,6 +1211,11 @@ def main(argv=None):
     p.add_argument("--list", action="store_true")
     p.add_argument("--gallery", metavar="DIR")
     a = p.parse_args(argv)
+    if a.accent is not None:
+        accent = parse_hex(a.accent)
+        if accent is None:
+            p.error(f"--accent must be a hex colour such as #FF8A3D or #F80, not {a.accent!r}")
+        a.accent = accent
 
     if a.list:
         print("Styles:")

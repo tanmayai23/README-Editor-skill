@@ -19,12 +19,14 @@ Rubric details live in references/quality-rubric.md.
 """
 from __future__ import annotations
 
+import codecs
 import html
 import json
 import os
 import re
 import sys
 from pathlib import Path
+from urllib.parse import unquote
 
 FILLER = [
     "blazing fast", "blazingly fast", "lightning fast", "simply", "just run", "easy to use", "easy-to-use",
@@ -92,6 +94,37 @@ class Report:
         got = sum(c["score"] for c in self.cats.values())
         mx = sum(c["max"] for c in self.cats.values()) or 1
         return round(100 * got / mx)
+
+
+# ----------------------------------------------------------------------------- reading
+# Same rules as analyze_repo.decode_bytes. Copied, not imported: this script must run on its own
+# (the GitHub Action ships it without analyze_repo.py). tests/test_encoding.py keeps the two in step.
+BOMS = (  # UTF-32 first: its little-endian BOM starts with the UTF-16 one
+    (codecs.BOM_UTF32_LE, "utf-32-le"), (codecs.BOM_UTF32_BE, "utf-32-be"),
+    (codecs.BOM_UTF8, "utf-8"), (codecs.BOM_UTF16_LE, "utf-16-le"), (codecs.BOM_UTF16_BE, "utf-16-be"),
+)
+
+
+def decode_bytes(data: bytes, final: bool = True) -> str:
+    """Honour a BOM (UTF-8, UTF-16, UTF-32), else strict UTF-8, else latin-1. The BOM is dropped."""
+    for bom, enc in BOMS:
+        if data.startswith(bom):
+            return codecs.getincrementaldecoder(enc)(errors="replace").decode(data[len(bom):], final=final)
+    try:
+        return codecs.getincrementaldecoder("utf-8")().decode(data, final=final)
+    except UnicodeDecodeError:
+        return data.decode("latin-1")
+
+
+def read_text(path: Path, limit: int = 0) -> str:
+    """Whole file (or the first `limit` bytes) as text, whatever its encoding. Newlines become \\n."""
+    with open(path, "rb") as fh:
+        data = fh.read(limit + 1) if limit else fh.read()
+    if limit:
+        text = decode_bytes(data[:limit], final=len(data) <= limit)
+    else:
+        text = decode_bytes(data)
+    return text.replace("\r\n", "\n").replace("\r", "\n")
 
 
 # ----------------------------------------------------------------------------- parsing
@@ -180,8 +213,9 @@ def images(text: str):
 
 
 def links(text: str):
+    """Markdown and <a> links outside code: a link inside a fenced example or `inline code` is not one."""
     out = []
-    for i, line in enumerate(text.splitlines(), 1):
+    for i, line in enumerate(strip_code(text).splitlines(), 1):
         for m in re.finditer(r"(?<!!)\[([^\]]+)\]\(([^)\s]+)(?:\s+\"[^\"]*\")?\)", line):
             out.append({"text": m.group(1), "href": m.group(2), "line": i})
         for m in re.finditer(r"<a\b[^>]*href=[\"']([^\"']+)[\"'][^>]*>(.*?)</a>", line, re.I):
@@ -203,10 +237,51 @@ def code_blocks(text: str):
     return blocks
 
 
+def repo_root(start: Path) -> Path:
+    """Nearest directory at or above `start` holding .git (a dir, or a file in worktrees); else `start`."""
+    start = start.resolve()
+    for d in [start] + list(start.parents):
+        if (d / ".git").exists():
+            return d
+    return start
+
+
+def local_target(href: str, readme_path: Path) -> Path:
+    """File a relative link points at, as GitHub resolves it: %-escapes decoded, query and fragment
+    dropped, and a leading / taken from the repository root rather than the filesystem root."""
+    p = unquote(href.split("#")[0].split("?")[0])
+    if p.startswith("/"):
+        return repo_root(readme_path.parent) / p.lstrip("/")
+    return readme_path.parent / p
+
+
 def slug(title: str) -> str:
-    s = re.sub(r"<[^>]+>", "", title).strip().lower()
+    """GitHub's anchor for a heading, from its raw Markdown: slug the visible text only."""
+    s = re.sub(r"!\[[^\]]*\]\([^)]*\)", "", title)       # images render no text
+    s = re.sub(r"\[([^\]]*)\]\([^)]*\)", r"\1", s)        # [text](url) -> text
+    s = re.sub(r"\[([^\]]*)\]\[[^\]]*\]", r"\1", s)       # [text][ref] -> text
+    s = re.sub(r"<[^>]+>", "", s).replace("`", "").strip().lower()
     s = re.sub(r"[^\w\- ]", "", s, flags=re.U)
     return s.replace(" ", "-")
+
+
+def heading_anchors(text: str, hs) -> list:
+    """Anchors GitHub gives the headings, in order: slugs of the raw heading text (inline code
+    intact), with -1, -2 ... appended to repeats the way github-slugger does."""
+    lines = text.splitlines()
+    seen: dict = {}
+    out = []
+    for _, title, ln in hs:
+        raw = lines[ln - 1] if 0 < ln <= len(lines) else ""
+        m = re.match(r"^(#{1,6})\s+(.+?)\s*#*\s*$", raw) or re.match(r"^\s*<h([1-6])[^>]*>(.*?)</h\1>", raw, re.I)
+        base = slug(m.group(2) if m else title)
+        s = base
+        while s in seen:
+            seen[base] += 1
+            s = f"{base}-{seen[base]}"
+        seen[s] = 0
+        out.append(s)
+    return out
 
 
 # ----------------------------------------------------------------------------- shared checks
@@ -247,7 +322,7 @@ def common_lints(r: Report, text, nocode, hs, imgs, lks, blocks, readme_path: Pa
         if lk["text"].strip().lower() in ("here", "click here", "this", "link", "this link", "read more"):
             r.add("WARN", "accessibility", f"non-descriptive link text '{lk['text']}' → {lk['href'][:60]}", lk["line"])
     # anchors
-    anchors = {slug(t) for _, t, _ in hs}
+    anchors = set(heading_anchors(text, hs))
     anchors |= {a.lower() for a in re.findall(r"<[a-z0-9]+\b[^>]*\b(?:id|name)=[\"']([^\"']+)", text, re.I)}
     anchors |= {"readme", "top"}
     for lk in lks:
@@ -256,15 +331,13 @@ def common_lints(r: Report, text, nocode, hs, imgs, lks, blocks, readme_path: Pa
             if a not in anchors and not any(a == x.strip("-") for x in anchors):
                 r.add("WARN", "links", f"in-page anchor '{lk['href']}' matches no heading", lk["line"])
     # relative links / images exist
-    base = readme_path.parent
     for item in [{"href": i["src"], "line": i["line"]} for i in imgs] + lks:
         h = item["href"]
         if not h or re.match(r"^(https?:|mailto:|#|data:|//|tel:)", h) or "{{" in h:
             continue
         if GITHUB_ROUTE.search(h):
             continue  # repo-relative GitHub routes (../../actions, ../../issues) resolve on github.com
-        target = (base / h.split("#")[0].split("?")[0]).resolve()
-        if not target.exists():
+        if not local_target(h, readme_path).exists():
             r.add("ERROR", "links", f"relative link/image target not found: {h}", item["line"])
     # mermaid: common syntax breakers that render as "Syntax error" on GitHub
     for b in blocks:
@@ -386,18 +459,17 @@ def drift_checks(r: Report, text: str, repo: Path):
 
 def design_lints(r: Report, text: str, imgs, readme_path: Path):
     """Visual-design checks: local SVG safety/size, dark variants, badge style consistency."""
-    base = readme_path.parent
     seen = set()
     for im in imgs:
         src = im["src"].split("#")[0].split("?")[0]
         if not src or re.match(r"^(https?:|data:|//)", src) or not src.lower().endswith(".svg") or src in seen:
             continue
         seen.add(src)
-        f = (base / src)
+        f = local_target(src, readme_path)
         if not f.is_file():
             continue
         size = f.stat().st_size
-        body = f.read_text(encoding="utf-8", errors="ignore")[:2_000_000]
+        body = read_text(f, 2_000_000)
         if "<script" in body.lower():
             r.add("ERROR", "design", f"{src} contains <script>: it never runs inside an <img> and looks unsafe", im["line"])
         if re.search(r"@import|<link\b|url\(\s*['\"]?https?:|href=['\"]https?:[^'\"]+\.(?:png|jpe?g|gif|webp|svg|woff2?|ttf)", body, re.I):
@@ -813,7 +885,7 @@ def main(argv):
     if not path.is_file():
         print(f"error: {path} not found", file=sys.stderr)
         return 2
-    text = path.read_text(encoding="utf-8", errors="ignore").replace("\r\n", "\n")
+    text = read_text(path)
     repo = None
     if "--repo" in args:
         repo = Path(args[args.index("--repo") + 1])

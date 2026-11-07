@@ -4,24 +4,32 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
-## [1.4.0] - 2026-11-03
+## [1.4.0] - 2026-11-07
 
 This release teaches the skill your style: it learns from what you keep, edit and delete, on your machine.
 
 ### Added
 
 - `scripts/learn.py`: the skill learns each user's style. Every choice it makes (sections, length, heading emoji, banner style, palette, profile archetype, page theme) is an arm of a contextual bandit, with the mode, project kind and language as context. Rewards come from the user's edits: `snapshot` records what was generated, and `observe` scores what survived (a deleted section, a regenerated banner or a README cut by more than a quarter counts as a rejection). `suggest` ranks options by posterior mean and picks the best one, using Thompson sampling only to choose among options tied for best, and keeps the skill's default until there is evidence. Older feedback decays, so tastes can change. Stated preferences (`prefer "never use emoji in headings"`) are kept as rules. Data stays in `~/.readme-forge` (no README text, no network); `show`, `off`, `on` and `reset` control it. A missing or moved README, a corrupted data file or snapshot, and a bad `--repo` path never teach it anything wrong. Both SKILL.md files run the loop, and 28 unit tests cover it.
-- Brand icons in `.github/assets/brand/`: the ghost-and-chip mark on a white rounded tile at 1024, 512, 400 and 240 px, plus a multi-size `favicon.ico`. The README hero card shows the mark.
+- Brand icons in `.github/assets/brand/`: a README page with a check mark on a violet-to-cyan tile, as a vector `icon.svg`, PNGs at 1024, 512, 400 and 240 px, and a multi-size `favicon.ico`. It stays readable down to 16 px. The README hero card shows the mark.
 - A form for the **Show and tell** discussion category, for sharing READMEs made with the skill.
 - `gallery/gallery.json` and the [gallery website](https://readme-forge-gallery.vercel.app/): every banner style, full README design, profile style, button and footer, and the before/after demo, with the command that makes each one. Anyone can add their README by pull request ([`gallery/README.md`](gallery/README.md)); `tests/test_gallery.py` checks every entry.
 
 ### Changed
 
-- Releases are cut from tags like `v1.4.0` only. A moving `v1` tag now follows the latest 1.x release, so `uses: tanmayai23/README-Editor-skill@v1` in the README and the Action docs resolves; until now no `v1` tag existed.
+- Releases are cut from tags like `v1.4.0` only. A moving `v1` tag now follows the latest 1.x release, so `uses: tanmayai23/README-Editor-skill@v1` in the README and the Action docs resolves; until now no `v1` tag existed. The release job moves it after publishing.
+- `check_links.py` has a new status, `UNVERIFIED`, for hosts that block bots (npm, LinkedIn and others) and GitHub pages that need a login, such as `/stargazers`. It is reported but doesn't fail the run. Exit code 1 still means `BROKEN` or `WIDGET-ERROR`.
 
 ### Fixed
 
 - The readme-forge-design skill description was 1051 characters, over the 1024 that claude.ai accepts, so uploading `readme-forge-design.zip` failed. It is now 1009, and `tests/test_skills.py` checks the name and description limits of both skills.
+- Files with a UTF-8 BOM or in UTF-16, common on Windows, are read correctly by `analyze_repo.py` and `score_readme.py`. Before, a `package.json` or `pyproject.toml` with a BOM lost every fact, and a README with a BOM scored 8/100 with "no title" ([#24](https://github.com/tanmayai23/README-Editor-skill/issues/24)).
+- `analyze_repo.py` skips files that `.gitignore` excludes, so generated or vendored code no longer decides the primary language or adds env vars ([#26](https://github.com/tanmayai23/README-Editor-skill/issues/26)).
+- `score_readme.py` builds heading anchors the way GitHub does: backticks and link syntax are removed, and duplicate headings get `-1`, `-2` ([#27](https://github.com/tanmayai23/README-Editor-skill/issues/27)). It also stops reporting working relative links as missing: URL-encoded paths, paths from the repo root (`/docs/...`) and example links inside code blocks ([#28](https://github.com/tanmayai23/README-Editor-skill/issues/28)).
+- `check_links.py` checks reference-style links (`[id]: url`), including badges, reads URLs with parentheses in full, and skips code ([#29](https://github.com/tanmayai23/README-Editor-skill/issues/29)). It follows 307 and 308 redirects on every Python version ([#30](https://github.com/tanmayai23/README-Editor-skill/issues/30)).
+- Animated banners now stop when the OS asks for reduced motion. The orbit, terminal, bold, spotlight and ribbon styles used SMIL, which CSS can't pause; they now use CSS animations ([#32](https://github.com/tanmayai23/README-Editor-skill/issues/32)).
+- `make_banner.py` accepts `--accent` as `#RGB` or `#RRGGBB` and rejects anything else with a clear message instead of crashing. Chinese, Japanese and Korean titles and long subtitles shrink, wrap or end with an ellipsis to stay inside the banner ([#33](https://github.com/tanmayai23/README-Editor-skill/issues/33)).
+- `analyze_repo.py` no longer crashes on a symlink to missing model weights, and it reads env vars in files such as `latest.py` whose names contain "test" ([#34](https://github.com/tanmayai23/README-Editor-skill/issues/34)).
 
 ## [1.3.0] - 2026-10-24
 

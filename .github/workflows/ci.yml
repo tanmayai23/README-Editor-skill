@@ -171,3 +171,11 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: gh release create "$GITHUB_REF_NAME" readme-forge.zip readme-forge-design.zip demo/readme-forge-demo.gif --title "readme-forge $GITHUB_REF_NAME" --notes-file notes.md
+      # `uses: tanmayai23/README-Editor-skill@v1` resolves through this tag, so it follows the latest 1.x release.
+      - name: Move the major version tag
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          major="${GITHUB_REF_NAME%%.*}"
+          git tag -f "$major" "$GITHUB_SHA"
+          git push -f "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" "refs/tags/$major"
