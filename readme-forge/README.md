@@ -75,7 +75,7 @@ python scripts/check_links.py README.md                        # network: verify
 python scripts/learn.py show                                   # what it has learned from your edits
 ```
 
-`verify_readme.py --min-accuracy 100` and `score_readme.py --min 85` exit 1 below the threshold, so either can gate CI. The [GitHub Action](../action/README.md) runs both on pull requests and comments the result.
+`verify_readme.py --min-accuracy 100` and `score_readme.py --min 85` exit 1 below the threshold, so either can gate CI. `check_links.py` exits 1 only for `BROKEN` links and widget error cards; `UNVERIFIED` (sites that block automated checks, such as npm and LinkedIn) and `RATE-LIMITED` are listed without failing. The [GitHub Action](../action/README.md) runs both on pull requests and comments the result.
 
 ## What's inside
 

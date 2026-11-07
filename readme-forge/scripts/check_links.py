@@ -8,9 +8,21 @@ Stdlib only. Needs network access — run only when the user allows it.
 Usage:
     python check_links.py README.md [--timeout 10] [--json] [--images-only]
 
-Reports: OK (2xx/3xx), BROKEN (4xx/5xx/DNS), SLOW (> 5s — common for cold widget
-instances), RATE-LIMITED (429 or a widget error SVG), and SVG widgets that return
-an error card instead of a chart.
+Redirects (301/302/303/307/308) are followed on every Python version.
+
+Statuses:
+    OK            2xx after redirects
+    SLOW          answered, but took more than 8 s (common for cold widget instances)
+    RATE-LIMITED  429
+    UNVERIFIED    the host blocks automated checks, so the link could not be tested:
+                  401/403/429/999 from bot-blocking hosts (npmjs.com, linkedin.com,
+                  x.com, medium.com, ...) and GitHub pages shown only to signed-in
+                  users (/stargazers, /watchers, ...). Open these in a browser.
+    WIDGET-ERROR  an SVG widget that returned an error card instead of a chart
+    BROKEN        other 4xx/5xx, DNS, timeout or TLS errors
+
+Exits 1 only for BROKEN or WIDGET-ERROR; SLOW, RATE-LIMITED and UNVERIFIED are
+listed but don't fail CI.
 """
 from __future__ import annotations
 
@@ -21,6 +33,7 @@ import ssl
 import sys
 import time
 import urllib.error
+import urllib.parse
 import urllib.request
 from pathlib import Path
 
@@ -142,13 +155,63 @@ def extract(text: str, images_only: bool):
     return out
 
 
-def check(kind, url, timeout):
-    ctx = ssl.create_default_context()
+# Hosts that answer automated clients with 401/403/429/999 even when the page exists
+# (Cloudflare bot checks, LinkedIn's 999). Subdomains match too.
+BOT_BLOCKING_HOSTS = (
+    "npmjs.com", "linkedin.com", "lnkd.in", "twitter.com", "x.com", "medium.com",
+    "facebook.com", "instagram.com", "reddit.com", "quora.com", "stackoverflow.com",
+    "stackexchange.com", "producthunt.com", "researchgate.net", "udemy.com", "fiverr.com",
+    "upwork.com", "glassdoor.com", "indeed.com", "tiktok.com", "threads.net", "discord.com",
+)
+BOT_BLOCK_CODES = (401, 403, 429, 999)
+# GitHub serves these repository pages only to signed-in users; anonymous requests get 404.
+GITHUB_LOGIN_ONLY = re.compile(
+    r"^/[^/]+/[^/]+/(stargazers|watchers|graphs/traffic|settings|network/members|community/license/new)(/|$)")
+GITHUB_HOSTS = ("github.com", "www.github.com")
+
+
+def unverifiable(url: str, code) -> str:
+    """Say why an HTTP error from this URL proves nothing about the link, or return "" if it does."""
+    parts = urllib.parse.urlsplit(url)
+    host = (parts.hostname or "").lower()
+    if code in BOT_BLOCK_CODES and any(host == h or host.endswith("." + h) for h in BOT_BLOCKING_HOSTS):
+        return "this site blocks automated checks; open it in a browser to confirm"
+    if host in GITHUB_HOSTS and code in (401, 403, 404, 429) and GITHUB_LOGIN_ONLY.match(parts.path):
+        return "GitHub shows this page only to signed-in users; open it in a browser to confirm"
+    return ""
+
+
+class RedirectHandler(urllib.request.HTTPRedirectHandler):
+    """Follow 307/308 redirects for HEAD and GET and keep the method.
+
+    urllib only follows 308 from Python 3.11, so on 3.8-3.10 a permanent redirect
+    to a working page was reported as BROKEN 308. Older versions also turned a
+    redirected HEAD into a GET.
+    """
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        method = req.get_method()
+        if code in (301, 302, 303, 307, 308) and method in ("GET", "HEAD"):
+            newheaders = {k: v for k, v in req.headers.items() if k.lower() not in ("content-length", "content-type")}
+            return urllib.request.Request(newurl.replace(" ", "%20"), headers=newheaders, method=method,
+                                          origin_req_host=req.origin_req_host, unverifiable=True)
+        return super().redirect_request(req, fp, code, msg, headers, newurl)
+
+    http_error_308 = urllib.request.HTTPRedirectHandler.http_error_302
+
+
+def build_opener(ctx=None):
+    return urllib.request.build_opener(urllib.request.HTTPSHandler(context=ctx or ssl.create_default_context()),
+                                       RedirectHandler())
+
+
+def check(kind, url, timeout, opener=None):
+    opener = opener or build_opener()
     t0 = time.time()
     for method in ("HEAD", "GET"):
         req = urllib.request.Request(url, method=method, headers={"User-Agent": UA, "Accept": "*/*"})
         try:
-            with urllib.request.urlopen(req, timeout=timeout, context=ctx) as resp:
+            with opener.open(req, timeout=timeout) as resp:
                 status = resp.status
                 ctype = resp.headers.get("Content-Type", "")
                 body = resp.read(20000) if method == "GET" and "svg" in ctype else b""
@@ -159,8 +222,12 @@ def check(kind, url, timeout):
                     continue  # re-fetch body to detect error cards
                 return {"url": url, "kind": kind, "status": status, "result": "SLOW" if dt > 8 else "OK", "seconds": round(dt, 2)}
         except urllib.error.HTTPError as e:
-            if method == "HEAD" and e.code in (403, 405, 400, 404, 501):
+            if method == "HEAD" and e.code in (400, 401, 403, 404, 405, 501, 999):
                 continue
+            note = unverifiable(url, e.code)
+            if note:
+                return {"url": url, "kind": kind, "status": e.code, "result": "UNVERIFIED", "note": note,
+                        "seconds": round(time.time() - t0, 2)}
             res = "RATE-LIMITED" if e.code == 429 else "BROKEN"
             return {"url": url, "kind": kind, "status": e.code, "result": res, "seconds": round(time.time() - t0, 2)}
         except Exception as e:  # DNS, timeout, SSL
@@ -179,15 +246,16 @@ def main(argv):
     text = Path(argv[1]).read_text(encoding="utf-8", errors="ignore")
     timeout = float(argv[argv.index("--timeout") + 1]) if "--timeout" in argv else 10.0
     urls = extract(text, "--images-only" in argv)
+    opener = build_opener()
     with cf.ThreadPoolExecutor(max_workers=8) as ex:
-        results = list(ex.map(lambda ku: check(ku[0], ku[1], timeout), urls))
+        results = list(ex.map(lambda ku: check(ku[0], ku[1], timeout, opener), urls))
     bad = [r for r in results if r["result"] != "OK"]
     if "--json" in argv:
         print(json.dumps({"checked": len(results), "problems": bad, "all": results}, indent=2))
     else:
         print(f"Checked {len(results)} URL(s): {len(results) - len(bad)} OK, {len(bad)} need attention")
         for r in sorted(bad, key=lambda r: r["result"]):
-            print(f"  {r['result']:<13} {r.get('status') or '-':<4} {r['kind']:<5} {r['url']}" + (f"  ({r['error']})" if r.get("error") else ""))
+            print(f"  {r['result']:<13} {r.get('status') or '-':<4} {r['kind']:<5} {r['url']}" + (f"  ({r.get('error') or r.get('note')})" if r.get("error") or r.get("note") else ""))
     return 1 if any(r["result"] in ("BROKEN", "WIDGET-ERROR") for r in results) else 0
 
 
