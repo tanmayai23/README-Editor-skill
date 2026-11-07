@@ -26,6 +26,7 @@ import os
 import re
 import sys
 from pathlib import Path
+from urllib.parse import unquote
 
 FILLER = [
     "blazing fast", "blazingly fast", "lightning fast", "simply", "just run", "easy to use", "easy-to-use",
@@ -212,8 +213,9 @@ def images(text: str):
 
 
 def links(text: str):
+    """Markdown and <a> links outside code: a link inside a fenced example or `inline code` is not one."""
     out = []
-    for i, line in enumerate(text.splitlines(), 1):
+    for i, line in enumerate(strip_code(text).splitlines(), 1):
         for m in re.finditer(r"(?<!!)\[([^\]]+)\]\(([^)\s]+)(?:\s+\"[^\"]*\")?\)", line):
             out.append({"text": m.group(1), "href": m.group(2), "line": i})
         for m in re.finditer(r"<a\b[^>]*href=[\"']([^\"']+)[\"'][^>]*>(.*?)</a>", line, re.I):
@@ -233,6 +235,24 @@ def code_blocks(text: str):
         elif cur is not None:
             cur.append(line)
     return blocks
+
+
+def repo_root(start: Path) -> Path:
+    """Nearest directory at or above `start` holding .git (a dir, or a file in worktrees); else `start`."""
+    start = start.resolve()
+    for d in [start] + list(start.parents):
+        if (d / ".git").exists():
+            return d
+    return start
+
+
+def local_target(href: str, readme_path: Path) -> Path:
+    """File a relative link points at, as GitHub resolves it: %-escapes decoded, query and fragment
+    dropped, and a leading / taken from the repository root rather than the filesystem root."""
+    p = unquote(href.split("#")[0].split("?")[0])
+    if p.startswith("/"):
+        return repo_root(readme_path.parent) / p.lstrip("/")
+    return readme_path.parent / p
 
 
 def slug(title: str) -> str:
@@ -311,15 +331,13 @@ def common_lints(r: Report, text, nocode, hs, imgs, lks, blocks, readme_path: Pa
             if a not in anchors and not any(a == x.strip("-") for x in anchors):
                 r.add("WARN", "links", f"in-page anchor '{lk['href']}' matches no heading", lk["line"])
     # relative links / images exist
-    base = readme_path.parent
     for item in [{"href": i["src"], "line": i["line"]} for i in imgs] + lks:
         h = item["href"]
         if not h or re.match(r"^(https?:|mailto:|#|data:|//|tel:)", h) or "{{" in h:
             continue
         if GITHUB_ROUTE.search(h):
             continue  # repo-relative GitHub routes (../../actions, ../../issues) resolve on github.com
-        target = (base / h.split("#")[0].split("?")[0]).resolve()
-        if not target.exists():
+        if not local_target(h, readme_path).exists():
             r.add("ERROR", "links", f"relative link/image target not found: {h}", item["line"])
     # mermaid: common syntax breakers that render as "Syntax error" on GitHub
     for b in blocks:
@@ -441,14 +459,13 @@ def drift_checks(r: Report, text: str, repo: Path):
 
 def design_lints(r: Report, text: str, imgs, readme_path: Path):
     """Visual-design checks: local SVG safety/size, dark variants, badge style consistency."""
-    base = readme_path.parent
     seen = set()
     for im in imgs:
         src = im["src"].split("#")[0].split("?")[0]
         if not src or re.match(r"^(https?:|data:|//)", src) or not src.lower().endswith(".svg") or src in seen:
             continue
         seen.add(src)
-        f = (base / src)
+        f = local_target(src, readme_path)
         if not f.is_file():
             continue
         size = f.stat().st_size
