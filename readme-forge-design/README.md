@@ -232,7 +232,6 @@ readme-forge-design/
 
 ## Limitations
 
-- `orbit`, `terminal`, `bold`, `ribbon` and the spotlight pill animate with SMIL, which keeps playing when reduced motion is on ([#32](https://github.com/tanmayai23/README-Editor-skill/issues/32)). All other styles use CSS only.
 - Page kit text is measured with Segoe UI widths plus a 4% margin, and every card uses system fonts. On a system with much wider fonts, a title can run close to the card edge, so keep copy short (page-kit.md rule 3).
 - PyPI, npm and Hugging Face ignore `<picture>`. Ask readme-forge for a platform port, which switches to single images with absolute URLs.
 - Widget hosts change. Run `check_links.py` from the core skill before publishing a profile.
