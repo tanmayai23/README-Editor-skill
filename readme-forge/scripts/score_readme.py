@@ -236,9 +236,32 @@ def code_blocks(text: str):
 
 
 def slug(title: str) -> str:
-    s = re.sub(r"<[^>]+>", "", title).strip().lower()
+    """GitHub's anchor for a heading, from its raw Markdown: slug the visible text only."""
+    s = re.sub(r"!\[[^\]]*\]\([^)]*\)", "", title)       # images render no text
+    s = re.sub(r"\[([^\]]*)\]\([^)]*\)", r"\1", s)        # [text](url) -> text
+    s = re.sub(r"\[([^\]]*)\]\[[^\]]*\]", r"\1", s)       # [text][ref] -> text
+    s = re.sub(r"<[^>]+>", "", s).replace("`", "").strip().lower()
     s = re.sub(r"[^\w\- ]", "", s, flags=re.U)
     return s.replace(" ", "-")
+
+
+def heading_anchors(text: str, hs) -> list:
+    """Anchors GitHub gives the headings, in order: slugs of the raw heading text (inline code
+    intact), with -1, -2 ... appended to repeats the way github-slugger does."""
+    lines = text.splitlines()
+    seen: dict = {}
+    out = []
+    for _, title, ln in hs:
+        raw = lines[ln - 1] if 0 < ln <= len(lines) else ""
+        m = re.match(r"^(#{1,6})\s+(.+?)\s*#*\s*$", raw) or re.match(r"^\s*<h([1-6])[^>]*>(.*?)</h\1>", raw, re.I)
+        base = slug(m.group(2) if m else title)
+        s = base
+        while s in seen:
+            seen[base] += 1
+            s = f"{base}-{seen[base]}"
+        seen[s] = 0
+        out.append(s)
+    return out
 
 
 # ----------------------------------------------------------------------------- shared checks
@@ -279,7 +302,7 @@ def common_lints(r: Report, text, nocode, hs, imgs, lks, blocks, readme_path: Pa
         if lk["text"].strip().lower() in ("here", "click here", "this", "link", "this link", "read more"):
             r.add("WARN", "accessibility", f"non-descriptive link text '{lk['text']}' → {lk['href'][:60]}", lk["line"])
     # anchors
-    anchors = {slug(t) for _, t, _ in hs}
+    anchors = set(heading_anchors(text, hs))
     anchors |= {a.lower() for a in re.findall(r"<[a-z0-9]+\b[^>]*\b(?:id|name)=[\"']([^\"']+)", text, re.I)}
     anchors |= {"readme", "top"}
     for lk in lks:
