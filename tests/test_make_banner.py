@@ -143,5 +143,77 @@ class TextFitTests(unittest.TestCase):
                 self.assertLessEqual(right, w)
 
 
+SMIL = re.compile(r"<(animate|animateMotion|animateTransform|animateColor|set)\b")
+REDUCE = "@media (prefers-reduced-motion: reduce){*{animation:none!important}}"
+
+
+def every_output(tmp):
+    """(label, svg) for every kind and style, both themes, with a tag (spotlight's pill) and a logo."""
+    logo = ROOT / ".github" / "assets" / "logo-320.png"
+    jobs = [("header", s, ["--tag", "New"]) for s in make_banner.STYLES]
+    jobs += [("header", s, ["--logo", logo]) for s in make_banner.STYLES]
+    jobs += [("footer", s, []) for s in make_banner.STYLES]
+    jobs += [("divider", s, []) for s in make_banner.STYLES]
+    jobs += [("button", "aurora", ["--variant", v]) for v in ("primary", "secondary")]
+    for i, (kind, style, extra) in enumerate(jobs):
+        name = f"b{i}"
+        run("--kind", kind, "--style", style, "--title", "readme-forge", "--subtitle", "Banners", *extra,
+            "--out", tmp, "--name", name)
+        for theme in ("dark", "light"):
+            yield f"{kind}/{style}/{theme}{extra[:1]}", (Path(tmp) / f"{name}-{theme}.svg").read_text(encoding="utf-8")
+
+
+class MotionTests(unittest.TestCase):
+    def test_no_smil_in_any_style(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            outputs = list(every_output(tmp))
+        self.assertGreater(len(outputs), 150)
+        for label, svg in outputs:
+            with self.subTest(label):
+                self.assertIsNone(SMIL.search(svg))
+                ET.fromstring(svg)  # well-formed
+
+    def test_every_animation_is_stopped_by_reduced_motion(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            for label, svg in every_output(tmp):
+                if "animation:" in svg:
+                    with self.subTest(label):
+                        self.assertIn(REDUCE, svg)
+
+    def test_static_banners_have_no_animation(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            for style in make_banner.STYLES:
+                run("--style", style, "--title", "x", "--tag", "New", "--static", "--theme", "dark", "--out", tmp)
+                svg = (Path(tmp) / "header-dark.svg").read_text(encoding="utf-8")
+                with self.subTest(style):
+                    self.assertNotIn("@keyframes", svg)
+                    self.assertIsNone(SMIL.search(svg))
+
+    def test_terminal_title_is_never_erased_without_animation(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            run("--style", "terminal", "--title", "my-cli", "--theme", "dark", "--out", tmp)
+            svg = (Path(tmp) / "header-dark.svg").read_text(encoding="utf-8")
+            self.assertNotIn("clip-path", svg)
+            # the cover that "erases" the title rests at zero width; only the CSS animation widens it
+            cover = re.search(r'<rect class="erase"[^>]*>', svg).group(0)
+            self.assertIn('transform="scale(0 1)"', cover)
+            self.assertIn(REDUCE, svg)
+            run("--style", "terminal", "--title", "my-cli", "--theme", "dark", "--static", "--out", tmp)
+            self.assertNotIn('class="erase"', (Path(tmp) / "header-dark.svg").read_text(encoding="utf-8"))
+
+    def test_committed_gallery_is_current_and_smil_free(self):
+        committed = DESIGN / "assets" / "banners"
+        with tempfile.TemporaryDirectory() as tmp:
+            run("--gallery", tmp)
+            fresh = sorted(p.name for p in Path(tmp).iterdir())
+            for name in fresh:
+                with self.subTest(name):
+                    self.assertTrue((committed / name).exists())
+                    text = (committed / name).read_text(encoding="utf-8")
+                    self.assertEqual(text, (Path(tmp) / name).read_text(encoding="utf-8"),
+                                     "regenerate with: python readme-forge-design/scripts/make_banner.py --gallery readme-forge-design/assets/banners")
+                    self.assertIsNone(SMIL.search(text))
+
+
 if __name__ == "__main__":
     unittest.main()

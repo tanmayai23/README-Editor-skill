@@ -3,9 +3,8 @@
 
 Stdlib only. No external services: the SVGs are committed to the repo, so they never
 rate-limit or go down. Every file ships a dark and a light variant and uses system
-font stacks (external fonts are blocked inside <img>). prefers-reduced-motion stops
-every CSS animation; orbit, terminal, bold, ribbon and the spotlight pill still use
-SMIL, which browsers keep playing (issue #32).
+font stacks (external fonts are blocked inside <img>). Every style animates with CSS
+@keyframes only (no SMIL), so prefers-reduced-motion stops all motion.
 
 Usage:
   python make_banner.py --style aurora --title "orbit-api" --subtitle "Subscription billing for SaaS" --out assets/
@@ -447,10 +446,18 @@ def s_orbit(x):
         x.defs.append(f'<path id="o{i}" d="{path}"/>')
         back.append(f'<use href="#o{i}" fill="none" stroke="{c["fg"]}" stroke-opacity=".18" stroke-width="1.2" transform="rotate({rot} {cx} {cy})"/>')
         pr = 5 + i * 1.6
-        anim = (f'<animateMotion dur="{dur}s" repeatCount="indefinite" rotate="0"><mpath href="#o{i}"/></animateMotion>'
-                f'<animate attributeName="r" values="{pr * .7:.1f};{pr * 1.25:.1f};{pr * .7:.1f}" keyTimes="0;.5;1" dur="{dur}s" repeatCount="indefinite"/>') if x.animate else ""
-        start = "" if x.animate else f' cx="{cx - rx:.1f}" cy="{cy:.1f}"'
-        front.append(f'<g transform="rotate({rot} {cx} {cy})"><circle r="{pr:.1f}"{start} fill="{col}">{anim}</circle></g>')
+        px = cx - rx
+        # The planet travels the flattened orbit: squash the plane by k, spin the planet round the
+        # centre (anticlockwise, from the left end, like the path), then undo the spin and the squash
+        # on the planet itself so it stays round. CSS transforms only, so reduced motion stops it.
+        front.append(f'<g transform="rotate({rot} {cx} {cy})"><g transform="translate(0 {cy:.1f}) scale(1 {k}) translate(0 {-cy:.1f})">'
+                     f'<g class="orb{i}"><g class="orbc{i}"><g transform="translate({px:.1f} {cy:.1f}) scale(1 {1 / k:.4f}) translate({-px:.1f} {-cy:.1f})">'
+                     f'<circle class="planet{i}" cx="{px:.1f}" cy="{cy:.1f}" r="{pr:.1f}" fill="{col}"/></g></g></g></g></g>')
+        x.css.append(f"@keyframes orb{i}{{to{{transform:rotate(-360deg)}}}}@keyframes orbc{i}{{to{{transform:rotate(360deg)}}}}"
+                     f"@keyframes planet{i}{{0%,100%{{transform:scale(.7)}}50%{{transform:scale(1.25)}}}}"
+                     f".orb{i}{{transform-origin:{cx:.1f}px {cy:.1f}px;animation:orb{i} {dur}s linear infinite}}"
+                     f".orbc{i}{{transform-origin:{px:.1f}px {cy:.1f}px;animation:orbc{i} {dur}s linear infinite}}"
+                     f".planet{i}{{transform-box:fill-box;transform-origin:center;animation:planet{i} {dur}s linear infinite}}")
     x.body.extend(back)
     x.body.append(f'<circle cx="{cx:.0f}" cy="{cy:.0f}" r="{H * 0.09:.0f}" fill="url(#core)"/>')
     x.body.append(f'<circle class="pulse" cx="{cx:.0f}" cy="{cy:.0f}" r="{H * 0.09:.0f}" fill="none" stroke="{c["a1"]}" stroke-width="2"/>')
@@ -475,11 +482,15 @@ def s_terminal(x):
     tx = px + 30
     title = clip(x.title, (pw - 60 - ts * 0.5) / char_w - 2, 1, wide=ts / char_w)
     full = (text_em(title, 1, wide=ts / char_w) + 2) * char_w
-    # frame 0 shows the whole command; every 7 s it is erased and typed again
-    x.defs.append(f'<clipPath id="type"><rect x="{tx:.0f}" y="{ty - ts:.0f}" width="{full:.0f}" height="{ts * 1.4:.0f}">'
-                  + (f'<animate attributeName="width" values="{full:.0f};{full:.0f};0;{full:.0f};{full:.0f}" keyTimes="0;.55;.6;.85;1" dur="7s" repeatCount="indefinite"/>' if x.animate else "")
-                  + "</rect></clipPath>")
-    x.body.append(f'<g clip-path="url(#type)"><text x="{tx:.0f}" y="{ty:.0f}" font-family="{MONO}" font-size="{ts}" font-weight="700" fill="{c["fg"]}"><tspan fill="{c["a1"]}">$ </tspan>{esc(title)}</text></g>')
+    x.body.append(f'<text x="{tx:.0f}" y="{ty:.0f}" font-family="{MONO}" font-size="{ts}" font-weight="700" fill="{c["fg"]}"><tspan fill="{c["a1"]}">$ </tspan>{esc(title)}</text>')
+    if x.animate:
+        # Frame 0 shows the whole command; every 7 s a window-coloured cover sweeps in from the
+        # right (erasing it) and slides back off (typing it again). Its resting state is
+        # transform="scale(0 1)", so with reduced motion, or no CSS, the cover is gone and the
+        # title stays fully visible.
+        x.body.append(f'<rect class="erase" x="{tx:.0f}" y="{ty - ts:.0f}" width="{full:.0f}" height="{ts * 1.4:.0f}" fill="{win}" transform="scale(0 1)"/>')
+        x.css.append("@keyframes erase{0%,55%{transform:scaleX(0)}60%{transform:scaleX(1)}85%,100%{transform:scaleX(0)}}"
+                     ".erase{transform-box:fill-box;transform-origin:100% 50%;animation:erase 7s linear infinite}")
     x.body.append(f'<rect class="cursor" x="{tx + full + 4:.0f}" y="{ty - ts * 0.8:.0f}" width="{ts * 0.5:.0f}" height="{ts * 0.95:.0f}" fill="{c["a1"]}"/>')
     x.css.append("@keyframes blink{50%{opacity:0}}.cursor{animation:blink 1s steps(1) infinite}")
     if x.sub:
@@ -609,12 +620,20 @@ def s_minimal(x):
 def s_bold(x):
     W, H, c = x.W, x.H, x.c
     x.body.append(f'<rect width="{W}" height="{H}" fill="{c["bg0"]}"/>')
-    sweep = (f'<animateTransform attributeName="gradientTransform" type="translate" values="0 0;{W} 0;0 0" dur="12s" repeatCount="indefinite"/>'
-             if x.animate else "")
     x.defs.append(f'<linearGradient id="ink" x1="0" y1="0" x2="{W}" y2="0" gradientUnits="userSpaceOnUse" spreadMethod="reflect">'
-                  f'<stop offset="0" stop-color="{c["a1"]}"/><stop offset=".5" stop-color="{c["a2"]}"/><stop offset="1" stop-color="{c["a3"]}"/>{sweep}</linearGradient>')
+                  f'<stop offset="0" stop-color="{c["a1"]}"/><stop offset=".5" stop-color="{c["a2"]}"/><stop offset="1" stop-color="{c["a3"]}"/></linearGradient>')
     ts = int(min(title_size(x.title, W, H, 150) * 1.15, H * 0.42))
-    text_block(x, size=ts, fill="url(#ink)")
+    if not x.animate:
+        text_block(x, size=ts, fill="url(#ink)")
+        return
+
+    def ink(title_el):
+        # CSS can't move a gradient, so the title becomes a clip path over a wide gradient-filled
+        # rect that slides right and back; the gradient moves with the rect.
+        x.defs.append(f'<clipPath id="inkclip">{title_el}</clipPath>')
+        return f'<g clip-path="url(#inkclip)"><rect class="ink" x="{-W}" y="0" width="{2 * W}" height="{H}" fill="url(#ink)"/></g>'
+    x.css.append(f"@keyframes ink{{50%{{transform:translateX({W}px)}}}}.ink{{animation:ink 12s linear infinite}}")
+    text_block(x, size=ts, title_wrap=ink)
 
 
 def grain(x, strength=0.14, freq=0.85):
@@ -689,10 +708,13 @@ def s_spotlight(x):
         pw = text_em(label, 1, wide=16.5 / 9.6) * 9.6 + 66
         px = W / 2 - pw / 2
         surf = c.get("surface", c["bg1"])
-        x.defs.append(f'<linearGradient id="pillb" x1="0" x2="1"><stop offset="0" stop-color="{line}" stop-opacity=".14"/><stop offset=".5" stop-color="{c["a1"]}" stop-opacity=".9"/><stop offset="1" stop-color="{line}" stop-opacity=".14"/>'
-                      + (f'<animateTransform attributeName="gradientTransform" type="translate" values="-1 0;1 0" dur="4s" repeatCount="indefinite"/>' if x.animate else "")
-                      + "</linearGradient>")
-        x.body.append(f'<rect x="{px:.0f}" y="{y:.0f}" width="{pw:.0f}" height="40" rx="20" fill="{surf}" fill-opacity="{.85 if dark else .95}" stroke="url(#pillb)" stroke-width="1"/>'
+        pill = f'x="{px:.0f}" y="{y:.0f}" width="{pw:.0f}" height="40" rx="20"'
+        # border light: an accent highlight masked to the pill's outline slides from left to right
+        x.defs.append(f'<linearGradient id="pillb" x1="0" x2="1"><stop offset="0" stop-color="{c["a1"]}" stop-opacity="0"/><stop offset=".5" stop-color="{c["a1"]}" stop-opacity=".9"/><stop offset="1" stop-color="{c["a1"]}" stop-opacity="0"/></linearGradient>'
+                      f'<mask id="pillm" maskUnits="userSpaceOnUse" x="0" y="0" width="{W}" height="{H}"><rect {pill} fill="none" stroke="#fff" stroke-width="1"/></mask>')
+        x.css.append(f"@keyframes pillsw{{from{{transform:translateX({-pw:.0f}px)}}to{{transform:translateX({pw:.0f}px)}}}}.pillsw{{animation:pillsw 4s linear infinite}}")
+        x.body.append(f'<rect {pill} fill="{surf}" fill-opacity="{.85 if dark else .95}" stroke="{line}" stroke-opacity=".14" stroke-width="1"/>'
+                      f'<g mask="url(#pillm)"><rect class="pillsw" x="{px:.0f}" y="{y - 1:.0f}" width="{pw:.0f}" height="42" fill="url(#pillb)"/></g>'
                       f'<circle cx="{px + 21:.0f}" cy="{y + 20:.0f}" r="4.5" fill="{c["a1"]}"/>'
                       f'<text x="{px + 34:.0f}" y="{y + 26:.0f}" font-family="{SANS}" font-size="16.5" font-weight="600" fill="{c["fg"]}">{esc(label)}</text>'
                       f'<text x="{px + pw - 26:.0f}" y="{y + 26:.0f}" font-family="{SANS}" font-size="16.5" fill="{c["muted"]}">→</text>')
@@ -709,17 +731,23 @@ def s_spotlight(x):
 
 def s_ribbon(x):
     """Silk ribbon: many strands following a twisting sine band; per-strand phase gives 3D depth.
-    SMIL morphs each strand between two phases so the ribbon flows."""
+    The strands run past the right edge and slide left and back (a CSS transform), which closely
+    follows the old morph between phase 0 and 0.55. Colour moves with the strands; the fade at
+    the ends is a fixed mask, so it stays put."""
     W, H, c = x.W, x.H, x.c
     bg_rect(x)
     n = 20
-    x.defs.append(f'<linearGradient id="silk" x1="0" x2="1"><stop offset="0" stop-color="{c["a3"]}" stop-opacity="0"/><stop offset=".25" stop-color="{c["a3"]}"/>'
-                  f'<stop offset=".6" stop-color="{c["a1"]}"/><stop offset="1" stop-color="{c["a2"]}" stop-opacity=".2"/></linearGradient>')
+    shift = (W + 80) * 0.325  # how far phase 0.55 moves the wave (0.306) and the twist (0.344), averaged
+    x.defs.append(f'<linearGradient id="silk" x1="-40" x2="{W + 40}" gradientUnits="userSpaceOnUse" spreadMethod="reflect"><stop offset="0" stop-color="{c["a3"]}"/><stop offset=".25" stop-color="{c["a3"]}"/>'
+                  f'<stop offset=".6" stop-color="{c["a1"]}"/><stop offset="1" stop-color="{c["a2"]}"/></linearGradient>'
+                  f'<linearGradient id="silkf" x1="-40" x2="{W + 40}" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset=".25" stop-color="#fff"/>'
+                  f'<stop offset=".6" stop-color="#fff"/><stop offset="1" stop-color="#fff" stop-opacity=".2"/></linearGradient>'
+                  f'<mask id="silkm" maskUnits="userSpaceOnUse" x="0" y="0" width="{W}" height="{H}"><rect width="{W}" height="{H}" fill="url(#silkf)"/></mask>')
 
     def strand(i, phase):
         t = i / (n - 1)
         pts = []
-        for k in range(0, 19):
+        for k in range(0, 26):  # u up to 1.39: the extra length slides into view
             u = k / 18
             X = -40 + (W + 80) * u
             twist = math.cos(math.pi * (u * 1.6 + phase))           # ribbon edge-on where cos≈0
@@ -733,14 +761,13 @@ def s_ribbon(x):
         d += f" T{pts[-1][0]:.0f},{pts[-1][1]:.0f}"
         return d
 
-    g = ['<g fill="none" stroke="url(#silk)" stroke-linecap="round">']
+    g = ['<g mask="url(#silkm)"><g class="flow" fill="none" stroke="url(#silk)" stroke-linecap="round">']
     for i in range(n):
-        d0, d1 = strand(i, 0.0), strand(i, 0.55)
         op = 0.25 + 0.75 * math.sin(math.pi * i / (n - 1))          # centre strands brightest
-        anim = f'<animate attributeName="d" values="{d0};{d1};{d0}" dur="14s" repeatCount="indefinite" calcMode="spline" keySplines=".45 0 .55 1;.45 0 .55 1"/>' if x.animate else ""
-        g.append(f'<path d="{d0}" stroke-width="{1.1 + op * .6:.2f}" stroke-opacity="{op:.2f}">{anim}</path>')
-    g.append("</g>")
+        g.append(f'<path d="{strand(i, 0.0)}" stroke-width="{1.1 + op * .6:.2f}" stroke-opacity="{op:.2f}"/>')
+    g.append("</g></g>")
     x.body.extend(g)
+    x.css.append(f"@keyframes flow{{50%{{transform:translateX({-shift:.0f}px)}}}}.flow{{animation:flow 14s cubic-bezier(.45,0,.55,1) infinite}}")
     scrim(x, rx=0.34, ry=0.30, strength=0.8 if x.theme == "dark" else 0.85)
     text_block(x, y_center=H * 0.42)
 
