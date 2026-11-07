@@ -9,6 +9,7 @@ in a file, so commands and env vars can be quoted without guessing.
 """
 from __future__ import annotations
 
+import codecs
 import configparser
 import json
 import os
@@ -131,12 +132,35 @@ MAX_FILES = 20000
 MAX_SCAN_BYTES = 400_000
 
 
-def read_text(path: Path, limit: int = MAX_SCAN_BYTES) -> str:
+BOMS = (  # UTF-32 first: its little-endian BOM starts with the UTF-16 one
+    (codecs.BOM_UTF32_LE, "utf-32-le"), (codecs.BOM_UTF32_BE, "utf-32-be"),
+    (codecs.BOM_UTF8, "utf-8"), (codecs.BOM_UTF16_LE, "utf-16-le"), (codecs.BOM_UTF16_BE, "utf-16-be"),
+)
+
+
+def decode_bytes(data: bytes, final: bool = True) -> str:
+    """Decode file bytes the way an editor would: honour a BOM (UTF-8, UTF-16, UTF-32),
+    else strict UTF-8, else latin-1 (never fails). The BOM itself is dropped.
+    final=False means the bytes were cut at a read limit, so a split last character is not an error."""
+    for bom, enc in BOMS:
+        if data.startswith(bom):
+            return codecs.getincrementaldecoder(enc)(errors="replace").decode(data[len(bom):], final=final)
     try:
-        with open(path, "r", encoding="utf-8", errors="ignore") as fh:
-            return fh.read(limit)
+        return codecs.getincrementaldecoder("utf-8")().decode(data, final=final)
+    except UnicodeDecodeError:
+        return data.decode("latin-1")
+
+
+def read_text(path: Path, limit: int = MAX_SCAN_BYTES) -> str:
+    """Read up to `limit` bytes of a text file, whatever its encoding (see decode_bytes).
+    Newlines are normalised to \\n, as text-mode open() would."""
+    try:
+        with open(path, "rb") as fh:
+            data = fh.read(limit + 1)
     except OSError:
         return ""
+    text = decode_bytes(data[:limit], final=len(data) <= limit)
+    return text.replace("\r\n", "\n").replace("\r", "\n")
 
 
 def load_json(path: Path):
@@ -147,13 +171,13 @@ def load_json(path: Path):
 
 
 def load_toml(path: Path):
+    text = read_text(path, 5_000_000)  # BOM already stripped: tomllib rejects it
     if tomllib is None:
-        return mini_toml(read_text(path))
+        return mini_toml(text)
     try:
-        with open(path, "rb") as fh:
-            return tomllib.load(fh)
+        return tomllib.loads(text)
     except Exception:
-        return mini_toml(read_text(path))
+        return mini_toml(text)
 
 
 def mini_toml(text: str) -> dict:
@@ -441,7 +465,7 @@ def analyze(root: Path) -> dict:
     if "setup.cfg" in top:
         cp = configparser.ConfigParser()
         try:
-            cp.read(top["setup.cfg"], encoding="utf-8")
+            cp.read_string(read_text(top["setup.cfg"]))
             if cp.has_option("metadata", "name"):
                 package.setdefault("name", cp.get("metadata", "name"))
         except configparser.Error:

@@ -19,6 +19,7 @@ Rubric details live in references/quality-rubric.md.
 """
 from __future__ import annotations
 
+import codecs
 import html
 import json
 import os
@@ -92,6 +93,37 @@ class Report:
         got = sum(c["score"] for c in self.cats.values())
         mx = sum(c["max"] for c in self.cats.values()) or 1
         return round(100 * got / mx)
+
+
+# ----------------------------------------------------------------------------- reading
+# Same rules as analyze_repo.decode_bytes. Copied, not imported: this script must run on its own
+# (the GitHub Action ships it without analyze_repo.py). tests/test_encoding.py keeps the two in step.
+BOMS = (  # UTF-32 first: its little-endian BOM starts with the UTF-16 one
+    (codecs.BOM_UTF32_LE, "utf-32-le"), (codecs.BOM_UTF32_BE, "utf-32-be"),
+    (codecs.BOM_UTF8, "utf-8"), (codecs.BOM_UTF16_LE, "utf-16-le"), (codecs.BOM_UTF16_BE, "utf-16-be"),
+)
+
+
+def decode_bytes(data: bytes, final: bool = True) -> str:
+    """Honour a BOM (UTF-8, UTF-16, UTF-32), else strict UTF-8, else latin-1. The BOM is dropped."""
+    for bom, enc in BOMS:
+        if data.startswith(bom):
+            return codecs.getincrementaldecoder(enc)(errors="replace").decode(data[len(bom):], final=final)
+    try:
+        return codecs.getincrementaldecoder("utf-8")().decode(data, final=final)
+    except UnicodeDecodeError:
+        return data.decode("latin-1")
+
+
+def read_text(path: Path, limit: int = 0) -> str:
+    """Whole file (or the first `limit` bytes) as text, whatever its encoding. Newlines become \\n."""
+    with open(path, "rb") as fh:
+        data = fh.read(limit + 1) if limit else fh.read()
+    if limit:
+        text = decode_bytes(data[:limit], final=len(data) <= limit)
+    else:
+        text = decode_bytes(data)
+    return text.replace("\r\n", "\n").replace("\r", "\n")
 
 
 # ----------------------------------------------------------------------------- parsing
@@ -397,7 +429,7 @@ def design_lints(r: Report, text: str, imgs, readme_path: Path):
         if not f.is_file():
             continue
         size = f.stat().st_size
-        body = f.read_text(encoding="utf-8", errors="ignore")[:2_000_000]
+        body = read_text(f, 2_000_000)
         if "<script" in body.lower():
             r.add("ERROR", "design", f"{src} contains <script>: it never runs inside an <img> and looks unsafe", im["line"])
         if re.search(r"@import|<link\b|url\(\s*['\"]?https?:|href=['\"]https?:[^'\"]+\.(?:png|jpe?g|gif|webp|svg|woff2?|ttf)", body, re.I):
@@ -813,7 +845,7 @@ def main(argv):
     if not path.is_file():
         print(f"error: {path} not found", file=sys.stderr)
         return 2
-    text = path.read_text(encoding="utf-8", errors="ignore").replace("\r\n", "\n")
+    text = read_text(path)
     repo = None
     if "--repo" in args:
         repo = Path(args[args.index("--repo") + 1])
