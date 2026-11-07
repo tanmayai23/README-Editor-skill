@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import codecs
 import configparser
+import fnmatch
 import json
 import os
 import re
@@ -227,12 +228,92 @@ def is_sample_dir(root: Path, dirpath: str, d: str) -> bool:
     return not re.search(r"(^|/)src/(main|test)(/|$)", parent)
 
 
+def skip_dir(root: Path, dirpath: str, d: str) -> bool:
+    return d in IGNORE_DIRS or is_sample_dir(root, dirpath, d) or (d.startswith(".") and d not in KEEP_DOT_DIRS)
+
+
+def git_files(root: Path):
+    """Paths (relative, '/'-separated) git would commit: tracked plus untracked, minus everything
+    .gitignore'd (nested .gitignore files, .git/info/exclude and the global excludes included).
+    None when git is missing, `root` is not in a work tree, or git lists nothing."""
+    try:
+        proc = subprocess.run(["git", "-C", str(root), "ls-files", "-co", "--exclude-standard", "-z"],
+                              capture_output=True, timeout=60)
+    except (OSError, subprocess.SubprocessError):
+        return None
+    if proc.returncode != 0:
+        return None
+    paths = [p for p in proc.stdout.decode("utf-8", "replace").split("\0") if p]
+    return paths or None
+
+
+class GitIgnore:
+    """Root .gitignore, for when git itself can't be asked: names, globs, `dir/`, `/anchored`,
+    `**/x`, `x/**` and `!negation`, last match wins. Not the full gitignore spec."""
+
+    def __init__(self, text: str):
+        self.rules = []
+        for raw in text.splitlines():
+            line = raw.rstrip()
+            if not line or line.startswith("#"):
+                continue
+            neg = line.startswith("!")
+            if neg:
+                line = line[1:]
+            dir_only = line.endswith("/")
+            line = line.rstrip("/")
+            if line.endswith("/**"):
+                line, dir_only = line[:-3], True
+            if line.startswith("**/"):
+                line = line[3:]
+            anchored = "/" in line
+            line = line.lstrip("/")
+            if line:
+                self.rules.append((line, neg, dir_only, anchored))
+
+    def ignored(self, relpath: str, is_dir: bool) -> bool:
+        hit = False
+        name = relpath.rsplit("/", 1)[-1]
+        for pat, neg, dir_only, anchored in self.rules:
+            if dir_only and not is_dir:
+                continue
+            if fnmatch.fnmatchcase(relpath if anchored else name, pat):
+                hit = not neg
+        return hit
+
+
+def walk_order(relpath: str):
+    """Sort key matching os.walk: a directory's files come before its subdirectories."""
+    parts = relpath.split("/")
+    return [(1, p) for p in parts[:-1]] + [(0, parts[-1])]
+
+
 def walk(root: Path):
+    """Project files, skipping IGNORE_DIRS, sample dirs, hidden dirs and anything .gitignore'd.
+    Uses `git ls-files` when it can, else the root .gitignore. Stops after MAX_FILES."""
     count = 0
+    listed = git_files(root)
+    if listed is not None:
+        for r in sorted(listed, key=walk_order):
+            parts = r.split("/")
+            if any(skip_dir(root, str(root.joinpath(*parts[:i])), parts[i]) for i in range(len(parts) - 1)):
+                continue
+            p = root.joinpath(*parts)
+            if not os.path.lexists(p) or p.is_dir():  # deleted but still in the index; submodules
+                continue
+            count += 1
+            if count > MAX_FILES:
+                return
+            yield p
+        return
+    ign = GitIgnore(read_text(root / ".gitignore"))
     for dirpath, dirnames, filenames in os.walk(root):
-        dirnames[:] = [d for d in dirnames if d not in IGNORE_DIRS and not is_sample_dir(root, dirpath, d)
-                       and (not d.startswith(".") or d in KEEP_DOT_DIRS)]
+        base = os.path.relpath(dirpath, root).replace(os.sep, "/")
+        base = "" if base == "." else base + "/"
+        dirnames[:] = [d for d in dirnames if not skip_dir(root, dirpath, d) and not ign.ignored(base + d, True)]
         for name in filenames:
+            if ign.ignored(base + name, False):
+                continue
             count += 1
             if count > MAX_FILES:
                 return
