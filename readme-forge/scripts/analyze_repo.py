@@ -9,7 +9,9 @@ in a file, so commands and env vars can be quoted without guessing.
 """
 from __future__ import annotations
 
+import codecs
 import configparser
+import fnmatch
 import json
 import os
 import re
@@ -131,12 +133,35 @@ MAX_FILES = 20000
 MAX_SCAN_BYTES = 400_000
 
 
-def read_text(path: Path, limit: int = MAX_SCAN_BYTES) -> str:
+BOMS = (  # UTF-32 first: its little-endian BOM starts with the UTF-16 one
+    (codecs.BOM_UTF32_LE, "utf-32-le"), (codecs.BOM_UTF32_BE, "utf-32-be"),
+    (codecs.BOM_UTF8, "utf-8"), (codecs.BOM_UTF16_LE, "utf-16-le"), (codecs.BOM_UTF16_BE, "utf-16-be"),
+)
+
+
+def decode_bytes(data: bytes, final: bool = True) -> str:
+    """Decode file bytes the way an editor would: honour a BOM (UTF-8, UTF-16, UTF-32),
+    else strict UTF-8, else latin-1 (never fails). The BOM itself is dropped.
+    final=False means the bytes were cut at a read limit, so a split last character is not an error."""
+    for bom, enc in BOMS:
+        if data.startswith(bom):
+            return codecs.getincrementaldecoder(enc)(errors="replace").decode(data[len(bom):], final=final)
     try:
-        with open(path, "r", encoding="utf-8", errors="ignore") as fh:
-            return fh.read(limit)
+        return codecs.getincrementaldecoder("utf-8")().decode(data, final=final)
+    except UnicodeDecodeError:
+        return data.decode("latin-1")
+
+
+def read_text(path: Path, limit: int = MAX_SCAN_BYTES) -> str:
+    """Read up to `limit` bytes of a text file, whatever its encoding (see decode_bytes).
+    Newlines are normalised to \\n, as text-mode open() would."""
+    try:
+        with open(path, "rb") as fh:
+            data = fh.read(limit + 1)
     except OSError:
         return ""
+    text = decode_bytes(data[:limit], final=len(data) <= limit)
+    return text.replace("\r\n", "\n").replace("\r", "\n")
 
 
 def load_json(path: Path):
@@ -147,13 +172,13 @@ def load_json(path: Path):
 
 
 def load_toml(path: Path):
+    text = read_text(path, 5_000_000)  # BOM already stripped: tomllib rejects it
     if tomllib is None:
-        return mini_toml(read_text(path))
+        return mini_toml(text)
     try:
-        with open(path, "rb") as fh:
-            return tomllib.load(fh)
+        return tomllib.loads(text)
     except Exception:
-        return mini_toml(read_text(path))
+        return mini_toml(text)
 
 
 def mini_toml(text: str) -> dict:
@@ -203,12 +228,92 @@ def is_sample_dir(root: Path, dirpath: str, d: str) -> bool:
     return not re.search(r"(^|/)src/(main|test)(/|$)", parent)
 
 
+def skip_dir(root: Path, dirpath: str, d: str) -> bool:
+    return d in IGNORE_DIRS or is_sample_dir(root, dirpath, d) or (d.startswith(".") and d not in KEEP_DOT_DIRS)
+
+
+def git_files(root: Path):
+    """Paths (relative, '/'-separated) git would commit: tracked plus untracked, minus everything
+    .gitignore'd (nested .gitignore files, .git/info/exclude and the global excludes included).
+    None when git is missing, `root` is not in a work tree, or git lists nothing."""
+    try:
+        proc = subprocess.run(["git", "-C", str(root), "ls-files", "-co", "--exclude-standard", "-z"],
+                              capture_output=True, timeout=60)
+    except (OSError, subprocess.SubprocessError):
+        return None
+    if proc.returncode != 0:
+        return None
+    paths = [p for p in proc.stdout.decode("utf-8", "replace").split("\0") if p]
+    return paths or None
+
+
+class GitIgnore:
+    """Root .gitignore, for when git itself can't be asked: names, globs, `dir/`, `/anchored`,
+    `**/x`, `x/**` and `!negation`, last match wins. Not the full gitignore spec."""
+
+    def __init__(self, text: str):
+        self.rules = []
+        for raw in text.splitlines():
+            line = raw.rstrip()
+            if not line or line.startswith("#"):
+                continue
+            neg = line.startswith("!")
+            if neg:
+                line = line[1:]
+            dir_only = line.endswith("/")
+            line = line.rstrip("/")
+            if line.endswith("/**"):
+                line, dir_only = line[:-3], True
+            if line.startswith("**/"):
+                line = line[3:]
+            anchored = "/" in line
+            line = line.lstrip("/")
+            if line:
+                self.rules.append((line, neg, dir_only, anchored))
+
+    def ignored(self, relpath: str, is_dir: bool) -> bool:
+        hit = False
+        name = relpath.rsplit("/", 1)[-1]
+        for pat, neg, dir_only, anchored in self.rules:
+            if dir_only and not is_dir:
+                continue
+            if fnmatch.fnmatchcase(relpath if anchored else name, pat):
+                hit = not neg
+        return hit
+
+
+def walk_order(relpath: str):
+    """Sort key matching os.walk: a directory's files come before its subdirectories."""
+    parts = relpath.split("/")
+    return [(1, p) for p in parts[:-1]] + [(0, parts[-1])]
+
+
 def walk(root: Path):
+    """Project files, skipping IGNORE_DIRS, sample dirs, hidden dirs and anything .gitignore'd.
+    Uses `git ls-files` when it can, else the root .gitignore. Stops after MAX_FILES."""
     count = 0
+    listed = git_files(root)
+    if listed is not None:
+        for r in sorted(listed, key=walk_order):
+            parts = r.split("/")
+            if any(skip_dir(root, str(root.joinpath(*parts[:i])), parts[i]) for i in range(len(parts) - 1)):
+                continue
+            p = root.joinpath(*parts)
+            if not os.path.lexists(p) or p.is_dir():  # deleted but still in the index; submodules
+                continue
+            count += 1
+            if count > MAX_FILES:
+                return
+            yield p
+        return
+    ign = GitIgnore(read_text(root / ".gitignore"))
     for dirpath, dirnames, filenames in os.walk(root):
-        dirnames[:] = [d for d in dirnames if d not in IGNORE_DIRS and not is_sample_dir(root, dirpath, d)
-                       and (not d.startswith(".") or d in KEEP_DOT_DIRS)]
+        base = os.path.relpath(dirpath, root).replace(os.sep, "/")
+        base = "" if base == "." else base + "/"
+        dirnames[:] = [d for d in dirnames if not skip_dir(root, dirpath, d) and not ign.ignored(base + d, True)]
         for name in filenames:
+            if ign.ignored(base + name, False):
+                continue
             count += 1
             if count > MAX_FILES:
                 return
@@ -228,6 +333,14 @@ def find_example_dirs(root: Path, limit: int = 10):
         if len(found) >= limit:
             break
     return sorted(found)[:limit]
+
+
+def file_size(p: Path) -> int:
+    """Size in bytes, or 0 when it can't be read (a dangling symlink into an HF cache or git-lfs store)."""
+    try:
+        return p.stat().st_size
+    except OSError:
+        return 0
 
 
 def rel(root: Path, p: Path) -> str:
@@ -441,7 +554,7 @@ def analyze(root: Path) -> dict:
     if "setup.cfg" in top:
         cp = configparser.ConfigParser()
         try:
-            cp.read(top["setup.cfg"], encoding="utf-8")
+            cp.read_string(read_text(top["setup.cfg"]))
             if cp.has_option("metadata", "name"):
                 package.setdefault("name", cp.get("metadata", "name"))
         except configparser.Error:
@@ -635,7 +748,7 @@ def analyze(root: Path) -> dict:
                     env[m.group(1)] = {"source": ef, "example": m.group(2).strip().strip('"\'')[:80]}
     code_ext = {".py", ".js", ".ts", ".tsx", ".jsx", ".mjs", ".go", ".rs", ".java", ".kt", ".rb"}
     for p in files:
-        if p.suffix not in code_ext or "test" in p.name.lower():
+        if p.suffix not in code_ext or TEST_NAME.search(p.name):  # not "test" in name: latest.py is code
             continue
         txt = read_text(p, 200_000)
         for pat in ENV_PATTERNS:
@@ -707,7 +820,7 @@ def analyze(root: Path) -> dict:
 
     # ---- Hugging Face artifacts -------------------------------------------
     hf = {}
-    weight_files = [rel(root, p) for p in files if p.suffix in (".safetensors", ".bin", ".gguf", ".pt", ".pth", ".onnx", ".h5", ".ckpt") and p.stat().st_size > 0]
+    weight_files = [rel(root, p) for p in files if p.suffix in (".safetensors", ".bin", ".gguf", ".pt", ".pth", ".onnx", ".h5", ".ckpt") and file_size(p) > 0]
     if weight_files:
         hf["weights"] = weight_files[:10]
     if "config.json" in top:
