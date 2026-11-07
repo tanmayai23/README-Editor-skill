@@ -335,6 +335,14 @@ def find_example_dirs(root: Path, limit: int = 10):
     return sorted(found)[:limit]
 
 
+def file_size(p: Path) -> int:
+    """Size in bytes, or 0 when it can't be read (a dangling symlink into an HF cache or git-lfs store)."""
+    try:
+        return p.stat().st_size
+    except OSError:
+        return 0
+
+
 def rel(root: Path, p: Path) -> str:
     return p.relative_to(root).as_posix()
 
@@ -740,7 +748,7 @@ def analyze(root: Path) -> dict:
                     env[m.group(1)] = {"source": ef, "example": m.group(2).strip().strip('"\'')[:80]}
     code_ext = {".py", ".js", ".ts", ".tsx", ".jsx", ".mjs", ".go", ".rs", ".java", ".kt", ".rb"}
     for p in files:
-        if p.suffix not in code_ext or "test" in p.name.lower():
+        if p.suffix not in code_ext or TEST_NAME.search(p.name):  # not "test" in name: latest.py is code
             continue
         txt = read_text(p, 200_000)
         for pat in ENV_PATTERNS:
@@ -812,7 +820,7 @@ def analyze(root: Path) -> dict:
 
     # ---- Hugging Face artifacts -------------------------------------------
     hf = {}
-    weight_files = [rel(root, p) for p in files if p.suffix in (".safetensors", ".bin", ".gguf", ".pt", ".pth", ".onnx", ".h5", ".ckpt") and p.stat().st_size > 0]
+    weight_files = [rel(root, p) for p in files if p.suffix in (".safetensors", ".bin", ".gguf", ".pt", ".pth", ".onnx", ".h5", ".ckpt") and file_size(p) > 0]
     if weight_files:
         hf["weights"] = weight_files[:10]
     if "config.json" in top:
