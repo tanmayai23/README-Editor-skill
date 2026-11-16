@@ -1,37 +1,64 @@
 <a id="top"></a>
 
-<a href="#why"><picture><source media="(prefers-color-scheme: dark)" srcset=".github/assets/page/hero-dark.svg"><img alt="readme-forge: Your code is the source of truth. Your README should be too. A Claude skill for verified READMEs, Python 3.8+, standard library only." src=".github/assets/page/hero-light.svg" width="100%"></picture></a>
-
-<p align="center"><b>A Claude skill that writes READMEs from your code, then checks every command, env var and path in them against the repo.</b></p>
-
 <p align="center">
-  <a href="https://github.com/tanmayai23/README-Editor-skill/actions/workflows/ci.yml"><img alt="CI status" src="https://github.com/tanmayai23/README-Editor-skill/actions/workflows/ci.yml/badge.svg"></a>
-  <a href="https://github.com/tanmayai23/README-Editor-skill/releases"><img alt="Latest release" src="https://img.shields.io/github/v/release/tanmayai23/README-Editor-skill?color=19C3EC"></a>
-  <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-19C3EC"></a>
-  <img alt="Python 3.8+, standard library only" src="https://img.shields.io/badge/python-3.8%2B%20%C2%B7%20stdlib%20only-19C3EC">
+  <img alt="readme-forge: the ghost logo and wordmark" src=".github/assets/wordmark-light.svg#gh-light-mode-only" width="460">
+  <img alt="readme-forge: the ghost logo and wordmark" src=".github/assets/wordmark-dark.svg#gh-dark-mode-only" width="460">
 </p>
 
 <p align="center">
-  <a href="#quickstart"><picture><source media="(prefers-color-scheme: dark)" srcset=".github/assets/cta-primary-dark.svg"><img alt="Get started" src=".github/assets/cta-primary-light.svg" height="44"></picture></a>
-  &nbsp;
-  <a href="https://readme-forge-gallery.vercel.app/#banners"><picture><source media="(prefers-color-scheme: dark)" srcset=".github/assets/cta-secondary-dark.svg"><img alt="Banner gallery" src=".github/assets/cta-secondary-light.svg" height="44"></picture></a>
+  <strong>A Claude skill that writes READMEs from your code, then fact-checks them against it.</strong><br>
+  <sub>Claim-by-claim verification · 0–100 score with drift checks · 15 ecosystems · Python 3.8+, standard library only</sub>
 </p>
 
-<p align="center"><a href="#why">Why</a> · <a href="#quickstart">Quickstart</a> · <a href="#how-it-works">How it works</a> · <a href="#scripts">Scripts</a> · <a href="#check-readmes-in-ci">CI</a> · <a href="#how-far-to-trust-the-score">Trust</a> · <a href="#limitations">Limitations</a> · <a href="#optional-design-and-profiles">Design</a> · <a href="https://readme-forge-gallery.vercel.app/">Gallery</a> · <a href="#faq">FAQ</a> · <a href="#support">Support</a></p>
+<p align="center">
+  <a href="#quickstart">Quickstart</a> &nbsp;·&nbsp;
+  <a href="#how-it-works">How it works</a> &nbsp;·&nbsp;
+  <a href="#scripts">Scripts</a> &nbsp;·&nbsp;
+  <a href="#check-readmes-in-ci">GitHub Action</a> &nbsp;·&nbsp;
+  <a href="https://readme-forge-gallery.vercel.app/">Gallery</a> &nbsp;·&nbsp;
+  <a href="#faq">FAQ</a>
+</p>
+
+<p align="center">
+  <a href="https://github.com/tanmayai23/README-Editor-skill/actions/workflows/ci.yml"><img alt="CI status" src="https://img.shields.io/github/actions/workflow/status/tanmayai23/README-Editor-skill/ci.yml?branch=main&label=CI&style=flat-square&color=1b1b1f&labelColor=1b1b1f"></a>
+  <a href="https://github.com/tanmayai23/README-Editor-skill/releases"><img alt="Latest release" src="https://img.shields.io/github/v/release/tanmayai23/README-Editor-skill?label=release&style=flat-square&color=1b1b1f&labelColor=1b1b1f"></a>
+  <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-1b1b1f?style=flat-square&labelColor=1b1b1f"></a>
+  <img alt="Python 3.8+, standard library only" src="https://img.shields.io/badge/python-3.8%2B%20%C2%B7%20stdlib%20only-1b1b1f?style=flat-square&labelColor=1b1b1f">
+</p>
+
+<hr>
+
+A README generator that guesses is worse than none: a wrong install command costs a new user more than a missing one. readme-forge reads the repo first, writes only what it can point to in a file, and leaves a `TODO` where it can't. Then it checks the result claim by claim, and doesn't finish until nothing in the README contradicts the code.
 
 ```bash
 claude plugin install readme-forge --marketplace tanmayai23/README-Editor-skill
 ```
 
-<p align="center">
-<a href="#quickstart"><picture><source media="(prefers-color-scheme: dark)" srcset=".github/assets/page/more-in-claude-dark.svg"><img alt="In Claude: Claude Code, claude.ai and Claude Desktop" src=".github/assets/page/more-in-claude-light.svg" width="32%"></picture></a>
-<a href="#check-readmes-in-ci"><picture><source media="(prefers-color-scheme: dark)" srcset=".github/assets/page/more-in-ci-dark.svg"><img alt="In CI: a GitHub Action that keeps one PR comment" src=".github/assets/page/more-in-ci-light.svg" width="32%"></picture></a>
-<a href="#try-it-without-claude"><picture><source media="(prefers-color-scheme: dark)" srcset=".github/assets/page/more-on-its-own-dark.svg"><img alt="On its own: the scripts run without a Claude account" src=".github/assets/page/more-on-its-own-light.svg" width="32%"></picture></a>
-</p>
+## What it does
 
-## Why
+| Capability | What it gives you |
+|---|---|
+| **Claim check** | `verify_readme.py` checks commands, package-manager scripts, CLI flags, env vars and paths against the repo. Anything it can't check offline is reported as unverifiable, never as correct. |
+| **Facts, not guesses** | `analyze_repo.py` reads manifests, lockfiles, scripts, env vars, Docker, CI and routes for 15 ecosystems, so the README is written from what the repo actually has. |
+| **Architecture from imports** | `import_graph.py` drafts a Mermaid diagram from real imports in Python, JS/TS, Go and Rust. |
+| **Score and drift** | `score_readme.py` grades structure, accessibility, links and drift from 0 to 100, and flags commands that no longer match the code. |
+| **A gate in CI** | The repo is also a GitHub Action: it fact-checks the README on every pull request and keeps one comment up to date. |
+| **Every platform** | GitHub READMEs, Hugging Face model, dataset and Space cards with validated YAML, and PyPI, npm and GitLab ports. |
+| **Learns your style** | It learns from what you keep, edit and delete, on your machine only, and never sends anything anywhere. |
 
-A README generator that guesses is worse than none: a wrong install command costs a new user more than a missing one. readme-forge reads the repo first, writes only what it can point to in a file, and leaves a `TODO` where it can't. Then `verify_readme.py` checks the result claim by claim.
+## Use cases
+
+| Use case | What it's for |
+|---|---|
+| **Write a README from scratch** | A first README for a repo that has none, built from the code |
+| **Audit an existing README** | Find every command, env var and path that no longer matches the code |
+| **Keep READMEs honest in CI** | Fail pull requests below a score or accuracy you set |
+| **Model and dataset cards** | Hugging Face cards with metadata that validates |
+| **Design the whole page** | Banners, CTA buttons, full-page card kits and GitHub profile READMEs, with the optional design plugin |
+
+<a id="why"></a>
+
+## See it catch mistakes
 
 This is its real output on a test fixture: a pnpm app whose README was seeded with five mistakes.
 
@@ -123,14 +150,6 @@ flowchart LR
     score -->|"fix until it passes"| claude
 ```
 
-<p align="center">
-<picture><source media="(prefers-color-scheme: dark)" srcset=".github/assets/page/project-verify-readme-py-dark.svg"><img alt="Claim check, verify_readme.py: checks commands, package-manager scripts, CLI flags, env vars and paths against the repo; anything it can't check offline is reported as unverifiable, never as correct. 15 ecosystems detected, 100% accuracy gate in CI, 0 dependencies." src=".github/assets/page/project-verify-readme-py-light.svg" width="100%"></picture>
-<picture><source media="(prefers-color-scheme: dark)" srcset=".github/assets/page/project-analyze-repo-py-dark.svg"><img alt="Facts, not guesses, analyze_repo.py: reads manifests, lockfiles, scripts, env vars, Docker, CI and routes for 15 ecosystems" src=".github/assets/page/project-analyze-repo-py-light.svg" width="49%"></picture>
-<picture><source media="(prefers-color-scheme: dark)" srcset=".github/assets/page/project-import-graph-py-dark.svg"><img alt="Architecture from imports, import_graph.py: drafts a Mermaid diagram from real imports in Python, JS/TS, Go and Rust" src=".github/assets/page/project-import-graph-py-light.svg" width="49%"></picture>
-<picture><source media="(prefers-color-scheme: dark)" srcset=".github/assets/page/project-score-readme-py-dark.svg"><img alt="Score and drift, score_readme.py: grades structure, accessibility, links and drift from 0 to 100, and flags commands that no longer match the code" src=".github/assets/page/project-score-readme-py-light.svg" width="49%"></picture>
-<picture><source media="(prefers-color-scheme: dark)" srcset=".github/assets/page/project-every-platform-dark.svg"><img alt="Every platform: GitHub READMEs, Hugging Face cards with validated YAML, and PyPI, npm and GitLab ports" src=".github/assets/page/project-every-platform-light.svg" width="49%"></picture>
-</p>
-
 `analyze_repo.py` covers Node, Python, Rust, Go, JVM, Ruby, PHP, Dart, Elixir, .NET, C/C++, Deno, Swift, Zig and Haskell, each with a fixture and a unit test. The skill also writes companion docs: CONTRIBUTING, SECURITY, Code of Conduct, CITATION.cff, and issue and PR templates.
 
 ## Scripts
@@ -202,7 +221,7 @@ Its page kit designs the whole README, not just the ends. You write one JSON spe
 
 <a href="readme-forge-design/examples/keynote-profile/README.md"><picture><source media="(prefers-color-scheme: dark)" srcset="readme-forge-design/examples/keynote-profile/assets/hello/project-tidewatch-dark.svg"><img alt="Page kit example: a feature project card with a tag pill, bold title, serif subtitle, three metrics and an animated network visual" src="readme-forge-design/examples/keynote-profile/assets/hello/project-tidewatch-light.svg" width="100%"></picture></a>
 
-It also generates self-contained animated SVG headers in 20 styles. The newest four rebuild the look of WebGL shader scenes in plain SVG and CSS, so GitHub can render them: a spinning vortex, a light beam racing around the edge, voronoi glass and RGB-split blinds. The cards on this page come from the page kit ([spec](.github/page.json)), and the buttons under the hero are `--kind button`.
+It also generates self-contained animated SVG headers in 20 styles. The newest four rebuild the look of WebGL shader scenes in plain SVG and CSS, so GitHub can render them: a spinning vortex, a light beam racing around the edge, voronoi glass and RGB-split blinds.
 
 <table>
 <tr>
@@ -313,7 +332,5 @@ readme-forge is free and MIT-licensed, and it stays that way. If it saves you ti
 ## License
 
 Distributed under the MIT License. See [LICENSE](LICENSE).
-
-<a href="#top"><picture><source media="(prefers-color-scheme: dark)" srcset=".github/assets/page/footer-dark.svg"><img alt="Every claim checked. Ship the README. MIT License, made with readme-forge." src=".github/assets/page/footer-light.svg" width="100%"></picture></a>
 
 <p align="right"><a href="#top">Back to top ↑</a></p>
