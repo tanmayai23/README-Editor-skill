@@ -4,6 +4,11 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### Changed
+
+- The ghost logo is back as the brand mark. The 1.4.0 page-and-check icon is replaced in `favicon.ico`, the icon PNGs in `.github/assets/brand/` and the README hero cards, and `icon.svg` is removed.
+- The README opens with a new wordmark (`.github/assets/wordmark-light.svg` and `-dark.svg`: the ghost logo and "readme-forge"), a two-line pitch, a row of section links and plain dark badges. The image cards under the hero and in How it works are replaced by a "What it does" table and a "Use cases" table, and the footer card is gone.
+
 ## [1.4.0] - 2026-11-07
 
 This release teaches the skill your style: it learns from what you keep, edit and delete, on your machine.
